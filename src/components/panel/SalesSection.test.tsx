@@ -23,7 +23,7 @@ vi.mock('@/config/setup', () => ({
     showConfirm: vi.fn().mockResolvedValue(true),
   },
   authService: {
-    getUser: vi.fn().mockReturnValue({ id: 1, id_usu: 1, correo_usu: 'test@kiora.com' }),
+    getUser: vi.fn().mockReturnValue({ id: 1, id_usu: 1, correo_usu: 'KiosKiora@gmail.com' }),
     isAdmin: vi.fn().mockReturnValue(true),
   }
 }));

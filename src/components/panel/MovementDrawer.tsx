@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { inventoryService, productService, alertService } from '@/config/setup';
 import type { Product } from '@/models/Product';
 import type { Supplier } from '@/models/Inventory';
+import { useStockSync } from '@/context/StockContext';
 
 interface MovementDrawerProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface MovementDrawerProps {
 }
 
 export const MovementDrawer: React.FC<MovementDrawerProps> = ({ isOpen, onClose, onSuccess }) => {
+  const { notifyStockChange } = useStockSync();
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,23 +57,18 @@ export const MovementDrawer: React.FC<MovementDrawerProps> = ({ isOpen, onClose,
 
     setIsSaving(true);
     try {
-      const res = await inventoryService.createMovement({
+      await inventoryService.createMovement({
         tipo_mov: formData.tipo_mov,
         cod_prod: Number(formData.cod_prod),
         cantidad: Number(formData.cantidad),
-        // @ts-ignore
         desc_mov: formData.desc_mov,
-        fecha_mov: new Date().toISOString() as any
-      }) as any;
+        fecha_mov: new Date().toISOString()
+      });
 
-      if (res.alerta_stock) {
-        alertService.showWarning('Stock Crítico', res.mensaje_alerta || 'El stock bajó del mínimo');
-      } else {
-        alertService.showSuccess('Operación Exitosa', `Se registró la ${formData.tipo_mov} correctamente`);
-      }
+      alertService.showSuccess('Operación Exitosa', `Se registró la ${formData.tipo_mov} correctamente`);
 
       onSuccess();
-      window.dispatchEvent(new CustomEvent('kiora-refresh-alerts'));
+      notifyStockChange();
       onClose();
       setFormData({ tipo_mov: 'entrada', cod_prod: '', fk_cod_prov: '', cantidad: '', desc_mov: '' });
     } catch (error: any) {
@@ -82,64 +79,64 @@ export const MovementDrawer: React.FC<MovementDrawerProps> = ({ isOpen, onClose,
   };
 
   return (
-    <div className={`fixed inset-0 z-99999 transition-all duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-      <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-sm" onClick={onClose}></div>
-      <div className={`absolute top-0 right-0 h-full w-100 max-w-full bg-[#fafafc] shadow-2xl transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}>
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white">
-          <button onClick={onClose} className="p-2 -ml-2 text-gray-400 hover:bg-gray-50 rounded-full transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+    <div className={`fixed inset-0 z-9999 transition-all duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose}></div>
+      <div className={`absolute top-0 right-0 h-full w-full sm:w-[450px] bg-white shadow-2xl transition-transform duration-500 ease-out transform ${isOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}>
+        <div className="flex items-center justify-between p-8 border-b border-slate-50">
+          <button onClick={onClose} className="p-2 -ml-2 text-slate-400 hover:bg-slate-50 rounded-full transition-colors">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <h2 className="text-[15px] font-bold text-gray-800">Registrar Movimiento</h2>
-          <div className="w-9" />
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">Nuevo Movimiento</h2>
+          <div className="w-10" />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          <form id="movementForm" onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <div className="flex-1 overflow-y-auto p-8">
+          <form id="movementForm" onSubmit={handleSubmit} className="space-y-8">
             
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-wider">Tipo de Movimiento</label>
-              <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Naturaleza de la Operación</label>
+              <div className="flex gap-2 p-1 bg-slate-50 rounded-2xl ring-1 ring-slate-100">
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, tipo_mov: 'entrada'})}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${formData.tipo_mov === 'entrada' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500'}`}
+                  className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${formData.tipo_mov === 'entrada' ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                 >
-                  Entrada (Ingreso)
+                  Entrada
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, tipo_mov: 'salida'})}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${formData.tipo_mov === 'salida' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500'}`}
+                  className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${formData.tipo_mov === 'salida' ? 'bg-white text-red-500 shadow-sm ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                 >
-                  Salida (Baja/Ajuste)
+                  Salida
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-wider">Producto</label>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Producto a Afectar</label>
               <select
                 required
                 value={formData.cod_prod}
                 onChange={(e) => setFormData({...formData, cod_prod: e.target.value})}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ec131e] focus:ring-4 focus:ring-red-50 transition-all text-sm bg-white"
+                className="w-full px-5 py-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-900 transition-all text-sm bg-slate-50 font-bold"
               >
                 <option value="">Seleccionar Producto...</option>
                 {products.map(p => (
-                  <option key={p.cod_prod} value={p.cod_prod}>{p.nom_prod} - (Stock: {p.stock_actual})</option>
+                  <option key={p.cod_prod} value={p.cod_prod}>{p.nom_prod} (Actual: {p.stock_actual})</option>
                 ))}
               </select>
             </div>
 
             {formData.tipo_mov === 'entrada' && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-wider">Proveedor (Opcional)</label>
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Proveedor de Origen</label>
                 <select
                   value={formData.fk_cod_prov}
                   onChange={(e) => setFormData({...formData, fk_cod_prov: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ec131e] focus:ring-4 focus:ring-red-50 transition-all text-sm bg-white"
+                  className="w-full px-5 py-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-900 transition-all text-sm bg-slate-50 font-bold"
                 >
-                  <option value="">Desconocido / Directo</option>
+                  <option value="">Desconocido / Otros</option>
                   {suppliers.map(s => (
                     <option key={s.cod_prov} value={s.cod_prov}>{s.nom_prov}</option>
                   ))}
@@ -147,8 +144,8 @@ export const MovementDrawer: React.FC<MovementDrawerProps> = ({ isOpen, onClose,
               </div>
             )}
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-wider">Cantidad de Unidades</label>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unidades a {formData.tipo_mov === 'entrada' ? 'Sumar' : 'Restar'}</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -156,41 +153,45 @@ export const MovementDrawer: React.FC<MovementDrawerProps> = ({ isOpen, onClose,
                 placeholder="Ej. 10"
                 value={formData.cantidad}
                 onChange={(e) => setFormData({...formData, cantidad: e.target.value.replace(/\D/g, '')})}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ec131e] focus:ring-4 focus:ring-red-50 transition-all text-lg font-bold"
+                className="w-full px-5 py-5 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-900 transition-all text-3xl font-black text-slate-900 placeholder:text-slate-200 bg-slate-50/50"
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-wider">Justificación / Origen</label>
-              <input
-                type="text"
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Justificación del Cambio</label>
+              <textarea
                 required
-                placeholder="Ej. Compra a proveedor, merma, ajuste..."
+                rows={3}
+                placeholder="Indica el motivo (ej. Reposición semanal, producto dañado, ajuste anual...)"
                 value={formData.desc_mov}
                 onChange={(e) => setFormData({...formData, desc_mov: e.target.value})}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ec131e] focus:ring-4 focus:ring-red-50 transition-all text-sm"
+                className="w-full px-5 py-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-slate-900 transition-all text-sm font-medium bg-slate-50/50"
               />
             </div>
           </form>
         </div>
 
-        <div className="p-6 bg-white border-t border-gray-100 flex flex-col gap-3">
+        <div className="p-8 bg-slate-50 border-t border-slate-100 flex flex-col gap-4">
           <button
             form="movementForm"
             type="submit"
             disabled={isSaving}
-            className={`w-full font-black py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${formData.tipo_mov === 'entrada' ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200' : 'bg-[#ec131e] hover:bg-[#d01019] text-white shadow-red-200'}`}
+            className={`w-full py-5 rounded-[1.25rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl transition-all active:scale-95 disabled:opacity-50 ${
+              formData.tipo_mov === 'entrada' 
+                ? 'bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700' 
+                : 'bg-slate-900 text-white shadow-slate-200 hover:bg-black'
+            }`}
           >
             {isSaving ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Procesando...</span>
+              </div>
             ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
-                <span>Procesar {formData.tipo_mov === 'entrada' ? 'Ingreso' : 'Salida'}</span>
-              </>
+              `Confirmar ${formData.tipo_mov === 'entrada' ? 'Ingreso' : 'Salida'}`
             )}
           </button>
-          <button type="button" onClick={onClose} className="w-full py-4 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors">Cerrar</button>
+          <button type="button" onClick={onClose} className="w-full py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">Cancelar Operación</button>
         </div>
       </div>
     </div>

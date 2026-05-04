@@ -45,24 +45,6 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
       ),
     },
     {
-      id: 'proveedores',
-      label: 'Proveedores',
-      icon: (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-      ),
-    },
-    {
-      id: 'pedidos',
-      label: 'Facturas',
-      icon: (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
-    },
-    {
       id: 'ventas',
       label: 'Ventas',
       icon: (
@@ -121,7 +103,7 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
   return (
     <div className="fixed left-4 top-1/2 -translate-y-1/2 z-[60] flex flex-col items-center gap-2">
       {/* Permanent Vertical Sidebar */}
-      <nav 
+      <nav
         className="flex flex-col items-center gap-1.5 rounded-[2rem] bg-[#2C2422]/95 py-3 shadow-[15px_0_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl ring-1 ring-white/10"
         style={{ width: '60px' }}
       >
@@ -132,11 +114,10 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
               key={item.id}
               onClick={() => onItemClick(item.id)}
               title={item.label}
-              className={`group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all duration-300 ${
-                active 
-                  ? 'bg-white/10 text-white shadow-inner scale-105 ring-1 ring-white/20' 
-                  : 'text-white/40 hover:bg-white/5 hover:text-white'
-              }`}
+              className={`group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all duration-300 ${active
+                ? 'bg-white/10 text-white shadow-inner scale-105 ring-1 ring-white/20'
+                : 'text-white/40 hover:bg-white/5 hover:text-white'
+                }`}
             >
               <div className="relative">
                 {item.icon}
@@ -144,7 +125,7 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
                   <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-0.5 h-3 rounded-full bg-[#ec131e] shadow-[2px_0_8px_rgba(236,19,30,0.8)]"></div>
                 )}
               </div>
-              
+
               {/* Desktop Tooltip */}
               <div className="absolute left-full ml-4 whitespace-nowrap rounded-lg bg-[#2C2422] px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none ring-1 ring-white/10 shadow-xl">
                 {item.label}
@@ -156,9 +137,9 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
 
       {/* Label for current active tab (Below dock) */}
       <div className="text-center mt-2">
-         <div className="text-[7px] font-black uppercase tracking-[0.2em] text-[#3E2723]/40 rotate-90 origin-left ml-2.5 whitespace-nowrap">
-           {activeItem?.label}
-         </div>
+        <div className="text-[7px] font-black uppercase tracking-[0.2em] text-[#3E2723]/40 rotate-90 origin-left ml-2.5 whitespace-nowrap">
+          {activeItem?.label}
+        </div>
       </div>
     </div>
   );

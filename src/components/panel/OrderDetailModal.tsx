@@ -6,6 +6,7 @@ interface OrderDetailModalProps {
   onClose: () => void;
   safePrice: (v: unknown) => number;
   estadoColors: Record<string, string>;
+  productMap?: Record<string | number, string>; // Add this
   onRefund?: (id: number) => void;
   onDownloadReceipt?: (id: number) => void;
 }
@@ -15,6 +16,7 @@ export function OrderDetailModal({
   onClose,
   safePrice,
   estadoColors,
+  productMap = {}, // Add this
   onRefund,
   onDownloadReceipt
 }: OrderDetailModalProps) {
@@ -134,7 +136,9 @@ export function OrderDetailModal({
                   (detailOrder.items ?? []).map((item, i) => (
                     <tr key={i} className="hover:bg-slate-50 transition-colors">
                       <td className="px-5 py-4">
-                        <p className="font-bold text-slate-800 line-clamp-1">{item.nom_prod ?? `Producto #${item.cod_prod}`}</p>
+                        <p className="font-bold text-slate-800 line-clamp-1">
+                          {item.nom_prod || productMap[item.cod_prod] || (item.cod_prod ? productMap[String(item.cod_prod)] : '') || `Producto #${item.cod_prod}`}
+                        </p>
                         <p className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-wide">Código: {item.cod_prod}</p>
                       </td>
                       <td className="px-5 py-4 text-center">
