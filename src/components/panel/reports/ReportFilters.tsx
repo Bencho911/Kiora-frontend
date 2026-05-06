@@ -18,24 +18,24 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
   isLoading
 }) => {
   return (
-    <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50">
+    <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50 relative z-20">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {/* Range */}
-        <div className="space-y-3">
+        <div className="space-y-3 relative z-30">
           <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Rango de Fechas</label>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3 report-date-range">
             <input 
               type="date" 
               value={filters.startDate}
               onChange={e => setFilters({...filters, startDate: e.target.value})}
-              className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-red-100 transition-all"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-red-100 transition-all"
             />
-            <span className="text-slate-300 font-bold">→</span>
+            <span className="text-slate-300 font-bold px-1">→</span>
             <input 
               type="date" 
               value={filters.endDate}
               onChange={e => setFilters({...filters, endDate: e.target.value})}
-              className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-red-100 transition-all"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-red-100 transition-all"
             />
           </div>
         </div>
@@ -62,6 +62,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
                 <option value="dia">Día</option>
                 <option value="semana">Semana</option>
                 <option value="mes">Mes</option>
+                <option value="unidad">Unidad</option>
               </select>
             )}
           </div>

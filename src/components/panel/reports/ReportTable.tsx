@@ -69,15 +69,21 @@ export const ReportTable: React.FC<ReportTableProps> = ({
               <p className="text-2xl font-black text-slate-900">$ {stats.totalSales?.toLocaleString('es-CO')}</p>
             </div>
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100/50">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Pedidos</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                {filters.grouping === 'unidad' ? 'Total Unidades' : 'Total Pedidos'}
+              </p>
               <p className="text-2xl font-black text-slate-900">{stats.totalOrders}</p>
             </div>
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100/50">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Promedio</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                {filters.grouping === 'unidad' ? 'Precio Promedio' : 'Ticket Promedio'}
+              </p>
               <p className="text-2xl font-black text-kiora-red">$ {stats.avgTicket?.toLocaleString('es-CO')}</p>
             </div>
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100/50">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Periodos Analizados</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                {filters.grouping === 'unidad' ? 'Items Vendidos' : 'Periodos Analizados'}
+              </p>
               <p className="text-2xl font-black text-slate-900">{data.length}</p>
             </div>
           </>
@@ -104,10 +110,10 @@ export const ReportTable: React.FC<ReportTableProps> = ({
           <thead className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">
             {filters.reportType === 'ventas_detalladas' ? (
               <tr>
-                <th className="px-8 py-5">Periodo Temporal</th>
-                <th className="px-8 py-5">Ventas Netas</th>
-                <th className="px-8 py-5">Volumen de Pedidos</th>
-                <th className="px-8 py-5">Ticket de Venta</th>
+                <th className="px-8 py-5">{filters.grouping === 'unidad' ? 'Producto / Pedido' : 'Periodo Temporal'}</th>
+                <th className="px-8 py-5">{filters.grouping === 'unidad' ? 'Subtotal' : 'Ventas Netas'}</th>
+                <th className="px-8 py-5">{filters.grouping === 'unidad' ? 'Unidades' : 'Volumen de Pedidos'}</th>
+                <th className="px-8 py-5">{filters.grouping === 'unidad' ? 'Precio Unitario' : 'Ticket de Venta'}</th>
               </tr>
             ) : (
               <tr>
@@ -125,7 +131,7 @@ export const ReportTable: React.FC<ReportTableProps> = ({
                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-8 py-5 text-sm font-black text-slate-900 uppercase">{row.period}</td>
                   <td className="px-8 py-5 text-sm font-bold text-slate-600">$ {row.totalSales.toLocaleString('es-CO')}</td>
-                  <td className="px-8 py-5 text-sm font-bold text-slate-600">{row.orderCount} ops</td>
+                  <td className="px-8 py-5 text-sm font-bold text-slate-600">{row.orderCount} {filters.grouping === 'unidad' ? 'uds' : 'ops'}</td>
                   <td className="px-8 py-5 text-sm font-black text-kiora-red">$ {row.averageTicket.toLocaleString('es-CO')}</td>
                 </tr>
               ))
