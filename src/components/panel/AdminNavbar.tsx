@@ -80,7 +80,14 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
                       <div className="p-10 flex justify-center"><div className="w-6 h-6 border-2 border-red-100 border-t-kiora-red rounded-full animate-spin"></div></div>
                     ) : alerts.length > 0 ? (
                       alerts.map((alert) => (
-                        <div key={alert.cod_prod} className="p-4 hover:bg-red-50/50 transition-colors border-b border-gray-50 last:border-0 group cursor-default">
+                        <div 
+                          key={alert.cod_prod} 
+                          className="p-4 hover:bg-red-50 transition-colors border-b border-gray-50 last:border-0 group cursor-pointer"
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('kiora_navigate', { detail: { tab: 'productos' } }));
+                            setIsNotificationsOpen(false);
+                          }}
+                        >
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-red-100/50 text-kiora-red rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
@@ -109,12 +116,12 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
                   {alerts.length > 0 && (
                     <button
                       onClick={() => {
-                        window.location.hash = 'inventario';
+                        window.dispatchEvent(new CustomEvent('kiora_navigate', { detail: { tab: 'productos' } }));
                         setIsNotificationsOpen(false);
                       }}
                       className="w-full p-3 bg-gray-50 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-gray-100 transition-colors border-t border-gray-100"
                     >
-                      Ver todos en Inventario
+                      Ver Stock en Productos
                     </button>
                   )}
                 </div>
