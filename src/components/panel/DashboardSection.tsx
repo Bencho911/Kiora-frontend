@@ -12,29 +12,32 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
   const [criticalStock, setCriticalStock] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [todaySales, setTodaySales] = useState(0);
-  const [todayDate, setTodayDate] = useState<string | null>(null);
+  const [statsData, setStatsData] = useState<any>(null);
+  const isPaidStatus = (status?: string) => {
+    const normalized = String(status ?? '').toLowerCase();
+    return normalized === 'completada' || normalized === 'pagado' || normalized === 'pagada';
+  };
 
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const todayStr = new Date().toDateString();
-      const [stockRes, orderRes] = await Promise.all([
+      const [stockRes, statsRes, orderRes] = await Promise.all([
         productService.getLowStock().catch(() => null),
-        orderService.getOrders(1, 100).catch(() => null)
+        orderService.getDashboardStats().catch(() => null),
+        orderService.getOrders(1, 10).catch(() => null)
       ]);
 
       if (stockRes && stockRes.data && Array.isArray(stockRes.data)) {
         setCriticalStock(stockRes.data);
       }
 
+      if (statsRes) {
+        setStatsData(statsRes);
+      }
+
       if (orderRes) {
         const ordersArr = Array.isArray(orderRes) ? orderRes : (orderRes.data || []);
         setOrders(ordersArr);
-        // Calculate today sales
-        const todayOrders = ordersArr.filter((o: Order) => o.fecha_vent && new Date(o.fecha_vent).toDateString() === todayStr);
-        const total = todayOrders.reduce((acc: number, o: Order) => acc + (Number(o.montofinal_vent) || 0), 0);
-        setTodaySales(total);
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -44,7 +47,6 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
   }, []);
 
   useEffect(() => {
-    setTodayDate(new Date().toDateString());
     void loadDashboardData();
 
     const handleRefresh = () => void loadDashboardData();
@@ -60,7 +62,7 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
   const stats = [
     { 
       label: 'Ventas de Hoy', 
-      value: `$${todaySales.toLocaleString('es-CO')}`, 
+      value: `$${Number(statsData?.monto_total || 0).toLocaleString('es-CO')}`, 
       icon: 'money', 
       color: 'text-emerald-500', 
       bg: 'bg-emerald-50', 
@@ -68,7 +70,7 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
     },
     { 
       label: 'Pedidos Hoy', 
-      value: orders.filter(o => o.fecha_vent && new Date(o.fecha_vent).toDateString() === todayDate).length.toString(), 
+      value: (statsData?.ventas_hoy || 0).toString(), 
       icon: 'clipboard', 
       color: 'text-blue-500', 
       bg: 'bg-blue-50', 
@@ -83,8 +85,8 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
       iconSvg: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' 
     },
     { 
-      label: 'Tendencia', 
-      value: 'Sugerida', 
+      label: 'Ticket Promedio', 
+      value: `$${Number(statsData?.ticket_promedio || 0).toLocaleString('es-CO')}`, 
       icon: 'sparkles', 
       color: 'text-purple-500', 
       bg: 'bg-purple-50', 
@@ -176,7 +178,7 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-black text-slate-900">${Number(order.montofinal_vent).toLocaleString()}</p>
-                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${order.estado === 'completada' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{order.estado}</span>
+                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${isPaidStatus(order.estado) ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{order.estado}</span>
                   </div>
                 </div>
               ))}
@@ -232,7 +234,7 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
                   </div>
                 ))}
                 <button 
-                  onClick={() => onSwitchTab('productos')}
+                  onClick={() => onSwitchTab('inventario')}
                   className="w-full mt-4 py-3 rounded-2xl bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
                 >
                   Ver Todo el Inventario
