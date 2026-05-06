@@ -21,3 +21,26 @@ input::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+/* Fix para el botón de Weglot que se sobrepone a modales */
+.weglot-container {
+  z-index: 10 !important; /* Bajar z-index para que quede detrás de modales y drawers */
+  right: auto !important;
+  left: 20px !important;
+}
+
+/* Fix para el selector de fechas en reportes que se amontona en movil */
+@media (max-width: 640px) {
+  .report-date-range {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .report-date-range span {
+    display: none;
+  }
+}
+
+/* Fix para SweetAlert2 que puede quedar detrás de los modales z-[110] */
+.swal2-container {
+  z-index: 999999 !important;
+}
