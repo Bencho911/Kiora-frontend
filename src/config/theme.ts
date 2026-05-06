@@ -14,7 +14,4 @@ export const COLORS = {
   border: 'rgb(226 232 240 / 0.9)',
 };
 
-export const SHADOWS = {
-  panel: '0 4px 24px -4px rgb(15 23 42 / 0.07)',
-  premium: '0 20px 50px rgba(0,0,0,0.04)',
-};
+
