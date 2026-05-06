@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Fuse from 'fuse.js';
 import { authService, userService, alertService, productService, orderService, notificationService } from '@/config/setup';
 import { SessionManager } from '@/services/SessionManager';
@@ -52,6 +52,58 @@ export default function PanelApp() {
     localStorage.setItem('kiora_active_tab', activeTab);
   }, [activeTab]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const url = new URL(window.location.href);
+    const search = url.searchParams;
+    const status = search.get('status');
+    const tab = search.get('tab');
+    const orderId = search.get('order_id');
+
+    if (tab) {
+      setActiveTab(tab);
+    }
+
+    if (status !== 'success' && status !== 'cancel') return;
+
+    if (status === 'success' && orderId) {
+      orderService.updateOrderStatus(Number(orderId), 'completada')
+        .then(() => {
+          window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+        })
+        .catch(e => console.error('Error auto-confirming payment:', e));
+    } else {
+      window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+    }
+
+    setPaymentReturnState(status);
+    setActiveTab('ventas');
+    alertService.showToast(
+      status === 'success' ? 'success' : 'info',
+      status === 'success' ? 'Pago confirmado en Stripe' : 'Pago cancelado por el usuario'
+    );
+
+    const clearTimer = window.setTimeout(() => {
+      setPaymentReturnState(null);
+    }, 8000);
+
+    search.delete('status');
+    search.delete('tab');
+    search.delete('order_id');
+    window.history.replaceState({}, document.title, `${url.pathname}${search.toString() ? `?${search.toString()}` : ''}`);
+
+    return () => window.clearTimeout(clearTimer);
+  }, []);
+
+  useEffect(() => {
+    const handleNavigate = (e: any) => {
+      if (e.detail?.tab) setActiveTab(e.detail.tab);
+    };
+    window.addEventListener('kiora_navigate', handleNavigate);
+    return () => window.removeEventListener('kiora_navigate', handleNavigate);
+  }, []);
+
   const [isHydrated, setIsHydrated] = useState(false);
 
   // POS State
@@ -62,6 +114,8 @@ export default function PanelApp() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [orderForm, setOrderForm] = useState<CreateOrderDto>(EMPTY_ORDER);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [paymentReturnState, setPaymentReturnState] = useState<null | 'success' | 'cancel'>(null);
+  const orderSubmitLockRef = useRef(false);
 
   // Stripe QR Modal State
   const [stripeQR, setStripeQR] = useState<{ isOpen: boolean; url: string; orderId: number; amount: number }>({
@@ -216,15 +270,20 @@ export default function PanelApp() {
   }, [usersList, searchTerm]);
 
   // POS Handlers
-  const loadPOSData = async () => {
+  const loadPOSData = async (): Promise<Product[]> => {
     try {
       const [prodRes, catRes] = await Promise.all([
-        productService.getProducts(),
+        productService.getProducts(1, 1000),
         productService.getCategories()
       ]);
-      setAllProducts(Array.isArray(prodRes) ? prodRes : (prodRes?.data || []));
+      const products = (Array.isArray(prodRes) ? prodRes : (prodRes?.data || [])) as Product[];
+      setAllProducts(products);
       setCategories(Array.isArray(catRes) ? catRes : (catRes?.data || []));
-    } catch (e) { console.error('Error loading POS data:', e); }
+      return products;
+    } catch (e) {
+      console.error('Error loading POS data:', e);
+      return [];
+    }
   };
 
   useEffect(() => {
@@ -314,33 +373,232 @@ export default function PanelApp() {
     return orderForm.items.reduce((acc, item) => acc + (item.cantidad * (item.precio_unit || 0)), 0);
   }, [orderForm.items]);
 
-  const handleCreateOrder = async () => {
-    if (!orderForm.items.length) return;
-    setIsSavingOrder(true);
-    try {
-      const order = await orderService.createOrder(orderForm);
-      
-      // Stripe Integration
-      if (orderForm.metodopago_usu === 'tarjeta' && order.id_vent) {
-        const { checkoutUrl } = await orderService.createCheckoutSession(order.id_vent);
-        if (checkoutUrl) {
-          setStripeQR({
-            isOpen: true,
-            url: checkoutUrl,
-            orderId: order.id_vent,
-            amount: cartTotal
-          });
-          return;
-        }
+  const syncCartWithLatestStock = (currentOrder: CreateOrderDto, latestProducts: Product[]) => {
+    const stockByProduct = new Map<number, number>();
+    latestProducts.forEach((product) => {
+      if (product.cod_prod !== undefined) {
+        stockByProduct.set(product.cod_prod, product.stock_actual ?? 0);
+      }
+    });
+
+    let removedItems = 0;
+    let adjustedItems = 0;
+    let changed = false;
+
+    const items = currentOrder.items.flatMap((item) => {
+      const hasLiveStock = stockByProduct.has(item.cod_prod);
+      const latestStock = hasLiveStock ? (stockByProduct.get(item.cod_prod) ?? 0) : 0;
+
+      if (latestStock <= 0) {
+        removedItems += 1;
+        changed = true;
+        return [];
       }
 
-      alertService.showToast('success', 'Venta realizada con éxito');
-      setOrderForm({ items: [], metodopago_usu: 'efectivo' });
-      setIsOrderDrawerOpen(false);
+      if (item.cantidad > latestStock) {
+        adjustedItems += 1;
+        changed = true;
+        return [{ ...item, cantidad: latestStock, stock_actual: latestStock }];
+      }
+
+      if (item.stock_actual !== latestStock) {
+        changed = true;
+      }
+
+      return [{ ...item, stock_actual: latestStock }];
+    });
+
+    const nextOrderForm: CreateOrderDto = {
+      ...currentOrder,
+      items
+    };
+
+    if (changed) {
+      setOrderForm(nextOrderForm);
+    }
+
+    if (removedItems > 0 || adjustedItems > 0) {
+      alertService.showToast(
+        'warning',
+        `Stock actualizado: ${removedItems} producto(s) agotado(s) y ${adjustedItems} ajustado(s) en el carrito.`
+      );
+    }
+
+    return {
+      nextOrderForm,
+      hasCriticalChanges: removedItems > 0 || adjustedItems > 0
+    };
+  };
+
+  const isStockConflictError = (error: unknown) => {
+    const message = getErrorMessage(error, '').toLowerCase();
+    return message.includes('stock') || message.includes('insuficiente') || message.includes('agotado') || message.includes('409');
+  };
+  const extractProductCodeFromStockError = (error: unknown): number | null => {
+    const message = getErrorMessage(error, '');
+    const match = message.match(/producto\s+(\d+)/i);
+    return match ? Number(match[1]) : null;
+  };
+
+  const validateCartAgainstLiveProducts = async (currentOrder: CreateOrderDto): Promise<{ hasCriticalChanges: boolean; nextOrderForm: CreateOrderDto }> => {
+    const checks = await Promise.all(
+      currentOrder.items.map(async (item) => {
+        try {
+          const product = await productService.getProductById(item.cod_prod);
+          return { cod_prod: item.cod_prod, stock_actual: product.stock_actual ?? 0 };
+        } catch {
+          return { cod_prod: item.cod_prod, stock_actual: 0 };
+        }
+      })
+    );
+
+    const stockByProduct = new Map<number, number>();
+    checks.forEach(({ cod_prod, stock_actual }) => stockByProduct.set(cod_prod, stock_actual));
+
+    let removedItems = 0;
+    let adjustedItems = 0;
+    let changed = false;
+
+    const nextItems = currentOrder.items.flatMap((item) => {
+      const latestStock = stockByProduct.get(item.cod_prod) ?? 0;
+      if (latestStock <= 0) {
+        removedItems += 1;
+        changed = true;
+        return [];
+      }
+      if (item.cantidad > latestStock) {
+        adjustedItems += 1;
+        changed = true;
+        return [{ ...item, cantidad: latestStock, stock_actual: latestStock }];
+      }
+      if (item.stock_actual !== latestStock) changed = true;
+      return [{ ...item, stock_actual: latestStock }];
+    });
+
+    const nextOrderForm: CreateOrderDto = { ...currentOrder, items: nextItems };
+    if (changed) {
+      setOrderForm(nextOrderForm);
+    }
+
+    if (removedItems > 0 || adjustedItems > 0) {
+      alertService.showToast(
+        'warning',
+        `Stock actualizado: ${removedItems} agotado(s) y ${adjustedItems} ajustado(s).`
+      );
+    }
+
+    return {
+      hasCriticalChanges: removedItems > 0 || adjustedItems > 0,
+      nextOrderForm
+    };
+  };
+
+  const handleCreateOrder = async () => {
+    if (!orderForm.items.length) return;
+    if (orderSubmitLockRef.current) return;
+
+    orderSubmitLockRef.current = true;
+    setIsSavingOrder(true);
+    try {
+      let candidateOrder: CreateOrderDto = orderForm;
+      const maxAttempts = 2;
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        const liveValidation = await validateCartAgainstLiveProducts(candidateOrder);
+        candidateOrder = liveValidation.nextOrderForm;
+
+        if (!candidateOrder.items.length) {
+          alertService.showToast('warning', 'No hay productos disponibles para procesar la venta.');
+          return;
+        }
+
+        if (liveValidation.hasCriticalChanges) {
+          if (attempt < maxAttempts) {
+            alertService.showToast('info', 'Ajustamos el carrito por stock en vivo. Reintentando cobro...');
+            continue;
+          }
+          alertService.showToast('info', 'Se actualizó el carrito con stock real. Revisa y vuelve a intentar.');
+          return;
+        }
+
+        const order = await orderService.createOrder(candidateOrder);
+
+        if (candidateOrder.metodopago_usu === 'tarjeta' && order.id_vent) {
+          try {
+            const { checkoutUrl } = await orderService.createCheckoutSession(order.id_vent);
+            if (!checkoutUrl) {
+              throw new Error('No se recibió URL de checkout.');
+            }
+
+            const totalToCharge = candidateOrder.items.reduce(
+              (acc, item) => acc + item.cantidad * (item.precio_unit || 0),
+              0
+            );
+
+            setStripeQR({
+              isOpen: true,
+              url: checkoutUrl,
+              orderId: order.id_vent,
+              amount: totalToCharge
+            });
+            return;
+          } catch (checkoutError) {
+            if (!isStockConflictError(checkoutError)) {
+              throw checkoutError;
+            }
+
+            try {
+              await orderService.deleteOrder(order.id_vent);
+            } catch (cleanupError) {
+              console.warn('No se pudo limpiar la orden pendiente tras conflicto de stock:', cleanupError);
+            }
+
+            const postCheckoutValidation = await validateCartAgainstLiveProducts(candidateOrder);
+            candidateOrder = postCheckoutValidation.nextOrderForm;
+            const conflictProductCode = extractProductCodeFromStockError(checkoutError);
+            if (conflictProductCode) {
+              candidateOrder = {
+                ...candidateOrder,
+                items: candidateOrder.items.filter((item) => item.cod_prod !== conflictProductCode)
+              };
+              setOrderForm(candidateOrder);
+            }
+            window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+            window.dispatchEvent(new CustomEvent('kiora_reload_inventory'));
+
+            if (!candidateOrder.items.length) {
+              alertService.showToast('error', 'No se pudo iniciar el pago: los productos del carrito se agotaron.');
+              return;
+            }
+
+            if (attempt < maxAttempts) {
+              alertService.showToast('warning', 'El stock cambió al iniciar checkout. Reintentando automáticamente...');
+              continue;
+            }
+
+            alertService.showToast('error', 'No se pudo iniciar el pago porque el stock cambió. Revisa tu carrito.');
+            return;
+          }
+        }
+
+        alertService.showToast('success', 'Venta realizada con éxito');
+        setOrderForm({ items: [], metodopago_usu: 'efectivo' });
+        setIsOrderDrawerOpen(false);
+        window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+        window.dispatchEvent(new CustomEvent('kiora_reload_inventory'));
+        return;
+      }
     } catch (e) {
+      if (isStockConflictError(e)) {
+        const latestProducts = await loadPOSData();
+        syncCartWithLatestStock(orderForm, latestProducts);
+        alertService.showToast('error', 'No se pudo completar la venta porque cambió el stock disponible.');
+        return;
+      }
       alertService.showToast('error', getErrorMessage(e, 'Error al procesar la venta'));
     } finally {
       setIsSavingOrder(false);
+      orderSubmitLockRef.current = false;
     }
   };
   const handleCancelOrder = () => {
@@ -362,15 +620,6 @@ export default function PanelApp() {
 
   const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validar contraseña si es creación
-    if (!isEditing && newUser.password) {
-      const validation = validatePassword(newUser.password);
-      if (!validation.isValid) {
-        alertService.showToast('error', validation.message);
-        return;
-      }
-    }
 
     setIsRegistering(true);
     try {
@@ -445,6 +694,55 @@ export default function PanelApp() {
         <AdminNavbar user={user} onLogout={handleLogout} onProfileOpen={() => setIsProfileOpen(true)} />
       
         <main className="relative mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:pl-16">
+          {paymentReturnState && (
+            <div className={`mb-6 rounded-2xl border px-5 py-4 shadow-sm animate-in slide-in-from-top-3 duration-300 ${
+              paymentReturnState === 'success'
+                ? 'border-emerald-200 bg-emerald-50/70'
+                : 'border-amber-200 bg-amber-50/70'
+            }`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl ${
+                    paymentReturnState === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                  }`}>
+                    {paymentReturnState === 'success' ? (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className={`text-sm font-extrabold ${
+                      paymentReturnState === 'success' ? 'text-emerald-800' : 'text-amber-800'
+                    }`}>
+                      {paymentReturnState === 'success' ? 'Pago completado con Stripe' : 'Pago cancelado'}
+                    </p>
+                    <p className={`mt-0.5 text-xs font-medium ${
+                      paymentReturnState === 'success' ? 'text-emerald-700' : 'text-amber-700'
+                    }`}>
+                      {paymentReturnState === 'success'
+                        ? 'Tu venta fue registrada correctamente. Ya actualizamos el historial.'
+                        : 'No se realizó ningún cargo. Puedes reintentar el pago desde Ventas.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPaymentReturnState(null)}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-white/80 hover:text-slate-600 transition-colors"
+                  aria-label="Cerrar notificación de pago"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'dashboard' ? (
             <DashboardSection onSwitchTab={setActiveTab} />
           ) : activeTab === 'inventario' ? (
@@ -566,6 +864,13 @@ export default function PanelApp() {
           amount={stripeQR.amount}
           onClose={() => setStripeQR(prev => ({ ...prev, isOpen: false }))}
           onSuccess={() => {
+            setStripeQR(prev => ({ ...prev, isOpen: false }));
+            setOrderForm({ items: [], metodopago_usu: 'efectivo' });
+            setIsOrderDrawerOpen(false);
+            window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+            window.dispatchEvent(new CustomEvent('kiora_reload_inventory'));
+          }}
+          onCancel={() => {
             setStripeQR(prev => ({ ...prev, isOpen: false }));
             setOrderForm({ items: [], metodopago_usu: 'efectivo' });
             setIsOrderDrawerOpen(false);
