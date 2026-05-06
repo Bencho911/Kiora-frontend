@@ -15,8 +15,9 @@ interface ProductDrawerProps {
   movements: Movement[];
   loadingMovements: boolean;
   onSave: (product: CreateProductDto, isEdit: boolean) => Promise<void>;
-  onSaveMovement: (movement: { tipo_mov: 'entrada' | 'salida'; cantidad: number; desc_mov: string; cod_prod: number }) => Promise<void>;
+  onSaveMovement: (movement: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; cod_prod: number }) => Promise<void>;
   onLoadMovements: (productId: number) => Promise<void>;
+  onViewMovement?: (movement: Movement) => void;
 }
 
 const EMPTY_PRODUCT: CreateProductDto = {
@@ -49,7 +50,8 @@ export function ProductDrawer({
   loadingMovements,
   onSave,
   onSaveMovement,
-  onLoadMovements
+  onLoadMovements,
+  onViewMovement
 }: ProductDrawerProps) {
   const [form, setForm] = useState<CreateProductDto>(EMPTY_PRODUCT);
   const [saving, setSaving] = useState(false);
@@ -90,7 +92,7 @@ export function ProductDrawer({
     }
   }, [activeTab, product?.cod_prod, onLoadMovements]);
 
-  const handleSaveMovement = async (movForm: { tipo_mov: 'entrada' | 'salida'; cantidad: number; desc_mov: string }) => {
+  const handleSaveMovement = async (movForm: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string }) => {
     if (!product?.cod_prod) return;
     
     if (!movForm.desc_mov.trim()) {
@@ -238,7 +240,8 @@ export function ProductDrawer({
                 <input
                   type="number"
                   required
-                  value={form.precio_prod}
+                  value={form.precio_prod === 0 ? '' : form.precio_prod}
+                  onFocus={e => e.target.select()}
                   onChange={e => setForm(f => ({ ...f, precio_prod: Number(e.target.value) }))}
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-lg font-black text-slate-900 focus:border-kiora-red focus:outline-none focus:ring-4 focus:ring-kiora-red/5 transition-all"
                 />
@@ -276,8 +279,9 @@ export function ProductDrawer({
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stock Inicial</label>
                   <input
                     type="number"
-                    value={form.stock_actual}
+                    value={form.stock_actual === 0 ? '' : form.stock_actual}
                     disabled={!!product} 
+                    onFocus={e => e.target.select()}
                     onChange={e => setForm(f => ({ ...f, stock_actual: Number(e.target.value) }))}
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold focus:border-kiora-red focus:outline-none disabled:opacity-40 disabled:bg-slate-100"
                   />
@@ -286,7 +290,8 @@ export function ProductDrawer({
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Límite Mínimo</label>
                   <input
                     type="number"
-                    value={form.stock_minimo}
+                    value={form.stock_minimo === 0 ? '' : form.stock_minimo}
+                    onFocus={e => e.target.select()}
                     onChange={e => setForm(f => ({ ...f, stock_minimo: Number(e.target.value) }))}
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold focus:border-kiora-red focus:outline-none"
                   />
@@ -300,6 +305,7 @@ export function ProductDrawer({
             movements={movements}
             isLoading={loadingMovements}
             onSaveMovement={handleSaveMovement}
+            onViewMovement={onViewMovement}
             saving={savingMov}
           />
         )}

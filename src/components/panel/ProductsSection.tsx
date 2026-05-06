@@ -5,6 +5,8 @@ import type { Product, Category } from '@/models/Product';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { ProductDrawer } from './ProductDrawer';
 import { CategoryModal } from './CategoryModal';
+import { MovementDetailModal } from './MovementDetailModal';
+import type { Movement } from '@/models/Inventory';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001/api';
 const IMG_BASE = API_URL.replace('/api', '');
@@ -42,8 +44,9 @@ export function ProductsSection() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Movements state for Drawer
-  const [movements, setMovements] = useState<any[]>([]);
+  const [movements, setMovements] = useState<Movement[]>([]);
   const [loadingMovements, setLoadingMovements] = useState(false);
+  const [detailMovement, setDetailMovement] = useState<Movement | null>(null);
 
   const isAdmin = authService.isAdmin();
 
@@ -296,7 +299,16 @@ export function ProductsSection() {
         onSave={handleSaveProduct}
         onSaveMovement={handleSaveMovement}
         onLoadMovements={loadMovements}
+        onViewMovement={(m) => setDetailMovement(m)}
       />
+
+      {detailMovement && (
+        <MovementDetailModal
+          movement={detailMovement}
+          productName={selectedProduct?.nom_prod}
+          onClose={() => setDetailMovement(null)}
+        />
+      )}
       <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} onSuccess={loadData} />
     </div>
   );

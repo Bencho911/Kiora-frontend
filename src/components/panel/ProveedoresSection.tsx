@@ -124,7 +124,8 @@ export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string })
               <tr>
                 <th className="px-6 py-4">Nombre / Empresa</th>
                 <th className="px-6 py-4">ID Fiscal</th>
-                <th className="px-6 py-4">Contacto</th>
+                <th className="px-6 py-4">Teléfono</th>
+                <th className="px-6 py-4">Email</th>
                 <th className="px-6 py-4 text-right">Acciones</th>
               </tr>
             </thead>
@@ -137,6 +138,7 @@ export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string })
                   </td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-600">{sup.id_prov || '---'}</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-600">{sup.tel_prov || '---'}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-600">{sup.correo_prov || '---'}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <button onClick={() => handleOpenEdit(sup)} className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
@@ -145,7 +147,7 @@ export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string })
                   </td>
                 </tr>
               ))}
-              {suppliers.filter(sup => !searchTerm || (sup.nom_prov || '').toLowerCase().includes(searchTerm.toLowerCase()) || (sup.id_prov || '').toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && <tr><td colSpan={4} className="py-20 text-center text-slate-400">No hay proveedores registrados.</td></tr>}
+              {suppliers.filter(sup => !searchTerm || (sup.nom_prov || '').toLowerCase().includes(searchTerm.toLowerCase()) || (sup.id_prov || '').toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && <tr><td colSpan={5} className="py-20 text-center text-slate-400">No hay proveedores registrados.</td></tr>}
             </tbody>
           </table>
         ) : (
