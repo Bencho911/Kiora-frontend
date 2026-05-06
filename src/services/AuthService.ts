@@ -52,7 +52,7 @@ export class AuthService {
       console.error('Error al cerrar sesión en el servidor:', e);
     }
     this.clearSession();
-    window.location.href = '/login/';
+    window.location.href = '/login';
   }
 
   saveSession(token: string, user: User | null) {

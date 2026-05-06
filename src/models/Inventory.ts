@@ -4,6 +4,7 @@ export interface Supplier {
   nom_prov: string;
   tel_prov: string | null;
   tipoid_prov: string | null;
+  correo_prov?: string | null;
 }
 
 export interface Movement {
@@ -12,6 +13,7 @@ export interface Movement {
   fecha_mov: string;
   cantidad: number;
   cod_prod: number;
+  desc_mov: string;
 }
 
 export interface Suministra {

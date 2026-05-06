@@ -3,16 +3,21 @@ import { productService } from '../../config/setup';
 import type { Product } from '../../models/Product';
 
 export const SystemAlerts: React.FC = () => {
-  const [alerts, setAlerts] = useState<Product[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        const res = await productService.getLowStock();
-        if (res && res.data) {
-          setAlerts(res.data);
-        }
+        const [lowRes, expRes] = await Promise.all([
+          productService.getLowStock(),
+          productService.getExpiredProducts()
+        ]);
+        
+        const lowStock = (lowRes?.data || []).map((p: any) => ({ ...p, alertType: 'stock' }));
+        const expired = (expRes || []).map((p: any) => ({ ...p, alertType: 'expired' }));
+        
+        setAlerts([...lowStock, ...expired]);
       } catch (err) {
         // Silently handle backend downtime
       } finally {

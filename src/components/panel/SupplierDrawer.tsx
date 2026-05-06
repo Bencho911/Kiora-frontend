@@ -21,7 +21,8 @@ export const SupplierDrawer: React.FC<SupplierDrawerProps> = ({
     nom_prov: '',
     tipoid_prov: 'NIT',
     id_prov: '',
-    tel_prov: ''
+    tel_prov: '',
+    correo_prov: ''
   });
 
   useEffect(() => {
@@ -33,7 +34,8 @@ export const SupplierDrawer: React.FC<SupplierDrawerProps> = ({
           nom_prov: '',
           tipoid_prov: 'NIT',
           id_prov: '',
-          tel_prov: ''
+          tel_prov: '',
+          correo_prov: ''
         });
       }
     }
@@ -115,17 +117,31 @@ export const SupplierDrawer: React.FC<SupplierDrawerProps> = ({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-bold text-gray-600">Teléfono / Celular de Contacto</label>
+              <label className="text-[12px] font-bold text-gray-600">Teléfono / Celular de Contacto *</label>
               <input 
                 type="tel" 
+                required
                 inputMode="numeric"
                 value={supplierData.tel_prov || ''}
+                onFocus={e => e.target.select()}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '');
                   setSupplierData({...supplierData, tel_prov: val});
                 }}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ec131e] focus:ring-4 focus:ring-red-50 transition-all text-[0.95rem] bg-white placeholder:text-gray-300" 
                 placeholder="3000000000" 
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-bold text-gray-600">Correo Electrónico *</label>
+              <input 
+                type="email" 
+                required
+                value={supplierData.correo_prov || ''}
+                onChange={(e) => setSupplierData({...supplierData, correo_prov: e.target.value})}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ec131e] focus:ring-4 focus:ring-red-50 transition-all text-[0.95rem] bg-white placeholder:text-gray-300" 
+                placeholder="proveedor@correo.com" 
               />
             </div>
           </form>

@@ -9,7 +9,7 @@ import autoTable from 'jspdf-autotable';
 export interface ReportFilters {
   startDate: string;
   endDate: string;
-  grouping: 'dia' | 'semana' | 'mes';
+  grouping: 'dia' | 'semana' | 'mes' | 'unidad';
   reportType: 'ventas_detalladas' | 'mas_vendidos' | 'menos_vendidos';
   topN?: number;
   category?: number;
@@ -52,6 +52,23 @@ export class ReportService {
     if (!res.ok || !res.data) throw new Error('Error al obtener datos de ventas');
     
     const orders = res.data.data || [];
+
+    if (filters.grouping === 'unidad') {
+      const unitData: DetailedSalesReport[] = [];
+      orders.forEach(order => {
+        const dateStr = order.fecha_vent ? new Date(order.fecha_vent).toLocaleDateString() : 'S/F';
+        (order.items || []).forEach(item => {
+          unitData.push({
+            period: `${item.nom_prod || `Prod #${item.cod_prod}`} (Ped #${order.id_vent} - ${dateStr})`,
+            totalSales: item.cantidad * (item.precio_unit || 0),
+            orderCount: item.cantidad,
+            averageTicket: item.precio_unit || 0
+          });
+        });
+      });
+      return unitData;
+    }
+
     const groupedData: Record<string, { total: number; count: number }> = {};
 
     orders.forEach(order => {
@@ -97,12 +114,25 @@ export class ReportService {
     const orders = res.data.data || [];
     const stats: Record<number, { name: string; qty: number; revenue: number }> = {};
 
+    // Fetch product names for missing ones
+    let productMap: Record<number, string> = {};
+    try {
+      const { productService } = await import('@/config/setup');
+      const pRes = await productService.getProducts(1, 1000);
+      const pList = Array.isArray(pRes) ? pRes : (pRes.data || []);
+      pList.forEach((p: any) => { productMap[p.cod_prod] = p.nom_prod; });
+    } catch (e) {
+      console.warn('Could not load product map for ranking enrichment:', e);
+    }
+
     orders.forEach(order => {
       (order.items || []).forEach(item => {
-        // Filter by category if requested
-        // Note: items from order usually don't have category ID, we might need a join or fetch products
         if (!stats[item.cod_prod]) {
-          stats[item.cod_prod] = { name: item.nom_prod || 'Producto', qty: 0, revenue: 0 };
+          stats[item.cod_prod] = { 
+            name: item.nom_prod || productMap[item.cod_prod] || `Producto #${item.cod_prod}`, 
+            qty: 0, 
+            revenue: 0 
+          };
         }
         stats[item.cod_prod].qty += item.cantidad;
         stats[item.cod_prod].revenue += item.cantidad * item.precio_unit;
@@ -137,7 +167,7 @@ export class ReportService {
     XLSX.writeFile(workbook, `${fileName}.xlsx`);
   }
 
-  async exportToPdf(title: string, head: string[][], body: any[][], fileName: string) {
+  async exportToPdf(title: string, head: string[][], body: any[][], fileName: string, foot?: string[][]) {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text(title, 14, 20);
@@ -148,7 +178,9 @@ export class ReportService {
       startY: 35,
       head: head,
       body: body,
+      foot: foot,
       headStyles: { fillColor: [236, 19, 30] }, // Kiora Red
+      footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
     });
 
     doc.save(`${fileName}.pdf`);

@@ -22,14 +22,14 @@ describe('LoginForm', () => {
 
   it('should render the login form with basic fields', () => {
     render(<LoginForm />);
-    expect(screen.getByPlaceholderText(/kiora@gmail.com/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/KiosKiora@gmail.com/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/escribe tu contraseña/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /iniciar sesión/i })).toBeInTheDocument();
   });
 
   it('should have required fields on email and password inputs', () => {
     render(<LoginForm />);
-    const emailInput = screen.getByPlaceholderText(/kiora@gmail.com/i);
+    const emailInput = screen.getByPlaceholderText(/KiosKiora@gmail.com/i);
     const passwordInput = screen.getByPlaceholderText(/escribe tu contraseña/i);
     expect(emailInput).toBeRequired();
     expect(passwordInput).toBeRequired();
@@ -40,14 +40,14 @@ describe('LoginForm', () => {
     
     render(<LoginForm />);
     
-    fireEvent.change(screen.getByPlaceholderText(/kiora@gmail.com/i), { target: { value: 'test@kiora.com' } });
+    fireEvent.change(screen.getByPlaceholderText(/kiora@gmail.com/i), { target: { value: 'KiosKiora@gmail.com' } });
     fireEvent.change(screen.getByPlaceholderText(/escribe tu contraseña/i), { target: { value: 'password123' } });
     
     fireEvent.click(screen.getByRole('button', { name: /iniciar sesión/i }));
 
     await waitFor(() => {
       expect(authService.login).toHaveBeenCalledWith({
-        correo_usu: 'test@kiora.com',
+        correo_usu: 'KiosKiora@gmail.com',
         password: 'password123'
       });
     });

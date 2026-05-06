@@ -25,21 +25,19 @@ export function LegalSection({ defaultTab }: { defaultTab?: LegalTab }) {
         <div className="flex border-b border-slate-100 mb-6">
           <button
             onClick={() => setActiveTab('terminos')}
-            className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${
-              activeTab === 'terminos' 
-                ? 'border-[#ec131e] text-[#ec131e]' 
+            className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'terminos'
+                ? 'border-[#ec131e] text-[#ec131e]'
                 : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
+              }`}
           >
             Términos y Condiciones
           </button>
           <button
             onClick={() => setActiveTab('privacidad')}
-            className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${
-              activeTab === 'privacidad' 
-                ? 'border-[#ec131e] text-[#ec131e]' 
+            className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'privacidad'
+                ? 'border-[#ec131e] text-[#ec131e]'
                 : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
+              }`}
           >
             Política de Privacidad
           </button>
@@ -48,13 +46,12 @@ export function LegalSection({ defaultTab }: { defaultTab?: LegalTab }) {
 
       <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-10 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#ec131e]"></div>
-        
+
         {activeTab === 'terminos' ? (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="mb-8">
               <div className="text-[10px] font-bold text-[#ec131e] tracking-widest uppercase mb-2">Legal • Kiora</div>
               <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Acuerdo de Usuario</h2>
-              <p className="text-xs text-slate-400 mb-6 italic">Última actualización: 24 de Octubre, 2023</p>
               <p className="text-sm text-gray-600 leading-relaxed font-medium">
                 Bienvenido a Kiora. Al acceder o utilizar nuestra plataforma, usted acepta estar sujeto a estos Términos y Condiciones.
               </p>
@@ -126,14 +123,14 @@ export function LegalSection({ defaultTab }: { defaultTab?: LegalTab }) {
               <section>
                 <h3 className="flex items-center gap-2 text-base font-bold text-[#ec131e] mb-3">Uso de la Información</h3>
                 <div className="grid gap-3 pl-8">
-                   <div className="bg-red-50/40 p-4 border border-red-50 rounded-xl">
-                      <h4 className="font-bold text-gray-900 text-sm mb-1">Personalización</h4>
-                      <p className="text-xs text-gray-500 font-medium">Adaptar nuestro contenido a tus preferencias.</p>
-                   </div>
-                   <div className="bg-red-50/40 p-4 border border-red-100 rounded-xl">
-                      <h4 className="font-bold text-gray-900 text-sm mb-1">Seguridad</h4>
-                      <p className="text-xs text-gray-500 font-medium">Verificar cuentas y prevenir fraudes.</p>
-                   </div>
+                  <div className="bg-red-50/40 p-4 border border-red-50 rounded-xl">
+                    <h4 className="font-bold text-gray-900 text-sm mb-1">Personalización</h4>
+                    <p className="text-xs text-gray-500 font-medium">Adaptar nuestro contenido a tus preferencias.</p>
+                  </div>
+                  <div className="bg-red-50/40 p-4 border border-red-100 rounded-xl">
+                    <h4 className="font-bold text-gray-900 text-sm mb-1">Seguridad</h4>
+                    <p className="text-xs text-gray-500 font-medium">Verificar cuentas y prevenir fraudes.</p>
+                  </div>
                 </div>
               </section>
 
@@ -148,8 +145,8 @@ export function LegalSection({ defaultTab }: { defaultTab?: LegalTab }) {
         )}
 
         <div className="mt-12 pt-8 border-t border-slate-100 text-center">
-          <p className="text-xs text-slate-400 font-medium">© 2024 Kiora S.A. Todos los derechos reservados.</p>
-          <a href="mailto:legal@kiora.com" className="text-[11px] font-bold text-[#ec131e] hover:underline mt-2 inline-block">legal@kiora.com</a>
+          <p className="text-xs text-slate-400 font-medium">© Kiora S.A. Todos los derechos reservados.</p>
+          <a href="mailto:KiosKiora@gmail.com" className="text-[11px] font-bold text-[#ec131e] hover:underline mt-2 inline-block">KiosKiora@gmail.com</a>
         </div>
       </div>
     </div>

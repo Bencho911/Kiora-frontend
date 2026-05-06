@@ -26,6 +26,13 @@ export class UserService {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
+  private normalizeUser(u: any): User {
+    return {
+      ...u,
+      tel_usu: u.tel_usu || u.telefono || u.telefono_usu || u.tel || u.phone || ''
+    };
+  }
+
   async fetchUsers(page: number = 1, limit: number = 10): Promise<PaginatedUsers> {
     const response = await this.httpClient.get<unknown>(
       `/auth/users?page=${page}&limit=${limit}`,
@@ -38,7 +45,11 @@ export class UserService {
       throw new Error('Respuesta de usuarios sin cuerpo');
     }
     try {
-      return parsePaginatedUsersPayload(response.data, page, limit);
+      const paginated = parsePaginatedUsersPayload(response.data, page, limit);
+      return {
+        ...paginated,
+        data: paginated.data.map(u => this.normalizeUser(u))
+      };
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Respuesta inválida';
       console.warn('[UserService.fetchUsers]', msg, response.data);
@@ -108,7 +119,7 @@ export class UserService {
     if (!response.ok || !response.data) {
       throw new Error(response.error ?? 'Error al obtener datos del perfil');
     }
-    return response.data;
+    return this.normalizeUser(response.data);
   }
 
   async changePassword(current_password: string, new_password: string): Promise<void> {

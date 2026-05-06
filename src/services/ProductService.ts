@@ -10,6 +10,7 @@ export interface CreateProductDto {
   stock_minimo?: number;
   fk_cod_cats?: number[];
   imagen?: File;
+  alerta_stock_critico?: boolean;
 }
 
 export class ProductService {
@@ -97,35 +98,53 @@ export class ProductService {
     return this.normalizeProduct(response.data);
   }
 
-  private prepareBody(dto: CreateProductDto | FormData): FormData | any {
+  private prepareBody(dto: CreateProductDto | FormData): FormData {
     if (dto instanceof FormData) return dto;
 
-    const hasImage = !!dto.imagen;
-    if (hasImage) {
-      const fd = new FormData();
-      fd.append('nom_prod', dto.nom_prod);
-      if (dto.desc_prod) fd.append('descrip_prod', dto.desc_prod);
-      fd.append('precio_unitario', dto.precio_prod.toString());
-      if (dto.stock_actual !== undefined) fd.append('stock_actual', dto.stock_actual.toString());
-      if (dto.stock_minimo !== undefined) fd.append('stock_minimo', dto.stock_minimo.toString());
-      if (dto.fk_cod_cats) fd.append('fk_cod_cats', JSON.stringify(dto.fk_cod_cats));
-      if (dto.imagen) fd.append('imagen', dto.imagen);
-      return fd;
-    }
+    // IMPORTANTE: La ruta del backend usa multer (upload.single) ANTES de la
+    // validación Joi. Cuando el cliente envía application/json, multer consume
+    // el body stream sin parsearlo (no es multipart), dejando req.body = {} vacío
+    // y Joi falla con 400. Por eso SIEMPRE enviamos FormData, con o sin imagen.
+    const fd = new FormData();
 
-    return {
-      nom_prod: dto.nom_prod,
-      descrip_prod: dto.desc_prod,
-      precio_unitario: dto.precio_prod,
-      stock_actual: dto.stock_actual,
-      stock_minimo: dto.stock_minimo,
-      fk_cod_cats: dto.fk_cod_cats
-    };
+    // Campos con nombres exactos que espera el schema Joi del backend
+    fd.append('nom_prod', dto.nom_prod);
+    fd.append('precio_unitario', String(dto.precio_prod));   // backend: precio_unitario
+
+    if (dto.desc_prod) fd.append('descrip_prod', dto.desc_prod); // backend: descrip_prod
+    if (dto.stock_actual !== undefined) fd.append('stock_actual', String(dto.stock_actual));
+    if (dto.stock_minimo !== undefined) fd.append('stock_minimo', String(dto.stock_minimo));
+    if (dto.fk_cod_cats?.length) fd.append('fk_cod_cats', JSON.stringify(dto.fk_cod_cats));
+    if (dto.imagen) fd.append('imagen', dto.imagen);
+
+    return fd;
   }
 
   async deleteProduct(id: number): Promise<void> {
     const response = await this.httpClient.delete(`/products/${id}`, { headers: this.getAuthHeaders() });
     if (!response.ok) throw new Error(response.error || 'Error deleting product');
+  }
+
+  async updateStock(id: number, cantidad: number): Promise<Product> {
+    const response = await this.httpClient.put<Product>(
+      `/products/${id}/stock`,
+      { cantidad },
+      { headers: this.getAuthHeaders() }
+    );
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error al actualizar stock');
+    return this.normalizeProduct(response.data);
+  }
+
+  /**
+   * Obtiene productos vencidos. 
+   * Dado que no hay un endpoint específico, filtramos localmente 
+   * del lote de productos activos.
+   */
+  async getExpiredProducts(): Promise<Product[]> {
+    const res = await this.getProducts(1, 1000);
+    const list = Array.isArray(res) ? res : res.data;
+    const today = new Date();
+    return list.filter(p => p.fechaven_prod && new Date(p.fechaven_prod) < today);
   }
 
   // Categories
@@ -135,6 +154,12 @@ export class ProductService {
       this.getAuthHeaders()
     );
     if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving categories');
+    return response.data;
+  }
+
+  async getCategoryById(id: number): Promise<Category> {
+    const response = await this.httpClient.get<Category>(`/categories/${id}`, this.getAuthHeaders());
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error al obtener detalles de la categoría');
     return response.data;
   }
 

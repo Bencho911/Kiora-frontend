@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { User } from '@/models/User';
 import type { Product } from '@/models/Product';
-import { productService, alertService } from '@/config/setup';
+import { alertService } from '@/config/setup';
+import { useStockSync } from '@/context/StockContext';
+import { getInitials } from '@/utils/userUtils';
+import { COLORS } from '@/config/theme';
 
 interface AdminNavbarProps {
   user: User;
@@ -10,51 +13,9 @@ interface AdminNavbarProps {
 }
 
 export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProfileOpen }) => {
-  const [alerts, setAlerts] = useState<Product[]>([]);
+  const { lowStockItems: alerts } = useStockSync();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    let lastAlertCount = 0;
-
-    const fetchAlerts = async () => {
-      try {
-        const res = await productService.getLowStock();
-        if (res && res.data) {
-          const newAlerts = res.data;
-          if (newAlerts.length > lastAlertCount) {
-            // New alerts detected!
-            const newCount = newAlerts.length - lastAlertCount;
-            alertService.showToast('warning', `⚠️ ${newCount} nuevos productos con bajo stock detectados`);
-          }
-          setAlerts(newAlerts);
-          lastAlertCount = newAlerts.length;
-        }
-      } catch (err) {
-        console.error('[Navbar Notifications Error]', err);
-      }
-    };
-
-    fetchAlerts();
-    // Poll every 30 seconds for near-real-time feedback
-    const interval = setInterval(fetchAlerts, 30000);
-
-    // Listen for manual refresh events (e.g. from Inventory)
-    const handleManualRefresh = () => fetchAlerts();
-    window.addEventListener('kiora-refresh-alerts', handleManualRefresh);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('kiora-refresh-alerts', handleManualRefresh);
-    };
-  }, []);
-
-  const getInitials = (name: string) => {
-    if (!name) return 'UN';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name.substring(0, 2).toUpperCase();
-  };
+  const isLoading = false; // El contexto maneja la carga, simplificamos aquí
 
   return (
     <header className="sticky top-0 z-40 bg-[#3E2723] shadow-lg border-b border-white/5 font-[Inter]">
@@ -96,8 +57,8 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
               </svg>
               {alerts.length > 0 && (
                 <>
-                  <div className="absolute right-1.5 top-1.5 h-3 w-3 rounded-full bg-[#ec131e] border-2 border-[#3E2723] animate-pulse"></div>
-                  <span className="absolute -right-1 -top-1 bg-[#ec131e] text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center text-white ring-2 ring-[#3E2723]">
+                  <div className="absolute right-1.5 top-1.5 h-3 w-3 rounded-full bg-kiora-red border-2 border-[#3E2723] animate-pulse"></div>
+                  <span className="absolute -right-1 -top-1 bg-kiora-red text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center text-white ring-2 ring-[#3E2723]">
                     {alerts.length}
                   </span>
                 </>
@@ -111,22 +72,29 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
                 <div className="absolute right-0 mt-4 w-80 origin-top-right rounded-2xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)] ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200 z-10 overflow-hidden">
                   <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                     <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">Alertas de Stock</h3>
-                    <span className="px-2 py-0.5 bg-red-100 text-[#ec131e] text-[9px] font-black rounded-full uppercase tracking-tighter">Bajo Stock</span>
+                    <span className="px-2 py-0.5 bg-red-100 text-kiora-red text-[9px] font-black rounded-full uppercase tracking-tighter">Bajo Stock</span>
                   </div>
 
                   <div className="max-h-96 overflow-y-auto">
                     {isLoading ? (
-                      <div className="p-10 flex justify-center"><div className="w-6 h-6 border-2 border-red-100 border-t-[#ec131e] rounded-full animate-spin"></div></div>
+                      <div className="p-10 flex justify-center"><div className="w-6 h-6 border-2 border-red-100 border-t-kiora-red rounded-full animate-spin"></div></div>
                     ) : alerts.length > 0 ? (
                       alerts.map((alert) => (
-                        <div key={alert.cod_prod} className="p-4 hover:bg-red-50/50 transition-colors border-b border-gray-50 last:border-0 group cursor-default">
+                        <div 
+                          key={alert.cod_prod} 
+                          className="p-4 hover:bg-red-50 transition-colors border-b border-gray-50 last:border-0 group cursor-pointer"
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('kiora_navigate', { detail: { tab: 'productos' } }));
+                            setIsNotificationsOpen(false);
+                          }}
+                        >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-red-100/50 text-[#ec131e] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <div className="w-10 h-10 bg-red-100/50 text-kiora-red rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-gray-900 truncate">{alert.nom_prod}</p>
-                              <p className="text-xs text-red-600 font-medium mt-0.5">⚠️ Solo quedan {alert.stock_actual} unid.</p>
+                              <p className="text-xs text-red-600 font-medium mt-0.5">Solo quedan {alert.stock_actual} unid.</p>
                             </div>
                           </div>
                           <div className="mt-2 text-[10px] text-gray-400 font-bold bg-gray-50 px-2 py-1 rounded w-fit">
@@ -148,12 +116,12 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
                   {alerts.length > 0 && (
                     <button
                       onClick={() => {
-                        window.location.hash = 'inventario';
+                        window.dispatchEvent(new CustomEvent('kiora_navigate', { detail: { tab: 'productos' } }));
                         setIsNotificationsOpen(false);
                       }}
                       className="w-full p-3 bg-gray-50 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-gray-100 transition-colors border-t border-gray-100"
                     >
-                      Ver todos en Inventario
+                      Ver Stock en Productos
                     </button>
                   )}
                 </div>
@@ -167,7 +135,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
               onClick={onProfileOpen}
               className="group flex items-center transition-all hover:opacity-90 active:scale-95"
             >
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#ec131e] text-sm font-bold text-white shadow-xl ring-2 ring-white/10">
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-kiora-red text-sm font-bold text-white shadow-xl ring-2 ring-white/10">
                 {getInitials(String(user.nom_usu))}
               </div>
             </button>
@@ -180,8 +148,6 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
           </div>
         </div>
       </nav>
-
-
     </header>
   );
 };

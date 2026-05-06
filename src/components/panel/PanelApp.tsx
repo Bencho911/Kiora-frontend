@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Fuse from 'fuse.js';
 import { authService, userService, alertService, productService, orderService, notificationService } from '@/config/setup';
 import { SessionManager } from '@/services/SessionManager';
@@ -19,18 +19,17 @@ import { SecurityDrawer } from './SecurityDrawer';
 import { DashboardSection } from './DashboardSection';
 import { InventarioSection } from './InventarioSection';
 import { CategoriasSection } from './CategoriasSection';
-import { ProveedoresSection } from './ProveedoresSection';
-import { OrdersSection } from './OrdersSection';
-import { GeneralSettings } from './GeneralSettings';
 import { ComingSoonSection } from './ComingSoonSection'; 
 import { ProductsSection } from './ProductsSection';
 import { SalesSection } from './SalesSection';
 import { MaintenanceSection } from './MaintenanceSection';
 import { OrderDrawer } from './OrderDrawer';
 import { ReportsSection } from './ReportsSection';
+import { StripeQRModal } from './StripeQRModal';
 import HelpCenter from '@/components/help/HelpCenter';
 import { StockProvider } from '@/context/StockContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import { validatePassword } from '@/utils/validation';
 
 const EMPTY_ORDER: CreateOrderDto = {
   metodopago_usu: 'efectivo',
@@ -53,6 +52,58 @@ export default function PanelApp() {
     localStorage.setItem('kiora_active_tab', activeTab);
   }, [activeTab]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const url = new URL(window.location.href);
+    const search = url.searchParams;
+    const status = search.get('status');
+    const tab = search.get('tab');
+    const orderId = search.get('order_id');
+
+    if (tab) {
+      setActiveTab(tab);
+    }
+
+    if (status !== 'success' && status !== 'cancel') return;
+
+    if (status === 'success' && orderId) {
+      orderService.updateOrderStatus(Number(orderId), 'completada')
+        .then(() => {
+          window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+        })
+        .catch(e => console.error('Error auto-confirming payment:', e));
+    } else {
+      window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+    }
+
+    setPaymentReturnState(status);
+    setActiveTab('ventas');
+    alertService.showToast(
+      status === 'success' ? 'success' : 'info',
+      status === 'success' ? 'Pago confirmado en Stripe' : 'Pago cancelado por el usuario'
+    );
+
+    const clearTimer = window.setTimeout(() => {
+      setPaymentReturnState(null);
+    }, 8000);
+
+    search.delete('status');
+    search.delete('tab');
+    search.delete('order_id');
+    window.history.replaceState({}, document.title, `${url.pathname}${search.toString() ? `?${search.toString()}` : ''}`);
+
+    return () => window.clearTimeout(clearTimer);
+  }, []);
+
+  useEffect(() => {
+    const handleNavigate = (e: any) => {
+      if (e.detail?.tab) setActiveTab(e.detail.tab);
+    };
+    window.addEventListener('kiora_navigate', handleNavigate);
+    return () => window.removeEventListener('kiora_navigate', handleNavigate);
+  }, []);
+
   const [isHydrated, setIsHydrated] = useState(false);
 
   // POS State
@@ -63,9 +114,19 @@ export default function PanelApp() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [orderForm, setOrderForm] = useState<CreateOrderDto>(EMPTY_ORDER);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [paymentReturnState, setPaymentReturnState] = useState<null | 'success' | 'cancel'>(null);
+  const orderSubmitLockRef = useRef(false);
+
+  // Stripe QR Modal State
+  const [stripeQR, setStripeQR] = useState<{ isOpen: boolean; url: string; orderId: number; amount: number }>({
+    isOpen: false,
+    url: '',
+    orderId: 0,
+    amount: 0
+  });
 
   // Settings view state
-  const [settingsView, setSettingsView] = useState<'main' | 'help' | 'terms' | 'privacy' | 'general'>('main');
+  const [settingsView, setSettingsView] = useState<'main' | 'help' | 'terms' | 'privacy'>('main');
   
   useEffect(() => {
     setSettingsView('main');
@@ -98,16 +159,11 @@ export default function PanelApp() {
     rol_usu: ''
   });
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
 
   const cartKey = user ? `kiora_cart_${user.id_usu}` : null;
 
   useEffect(() => {
     setIsHydrated(true);
-    const handleOpenProfile = () => setIsProfileOpen(true);
-    window.addEventListener('kiora-open-profile', handleOpenProfile);
-    return () => window.removeEventListener('kiora-open-profile', handleOpenProfile);
   }, []);
 
   useEffect(() => {
@@ -214,15 +270,20 @@ export default function PanelApp() {
   }, [usersList, searchTerm]);
 
   // POS Handlers
-  const loadPOSData = async () => {
+  const loadPOSData = async (): Promise<Product[]> => {
     try {
       const [prodRes, catRes] = await Promise.all([
-        productService.getProducts(),
+        productService.getProducts(1, 1000),
         productService.getCategories()
       ]);
-      setAllProducts(Array.isArray(prodRes) ? prodRes : (prodRes?.data || []));
+      const products = (Array.isArray(prodRes) ? prodRes : (prodRes?.data || [])) as Product[];
+      setAllProducts(products);
       setCategories(Array.isArray(catRes) ? catRes : (catRes?.data || []));
-    } catch (e) { console.error('Error loading POS data:', e); }
+      return products;
+    } catch (e) {
+      console.error('Error loading POS data:', e);
+      return [];
+    }
   };
 
   useEffect(() => {
@@ -312,29 +373,232 @@ export default function PanelApp() {
     return orderForm.items.reduce((acc, item) => acc + (item.cantidad * (item.precio_unit || 0)), 0);
   }, [orderForm.items]);
 
-  const handleCreateOrder = async () => {
-    if (!orderForm.items.length) return;
-    setIsSavingOrder(true);
-    try {
-      const order = await orderService.createOrder(orderForm);
-      
-      // Stripe Integration
-      if (orderForm.metodopago_usu === 'tarjeta' && order.id_vent) {
-        alertService.showToast('info', 'Redirigiendo a pasarela de pago...');
-        const { checkoutUrl } = await orderService.createCheckoutSession(order.id_vent);
-        if (checkoutUrl) {
-          window.location.href = checkoutUrl;
-          return;
-        }
+  const syncCartWithLatestStock = (currentOrder: CreateOrderDto, latestProducts: Product[]) => {
+    const stockByProduct = new Map<number, number>();
+    latestProducts.forEach((product) => {
+      if (product.cod_prod !== undefined) {
+        stockByProduct.set(product.cod_prod, product.stock_actual ?? 0);
+      }
+    });
+
+    let removedItems = 0;
+    let adjustedItems = 0;
+    let changed = false;
+
+    const items = currentOrder.items.flatMap((item) => {
+      const hasLiveStock = stockByProduct.has(item.cod_prod);
+      const latestStock = hasLiveStock ? (stockByProduct.get(item.cod_prod) ?? 0) : 0;
+
+      if (latestStock <= 0) {
+        removedItems += 1;
+        changed = true;
+        return [];
       }
 
-      alertService.showToast('success', 'Venta realizada con éxito');
-      setOrderForm({ items: [], metodopago_usu: 'efectivo' });
-      setIsOrderDrawerOpen(false);
+      if (item.cantidad > latestStock) {
+        adjustedItems += 1;
+        changed = true;
+        return [{ ...item, cantidad: latestStock, stock_actual: latestStock }];
+      }
+
+      if (item.stock_actual !== latestStock) {
+        changed = true;
+      }
+
+      return [{ ...item, stock_actual: latestStock }];
+    });
+
+    const nextOrderForm: CreateOrderDto = {
+      ...currentOrder,
+      items
+    };
+
+    if (changed) {
+      setOrderForm(nextOrderForm);
+    }
+
+    if (removedItems > 0 || adjustedItems > 0) {
+      alertService.showToast(
+        'warning',
+        `Stock actualizado: ${removedItems} producto(s) agotado(s) y ${adjustedItems} ajustado(s) en el carrito.`
+      );
+    }
+
+    return {
+      nextOrderForm,
+      hasCriticalChanges: removedItems > 0 || adjustedItems > 0
+    };
+  };
+
+  const isStockConflictError = (error: unknown) => {
+    const message = getErrorMessage(error, '').toLowerCase();
+    return message.includes('stock') || message.includes('insuficiente') || message.includes('agotado') || message.includes('409');
+  };
+  const extractProductCodeFromStockError = (error: unknown): number | null => {
+    const message = getErrorMessage(error, '');
+    const match = message.match(/producto\s+(\d+)/i);
+    return match ? Number(match[1]) : null;
+  };
+
+  const validateCartAgainstLiveProducts = async (currentOrder: CreateOrderDto): Promise<{ hasCriticalChanges: boolean; nextOrderForm: CreateOrderDto }> => {
+    const checks = await Promise.all(
+      currentOrder.items.map(async (item) => {
+        try {
+          const product = await productService.getProductById(item.cod_prod);
+          return { cod_prod: item.cod_prod, stock_actual: product.stock_actual ?? 0 };
+        } catch {
+          return { cod_prod: item.cod_prod, stock_actual: 0 };
+        }
+      })
+    );
+
+    const stockByProduct = new Map<number, number>();
+    checks.forEach(({ cod_prod, stock_actual }) => stockByProduct.set(cod_prod, stock_actual));
+
+    let removedItems = 0;
+    let adjustedItems = 0;
+    let changed = false;
+
+    const nextItems = currentOrder.items.flatMap((item) => {
+      const latestStock = stockByProduct.get(item.cod_prod) ?? 0;
+      if (latestStock <= 0) {
+        removedItems += 1;
+        changed = true;
+        return [];
+      }
+      if (item.cantidad > latestStock) {
+        adjustedItems += 1;
+        changed = true;
+        return [{ ...item, cantidad: latestStock, stock_actual: latestStock }];
+      }
+      if (item.stock_actual !== latestStock) changed = true;
+      return [{ ...item, stock_actual: latestStock }];
+    });
+
+    const nextOrderForm: CreateOrderDto = { ...currentOrder, items: nextItems };
+    if (changed) {
+      setOrderForm(nextOrderForm);
+    }
+
+    if (removedItems > 0 || adjustedItems > 0) {
+      alertService.showToast(
+        'warning',
+        `Stock actualizado: ${removedItems} agotado(s) y ${adjustedItems} ajustado(s).`
+      );
+    }
+
+    return {
+      hasCriticalChanges: removedItems > 0 || adjustedItems > 0,
+      nextOrderForm
+    };
+  };
+
+  const handleCreateOrder = async () => {
+    if (!orderForm.items.length) return;
+    if (orderSubmitLockRef.current) return;
+
+    orderSubmitLockRef.current = true;
+    setIsSavingOrder(true);
+    try {
+      let candidateOrder: CreateOrderDto = orderForm;
+      const maxAttempts = 2;
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        const liveValidation = await validateCartAgainstLiveProducts(candidateOrder);
+        candidateOrder = liveValidation.nextOrderForm;
+
+        if (!candidateOrder.items.length) {
+          alertService.showToast('warning', 'No hay productos disponibles para procesar la venta.');
+          return;
+        }
+
+        if (liveValidation.hasCriticalChanges) {
+          if (attempt < maxAttempts) {
+            alertService.showToast('info', 'Ajustamos el carrito por stock en vivo. Reintentando cobro...');
+            continue;
+          }
+          alertService.showToast('info', 'Se actualizó el carrito con stock real. Revisa y vuelve a intentar.');
+          return;
+        }
+
+        const order = await orderService.createOrder(candidateOrder);
+
+        if (candidateOrder.metodopago_usu === 'tarjeta' && order.id_vent) {
+          try {
+            const { checkoutUrl } = await orderService.createCheckoutSession(order.id_vent);
+            if (!checkoutUrl) {
+              throw new Error('No se recibió URL de checkout.');
+            }
+
+            const totalToCharge = candidateOrder.items.reduce(
+              (acc, item) => acc + item.cantidad * (item.precio_unit || 0),
+              0
+            );
+
+            setStripeQR({
+              isOpen: true,
+              url: checkoutUrl,
+              orderId: order.id_vent,
+              amount: totalToCharge
+            });
+            return;
+          } catch (checkoutError) {
+            if (!isStockConflictError(checkoutError)) {
+              throw checkoutError;
+            }
+
+            try {
+              await orderService.deleteOrder(order.id_vent);
+            } catch (cleanupError) {
+              console.warn('No se pudo limpiar la orden pendiente tras conflicto de stock:', cleanupError);
+            }
+
+            const postCheckoutValidation = await validateCartAgainstLiveProducts(candidateOrder);
+            candidateOrder = postCheckoutValidation.nextOrderForm;
+            const conflictProductCode = extractProductCodeFromStockError(checkoutError);
+            if (conflictProductCode) {
+              candidateOrder = {
+                ...candidateOrder,
+                items: candidateOrder.items.filter((item) => item.cod_prod !== conflictProductCode)
+              };
+              setOrderForm(candidateOrder);
+            }
+            window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+            window.dispatchEvent(new CustomEvent('kiora_reload_inventory'));
+
+            if (!candidateOrder.items.length) {
+              alertService.showToast('error', 'No se pudo iniciar el pago: los productos del carrito se agotaron.');
+              return;
+            }
+
+            if (attempt < maxAttempts) {
+              alertService.showToast('warning', 'El stock cambió al iniciar checkout. Reintentando automáticamente...');
+              continue;
+            }
+
+            alertService.showToast('error', 'No se pudo iniciar el pago porque el stock cambió. Revisa tu carrito.');
+            return;
+          }
+        }
+
+        alertService.showToast('success', 'Venta realizada con éxito');
+        setOrderForm({ items: [], metodopago_usu: 'efectivo' });
+        setIsOrderDrawerOpen(false);
+        window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+        window.dispatchEvent(new CustomEvent('kiora_reload_inventory'));
+        return;
+      }
     } catch (e) {
+      if (isStockConflictError(e)) {
+        const latestProducts = await loadPOSData();
+        syncCartWithLatestStock(orderForm, latestProducts);
+        alertService.showToast('error', 'No se pudo completar la venta porque cambió el stock disponible.');
+        return;
+      }
       alertService.showToast('error', getErrorMessage(e, 'Error al procesar la venta'));
     } finally {
       setIsSavingOrder(false);
+      orderSubmitLockRef.current = false;
     }
   };
   const handleCancelOrder = () => {
@@ -356,6 +620,7 @@ export default function PanelApp() {
 
   const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setIsRegistering(true);
     try {
       if (isEditing && editingUser?.id_usu) {
@@ -386,23 +651,9 @@ export default function PanelApp() {
     finally { setIsResettingPassword(false); }
   };
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwords.new !== passwords.confirm) {
-      alertService.showToast('warning', 'Las contraseñas no coinciden');
-      return;
-    }
-    setIsChangingPassword(true);
-    try {
-      await userService.changePassword(passwords.current, passwords.new);
-      alertService.showToast('success', 'Contraseña actualizada');
-      setIsProfileOpen(false);
-      setPasswords({ current: '', new: '', confirm: '' });
-    } catch (e) {
-      alertService.showToast('error', getErrorMessage(e, 'Error al actualizar'));
-    } finally {
-      setIsChangingPassword(false);
-    }
+  const handleResetPasswordClick = (u: User) => {
+    setResettingUser(u);
+    setIsSecurityOpen(true);
   };
 
   const handleEditClick = (u: User) => {
@@ -443,6 +694,55 @@ export default function PanelApp() {
         <AdminNavbar user={user} onLogout={handleLogout} onProfileOpen={() => setIsProfileOpen(true)} />
       
         <main className="relative mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:pl-16">
+          {paymentReturnState && (
+            <div className={`mb-6 rounded-2xl border px-5 py-4 shadow-sm animate-in slide-in-from-top-3 duration-300 ${
+              paymentReturnState === 'success'
+                ? 'border-emerald-200 bg-emerald-50/70'
+                : 'border-amber-200 bg-amber-50/70'
+            }`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl ${
+                    paymentReturnState === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                  }`}>
+                    {paymentReturnState === 'success' ? (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className={`text-sm font-extrabold ${
+                      paymentReturnState === 'success' ? 'text-emerald-800' : 'text-amber-800'
+                    }`}>
+                      {paymentReturnState === 'success' ? 'Pago completado con Stripe' : 'Pago cancelado'}
+                    </p>
+                    <p className={`mt-0.5 text-xs font-medium ${
+                      paymentReturnState === 'success' ? 'text-emerald-700' : 'text-amber-700'
+                    }`}>
+                      {paymentReturnState === 'success'
+                        ? 'Tu venta fue registrada correctamente. Ya actualizamos el historial.'
+                        : 'No se realizó ningún cargo. Puedes reintentar el pago desde Ventas.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPaymentReturnState(null)}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-white/80 hover:text-slate-600 transition-colors"
+                  aria-label="Cerrar notificación de pago"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'dashboard' ? (
             <DashboardSection onSwitchTab={setActiveTab} />
           ) : activeTab === 'inventario' ? (
@@ -451,10 +751,6 @@ export default function PanelApp() {
             <ProductsSection />
           ) : activeTab === 'categorias' ? (
             <CategoriasSection />
-          ) : activeTab === 'proveedores' ? (
-            <ProveedoresSection />
-          ) : activeTab === 'pedidos' ? (
-            <OrdersSection />
           ) : activeTab === 'ventas' ? (
             <SalesSection onOpenPOS={() => setIsOrderDrawerOpen(true)} isAdmin={isAdmin} />
           ) : activeTab === 'mantenimiento' ? (
@@ -472,7 +768,7 @@ export default function PanelApp() {
               </header>
 
               <div className="space-y-12">
-                <UserList users={usersList} isLoading={isLoadingUsers} searchTerm={searchTerm} onSearchChange={setSearchTerm} onEdit={handleEditClick} onDelete={handleDeleteUser} onUnlock={handleUnlockUser} pagination={{ currentPage, totalPages, onPageChange: loadUsersList }} />
+                <UserList users={filteredUsers} isLoading={isLoadingUsers} searchTerm={searchTerm} onSearchChange={setSearchTerm} onEdit={handleEditClick} onDelete={handleDeleteUser} onUnlock={handleUnlockUser} onResetPassword={handleResetPasswordClick} pagination={{ currentPage, totalPages, onPageChange: loadUsersList }} />
               </div>
             </>
           ) : activeTab === 'ajustes' ? (
@@ -483,51 +779,69 @@ export default function PanelApp() {
 
               {settingsView === 'main' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <button onClick={() => setSettingsView('help')} className="flex items-center gap-4 p-6 bg-white border border-slate-100 rounded-2xl text-left hover:border-[#ec131e]/30 hover:shadow-lg transition-all group">
-                    <div className="w-14 h-14 bg-red-50 text-[#ec131e] rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
+                  <button onClick={() => setSettingsView('help')} className="flex flex-col p-6 bg-white border border-slate-100 rounded-2xl text-left hover:border-[#ec131e]/30 hover:shadow-lg transition-all group h-full">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-red-50 text-[#ec131e] rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-[#111827] text-lg">Centro de Ayuda</h3>
+                        <p className="text-slate-500 text-sm">Soporte y FAQs.</p>
+                      </div>
                     </div>
-                    <div><h3 className="font-bold text-[#111827] text-lg">Centro de Ayuda</h3><p className="text-slate-500 text-sm">Soporte y FAQs.</p></div>
                   </button>
 
-                  <button onClick={() => setSettingsView('general')} className="flex items-center gap-4 p-6 bg-white border border-slate-100 rounded-2xl text-left hover:border-[#ec131e]/30 hover:shadow-lg transition-all group">
-                    <div className="w-14 h-14 bg-red-50 text-[#ec131e] rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
+                  <div className="flex flex-col p-6 bg-white border border-slate-100 rounded-2xl hover:border-[#ec131e]/30 hover:shadow-lg transition-all h-full relative overflow-hidden">
+                    <div className="flex items-center gap-4 mb-5">
+                      <div className="w-14 h-14 bg-slate-50 text-slate-600 rounded-2xl flex items-center justify-center shrink-0">
+                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-[#111827] text-lg">Información Legal</h3>
+                        <p className="text-slate-500 text-sm">Políticas y normas.</p>
+                      </div>
                     </div>
-                    <div><h3 className="font-bold text-[#111827] text-lg">Configuración General</h3><p className="text-slate-500 text-sm">Parámetros globales.</p></div>
-                  </button>
+                    <div className="flex flex-col gap-2 mt-auto -ml-6">
+                      <button 
+                        onClick={() => setSettingsView('terms')} 
+                        className="w-fit text-[11px] text-slate-500 hover:text-[#ec131e] font-bold transition-colors bg-white/90 backdrop-blur-md px-4 py-2 rounded-r-xl shadow-md border border-l-0 border-slate-100 hover:border-[#ec131e]/30 inline-flex items-center"
+                      >
+                        Términos y Condiciones
+                      </button>
+                      <button 
+                        onClick={() => setSettingsView('privacy')} 
+                        className="w-fit text-[11px] text-slate-500 hover:text-[#ec131e] font-bold transition-colors bg-white/90 backdrop-blur-md px-4 py-2 rounded-r-xl shadow-md border border-l-0 border-slate-100 hover:border-[#ec131e]/30 inline-flex items-center"
+                      >
+                        Política de Privacidad
+                      </button>
+                    </div>
+                  </div>
 
-                  <div className="flex flex-col p-6 bg-white border border-slate-100 rounded-2xl md:col-span-2">
-                    <h3 className="font-bold text-[#111827] mb-4">Información Legal</h3>
-                    <div className="flex gap-4">
-                      <button onClick={() => setSettingsView('terms')} className="text-sm font-bold text-[#ec131e] hover:underline">Términos y Condiciones</button>
-                      <button onClick={() => setSettingsView('privacy')} className="text-sm font-bold text-[#ec131e] hover:underline">Política de Privacidad</button>
+                  <div className="flex items-center gap-4 p-6 bg-white border border-slate-100 rounded-2xl text-left transition-all md:col-span-2">
+                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+                      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5a18.022 18.022 0 01-3.827-5.802M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-[#111827] text-lg">Idioma & Traducción</h3>
+                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-widest">Weglot AI</span>
+                      </div>
+                      <div className="flex gap-3">
+                        <button onClick={() => { if (typeof window !== 'undefined' && (window as any).Weglot) { (window as any).Weglot.switchTo('es'); } }} className="px-5 py-2 bg-slate-100 hover:bg-[#ec131e] hover:text-white text-slate-700 text-sm font-bold rounded-lg transition-colors">Español</button>
+                        <button onClick={() => { if (typeof window !== 'undefined' && (window as any).Weglot) { (window as any).Weglot.switchTo('en'); } }} className="px-5 py-2 bg-slate-100 hover:bg-[#ec131e] hover:text-white text-slate-700 text-sm font-bold rounded-lg transition-colors">Inglés</button>
+                      </div>
                     </div>
                   </div>
                 </div>
               ) : settingsView === 'help' ? (
                 <div className="animate-in fade-in slide-in-from-bottom-4">
                   <button onClick={() => setSettingsView('main')} className="mb-6 flex items-center gap-2 text-slate-400 font-bold hover:text-[#ec131e] transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>Volver</button>
-                  <HelpCenter />
-                </div>
-              ) : settingsView === 'general' ? (
-                <div className="animate-in fade-in slide-in-from-bottom-4">
-                  <button onClick={() => setSettingsView('main')} className="mb-6 flex items-center gap-2 text-slate-400 font-bold hover:text-[#ec131e] transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>Volver</button>
-                  <GeneralSettings />
+                  <HelpCenter hideBackButton={true} />
                 </div>
               ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4">
                   <button onClick={() => setSettingsView('main')} className="mb-6 flex items-center gap-2 text-slate-400 font-bold hover:text-[#ec131e] transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>Volver</button>
-                  <section className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm">
-                    <h3 className="text-xl font-black mb-6">{settingsView === 'terms' ? 'Términos y Condiciones' : 'Política de Privacidad'}</h3>
-                    <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200">
-                      <p className="text-[15px] text-slate-600 leading-relaxed italic">
-                        {settingsView === 'terms' 
-                          ? 'Bienvenido a Kiora. Al acceder y utilizar esta aplicación, usted acepta los siguientes términos y condiciones...' 
-                          : 'En Kiora, protegemos la integridad de su información corporativa. La información recolectada se utiliza exclusivamente para la operación...'}
-                      </p>
-                    </div>
-                  </section>
+                  <LegalSection defaultTab={settingsView === 'terms' ? 'terminos' : 'privacidad'} />
                 </div>
               )}
             </div>
@@ -539,9 +853,29 @@ export default function PanelApp() {
         <AdminSubNav activeId={activeTab} onItemClick={setActiveTab} isAdmin={isAdmin} />
 
         <UserDrawer isOpen={isDrawerOpen} isEditing={isEditing} isRegistering={isRegistering} userData={newUser} onUserDataChange={setNewUser} onSubmit={handleSubmitUser} onClose={() => setIsDrawerOpen(false)} />
-        <ProfileDrawer isOpen={isProfileOpen} user={user} passwords={passwords} isChangingPassword={isChangingPassword} onPasswordsChange={setPasswords} onSubmitPassword={handleUpdatePassword} onClose={() => setIsProfileOpen(false)} />
+        <ProfileDrawer isOpen={isProfileOpen} user={user} onClose={() => setIsProfileOpen(false)} />
         <SecurityDrawer isOpen={isSecurityOpen} userName={resettingUser?.nom_usu || ''} isProcessing={isResettingPassword} onConfirm={handleConfirmPasswordReset} onClose={() => setIsSecurityOpen(false)} />
         <OrderDrawer drawerOpen={isOrderDrawerOpen} onClose={() => setIsOrderDrawerOpen(false)} prodSearch={prodSearch} setProdSearch={setProdSearch} filteredProducts={filteredPOSProducts} categories={categories} selectedCategoryId={selectedCategoryId} setSelectedCategoryId={setSelectedCategoryId} addToCart={addToCart} removeFromCart={removeFromCart} updateQuantity={updateQuantity} orderForm={orderForm} setOrderForm={setOrderForm} cartTotal={cartTotal} handleCreateOrder={handleCreateOrder} onCancelOrder={handleCancelOrder} saving={isSavingOrder} safePrice={(v) => (typeof v === 'number' && !isNaN(v)) ? v : Number(v) || 0} />
+        
+        <StripeQRModal 
+          isOpen={stripeQR.isOpen} 
+          checkoutUrl={stripeQR.url} 
+          orderId={stripeQR.orderId}
+          amount={stripeQR.amount}
+          onClose={() => setStripeQR(prev => ({ ...prev, isOpen: false }))}
+          onSuccess={() => {
+            setStripeQR(prev => ({ ...prev, isOpen: false }));
+            setOrderForm({ items: [], metodopago_usu: 'efectivo' });
+            setIsOrderDrawerOpen(false);
+            window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+            window.dispatchEvent(new CustomEvent('kiora_reload_inventory'));
+          }}
+          onCancel={() => {
+            setStripeQR(prev => ({ ...prev, isOpen: false }));
+            setOrderForm({ items: [], metodopago_usu: 'efectivo' });
+            setIsOrderDrawerOpen(false);
+          }}
+        />
       </div>
     </StockProvider>
   );

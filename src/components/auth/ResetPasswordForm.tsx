@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { authService, alertService } from '../../config/setup';
 import Loading from '../cargando';
+import { validatePassword } from '@/utils/validation';
 
 export default function ResetPasswordForm() {
   const [email, setEmail] = useState<string | null>(null);
@@ -39,8 +40,9 @@ export default function ResetPasswordForm() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      alertService.showError('Error', 'La contraseña debe tener al menos 6 caracteres.');
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
+      alertService.showError('Contraseña débil', validation.message);
       return;
     }
 

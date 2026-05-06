@@ -5,6 +5,8 @@ import type { Product, Category } from '@/models/Product';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { ProductDrawer } from './ProductDrawer';
 import { CategoryModal } from './CategoryModal';
+import { MovementDetailModal } from './MovementDetailModal';
+import type { Movement } from '@/models/Inventory';
 
 const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001/api';
 const IMG_BASE = API_URL.replace('/api', '');
@@ -29,8 +31,7 @@ export function ProductsSection() {
     categories: [] as number[],
     stock: 'all' as 'all' | 'low' | 'out',
     minPrice: '',
-    maxPrice: '',
-    tipo: 'all' as string
+    maxPrice: ''
   });
 
   // Pending filters (UI state)
@@ -43,8 +44,9 @@ export function ProductsSection() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Movements state for Drawer
-  const [movements, setMovements] = useState<any[]>([]);
+  const [movements, setMovements] = useState<Movement[]>([]);
   const [loadingMovements, setLoadingMovements] = useState(false);
+  const [detailMovement, setDetailMovement] = useState<Movement | null>(null);
 
   const isAdmin = authService.isAdmin();
 
@@ -109,7 +111,7 @@ export function ProductsSection() {
   const filteredProducts = useMemo(() => {
     let result = products;
     
-    const { search, categories: selCats, stock, minPrice, maxPrice, tipo } = activeFilters;
+    const { search, categories: selCats, stock, minPrice, maxPrice } = activeFilters;
 
     if (selCats.length > 0) {
       result = result.filter(p => p.fk_cod_cats?.some(c => selCats.includes(c)));
@@ -120,10 +122,6 @@ export function ProductsSection() {
 
     if (minPrice !== '') result = result.filter(p => (p.precio_prod || 0) >= Number(minPrice));
     if (maxPrice !== '') result = result.filter(p => (p.precio_prod || 0) <= Number(maxPrice));
-
-    if (tipo !== 'all') {
-      result = result.filter(p => (p.tipo_prod || 'alimento') === tipo);
-    }
 
     if (search.trim()) {
       const fuse = new Fuse(result, { keys: ['nom_prod', 'desc_prod', 'cod_prod'], threshold: 0.3 });
@@ -145,8 +143,7 @@ export function ProductsSection() {
       categories: [],
       stock: 'all' as const,
       minPrice: '',
-      maxPrice: '',
-      tipo: 'all'
+      maxPrice: ''
     };
     setPendingFilters(cleared);
     setActiveFilters(cleared);
@@ -222,20 +219,6 @@ export function ProductsSection() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tipo de Elemento</label>
-              <select
-                value={pendingFilters.tipo}
-                onChange={e => setPendingFilters(p => ({ ...p, tipo: e.target.value }))}
-                className="w-full rounded-2xl border border-slate-100 bg-slate-50 py-4 px-5 text-sm font-bold focus:border-[#ec131e] focus:bg-white focus:outline-none transition-all"
-              >
-                <option value="all">Cualquier Tipo</option>
-                <option value="alimento">🍎 Alimento</option>
-                <option value="bebida">🥤 Bebida</option>
-                <option value="otro">📦 Otro</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Rango de Precio</label>
               <div className="flex gap-2">
                 <input type="number" placeholder="Min" value={pendingFilters.minPrice} onChange={e => setPendingFilters(p => ({ ...p, minPrice: e.target.value }))} className="w-1/2 rounded-2xl border border-slate-100 bg-slate-50 py-4 px-4 text-sm font-bold focus:border-[#ec131e] focus:bg-white transition-all" />
@@ -287,7 +270,6 @@ export function ProductsSection() {
                   <div className="h-full w-full flex items-center justify-center text-slate-100 font-black text-4xl">?</div>
                 )}
                 <span className={`absolute top-4 right-4 rounded-full px-3 py-1 text-[9px] font-black uppercase text-white ${stockBadgeColor(p)}`}>STOCK: {p.stock_actual}</span>
-                <span className="absolute bottom-4 left-4 rounded-lg px-2 py-1 text-[8px] font-black uppercase bg-white/80 backdrop-blur-sm text-slate-500 border border-slate-100 shadow-sm">{p.tipo_prod || 'alimento'}</span>
               </div>
               <div className="p-7 flex-1 flex flex-col">
                 <h3 className="text-lg font-black text-slate-900 leading-tight mb-2">{p.nom_prod}</h3>
@@ -317,7 +299,16 @@ export function ProductsSection() {
         onSave={handleSaveProduct}
         onSaveMovement={handleSaveMovement}
         onLoadMovements={loadMovements}
+        onViewMovement={(m) => setDetailMovement(m)}
       />
+
+      {detailMovement && (
+        <MovementDetailModal
+          movement={detailMovement}
+          productName={selectedProduct?.nom_prod}
+          onClose={() => setDetailMovement(null)}
+        />
+      )}
       <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} onSuccess={loadData} />
     </div>
   );

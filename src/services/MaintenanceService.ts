@@ -24,74 +24,38 @@ export class MaintenanceService {
   }
 
   // ── Reports ─────────────────────────────────────────────────────────────────
+  // NOTE: These endpoints are not currently implemented in the Kiora microservices backend.
+  // They serve as placeholders for future maintenance management modules.
 
   async getReports(): Promise<MaintenanceReport[]> {
-    // NOTE: Backend for /maintenance/reports is not implemented yet.
-    // const res = await this.httpClient.get<any>('/maintenance/reports', this.getAuthHeaders());
-    // if (!res.ok) throw new Error(res.error ?? 'Error al obtener reportes');
-    // return this.ensureArray<MaintenanceReport>(res.data);
-    console.warn('Backend de reportes de mantenimiento no implementado');
+    console.warn('Endpoint GET /maintenance/reports no implementado en el backend');
     return [];
   }
 
-  async getReportById(id: number): Promise<MaintenanceReport> {
-    const res = await this.httpClient.get<MaintenanceReport>(`/maintenance/reports/${id}`, this.getAuthHeaders());
-    if (!res.ok || !res.data) throw new Error(res.error ?? 'Reporte no encontrado');
-    return res.data;
+  async getReportById(_id: number): Promise<MaintenanceReport> {
+    throw new Error('Módulo de mantenimiento no disponible en el servidor');
   }
 
-  async createReport(dto: Partial<MaintenanceReport>): Promise<MaintenanceReport> {
-    const res = await this.httpClient.post<MaintenanceReport>(
-      '/maintenance/reports',
-      dto,
-      { headers: this.getAuthHeaders() }
-    );
-    if (!res.ok || !res.data) throw new Error(res.error ?? 'Error al crear reporte');
-    return res.data;
+  async createReport(_dto: Partial<MaintenanceReport>): Promise<MaintenanceReport> {
+    throw new Error('Módulo de mantenimiento no disponible en el servidor');
   }
 
-  async updateReport(id: number, dto: Partial<MaintenanceReport>): Promise<MaintenanceReport> {
-    const res = await this.httpClient.put<MaintenanceReport>(
-      `/maintenance/reports/${id}`,
-      dto,
-      { headers: this.getAuthHeaders() }
-    );
-    if (!res.ok || !res.data) throw new Error(res.error ?? 'Error al actualizar reporte');
-    return res.data;
+  async updateReport(_id: number, _dto: Partial<MaintenanceReport>): Promise<MaintenanceReport> {
+    throw new Error('Módulo de mantenimiento no disponible en el servidor');
   }
 
-  async deleteReport(id: number): Promise<void> {
-    const res = await this.httpClient.delete(`/maintenance/reports/${id}`, { headers: this.getAuthHeaders() });
-    if (!res.ok) throw new Error(res.error ?? 'Error al eliminar reporte');
+  async deleteReport(_id: number): Promise<void> {
+    throw new Error('Módulo de mantenimiento no disponible en el servidor');
   }
 
   // ── Export ──────────────────────────────────────────────────────────────────
 
-  private async downloadBlob(path: string, fileName: string): Promise<void> {
-    const token = this.authService.getToken();
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const res = await fetch(`${this.baseURL}${path}`, { headers });
-    if (!res.ok) throw new Error('Error al exportar archivo');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   async exportExcel(): Promise<void> {
-    // NOTE: Backend does not support /maintenance/export/excel
-    // await this.downloadBlob('/maintenance/export/excel', `mantenimientos_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    throw new Error('Exportación de mantenimiento no implementada en el servidor');
+    throw new Error('Exportación de mantenimiento no disponible');
   }
 
   async exportPdf(): Promise<void> {
-    // NOTE: Backend does not support /maintenance/export/pdf
-    // await this.downloadBlob('/maintenance/export/pdf', `mantenimientos_${new Date().toISOString().slice(0, 10)}.pdf`);
-    throw new Error('Exportación de mantenimiento no implementada en el servidor');
+    throw new Error('Exportación de mantenimiento no disponible');
   }
 }
+

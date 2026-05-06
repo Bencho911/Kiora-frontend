@@ -22,6 +22,12 @@ export class InventoryService {
     if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving suppliers');
     return response.data;
   }
+  
+  async getSupplierById(id: number): Promise<Supplier> {
+    const response = await this.httpClient.get<Supplier>(`/inventory/suppliers/${id}`, this.getAuthHeaders());
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error al obtener detalles del proveedor');
+    return response.data;
+  }
 
   async createSupplier(supplier: Partial<Supplier>): Promise<Supplier> {
     const response = await this.httpClient.post<Supplier>('/inventory/suppliers', supplier, { headers: this.getAuthHeaders() });
@@ -73,5 +79,23 @@ export class InventoryService {
     const response = await this.httpClient.get<any>(`/inventory/suministra?page=${page}&limit=${limit}`, this.getAuthHeaders());
     if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving suministra records');
     return response.data;
+  }
+
+  async getSuministraById(id: number): Promise<Suministra> {
+    const response = await this.httpClient.get<Suministra>(`/inventory/suministra/${id}`, this.getAuthHeaders());
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error al obtener registro de suministra');
+    return response.data;
+  }
+
+  // ── Reservations (Redis Based) ───────────────────────────────────────────
+  
+  async reserveInventory(orderId: number, items: { cod_prod: number; cantidad: number }[]): Promise<void> {
+    const response = await this.httpClient.post('/inventory/reserve', { orderId, items }, { headers: this.getAuthHeaders() });
+    if (!response.ok) throw new Error(response.error || 'Error al reservar inventario');
+  }
+
+  async commitReservation(orderId: number): Promise<void> {
+    const response = await this.httpClient.post('/inventory/reserve/commit', { orderId }, { headers: this.getAuthHeaders() });
+    if (!response.ok) throw new Error(response.error || 'Error al confirmar la reserva de inventario');
   }
 }

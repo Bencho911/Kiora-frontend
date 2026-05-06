@@ -22,7 +22,7 @@ export interface Order {
   fecha_vent?: string;
   montofinal_vent?: number;
   metodopago_usu?: string;
-  estado?: 'pendiente' | 'completada' | 'cancelada' | 'reembolsada';
+  estado?: 'pendiente' | 'completada' | 'cancelada' | 'reembolsada' | 'pagado' | 'pagada';
   items?: OrderItem[];
   productos_resumen?: string;
 }

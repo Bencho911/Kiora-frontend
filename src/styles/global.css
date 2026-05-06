@@ -1,13 +1,14 @@
 @import "tailwindcss";
 
-/* Tokens panel Kiora (referencia desde componentes con arbitrary values o clases) */
-:root {
-  --kiora-red: #ec131e;
-  --kiora-red-hover: #d01019;
-  --panel-surface: #f8fafc;
-  --panel-card: #ffffff;
-  --panel-border: rgb(226 232 240 / 0.9);
-  --panel-shadow: 0 4px 24px -4px rgb(15 23 42 / 0.07);
+@theme {
+  --color-kiora-red: #ec131e;
+  --color-kiora-red-hover: #d01019;
+  --color-panel-surface: #f8fafc;
+  --color-panel-card: #ffffff;
+  --color-panel-border: rgb(226 232 240 / 0.9);
+  
+  --shadow-panel: 0 4px 24px -4px rgb(15 23 42 / 0.07);
+  --shadow-premium: 0 20px 50px rgba(0,0,0,0.04);
 }
 
 /* Ocultar flechas en inputs numericos (no escalables) */
@@ -19,4 +20,27 @@ input::-webkit-inner-spin-button {
 
 input[type=number] {
   -moz-appearance: textfield;
+}
+
+/* Fix para el botón de Weglot que se sobrepone a modales */
+.weglot-container {
+  z-index: 10 !important; /* Bajar z-index para que quede detrás de modales y drawers */
+  right: auto !important;
+  left: 20px !important;
+}
+
+/* Fix para el selector de fechas en reportes que se amontona en movil */
+@media (max-width: 640px) {
+  .report-date-range {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .report-date-range span {
+    display: none;
+  }
+}
+
+/* Fix para SweetAlert2 que puede quedar detrás de los modales z-[110] */
+.swal2-container {
+  z-index: 999999 !important;
 }

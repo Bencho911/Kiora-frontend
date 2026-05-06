@@ -6,6 +6,7 @@ interface OrderDetailModalProps {
   onClose: () => void;
   safePrice: (v: unknown) => number;
   estadoColors: Record<string, string>;
+  productMap?: Record<string | number, string>; // Add this
   onRefund?: (id: number) => void;
   onDownloadReceipt?: (id: number) => void;
 }
@@ -15,12 +16,17 @@ export function OrderDetailModal({
   onClose,
   safePrice,
   estadoColors,
+  productMap = {}, // Add this
   onRefund,
   onDownloadReceipt
 }: OrderDetailModalProps) {
   const handleModalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+  const isCompletada = (status?: string) =>
+    String(status ?? '').toLowerCase() === 'completada';
+
+  const isPaidStatus = (status?: string) => isCompletada(status);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -134,7 +140,9 @@ export function OrderDetailModal({
                   (detailOrder.items ?? []).map((item, i) => (
                     <tr key={i} className="hover:bg-slate-50 transition-colors">
                       <td className="px-5 py-4">
-                        <p className="font-bold text-slate-800 line-clamp-1">{item.nom_prod ?? `Producto #${item.cod_prod}`}</p>
+                        <p className="font-bold text-slate-800 line-clamp-1">
+                          {item.nom_prod || productMap[item.cod_prod] || (item.cod_prod ? productMap[String(item.cod_prod)] : '') || `Producto #${item.cod_prod}`}
+                        </p>
                         <p className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-wide">Código: {item.cod_prod}</p>
                       </td>
                       <td className="px-5 py-4 text-center">
@@ -166,7 +174,7 @@ export function OrderDetailModal({
           </div>
 
           <div className="mt-6 flex flex-wrap justify-end gap-3 px-2 border-t border-slate-100 pt-6">
-            {detailOrder.estado === 'completada' && onDownloadReceipt && (
+            {isPaidStatus(detailOrder.estado) && onDownloadReceipt && (
               <button
                 onClick={() => onDownloadReceipt(detailOrder.id_vent!)}
                 className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-xl font-bold transition-all border border-emerald-100 hover:border-emerald-600 shadow-sm"
@@ -178,7 +186,7 @@ export function OrderDetailModal({
               </button>
             )}
 
-            {detailOrder.estado === 'completada' && onRefund && (
+            {isCompletada(detailOrder.estado) && onRefund && (
               <button
                 onClick={() => onRefund(detailOrder.id_vent!)}
                 className="flex items-center gap-2 px-5 py-2.5 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white rounded-xl font-bold transition-all border border-purple-100 hover:border-purple-600 shadow-sm"

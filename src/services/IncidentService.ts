@@ -1,6 +1,18 @@
 import type { IHttpClient } from '../core/http/HttpClient';
 import type { AuthService } from './AuthService';
-import type { Incident, CreateIncidentDto } from '../models/Incident';
+
+export interface Incident {
+  id_rep: number;
+  titulo: string;
+  descripcion: string;
+  prioridad: 'baja' | 'media' | 'alta';
+  estado: 'pendiente' | 'en_proceso' | 'resuelto' | 'cancelado';
+  fk_id_usu: number;
+  cod_prod?: number;
+  fecha_rep: string;
+  observaciones_tecnicas?: string;
+  nombre_usuario?: string; // Si el backend hace join
+}
 
 export class IncidentService {
   constructor(
@@ -13,27 +25,29 @@ export class IncidentService {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  async getIncidents(): Promise<Incident[]> {
-    const res = await this.httpClient.get<Incident[]>('/incidents', this.getAuthHeaders());
-    if (!res.ok || !res.data) throw new Error(res.error ?? 'Error al obtener incidencias');
-    return res.data;
+  async getAll(): Promise<Incident[]> {
+    const response = await this.httpClient.get<Incident[]>('/incidents', this.getAuthHeaders());
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving incidents');
+    return response.data;
   }
 
-  async createIncident(dto: CreateIncidentDto): Promise<Incident> {
-    const res = await this.httpClient.post<Incident>('/incidents', dto, {
-      headers: this.getAuthHeaders()
-    });
-    if (!res.ok || !res.data) throw new Error(res.error ?? 'Error al crear incidencia');
-    return res.data;
-  }
-
-  async updateIncidentStatus(id: number, estado: Incident['estado']): Promise<Incident> {
-    const res = await this.httpClient.put<Incident>(
+  async updateStatus(id: number, estado: Incident['estado']): Promise<Incident> {
+    const response = await this.httpClient.put<Incident>(
       `/incidents/${id}/estado`,
       { estado },
       { headers: this.getAuthHeaders() }
     );
-    if (!res.ok || !res.data) throw new Error(res.error ?? 'Error al actualizar estado de la incidencia');
-    return res.data;
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error updating incident status');
+    return response.data;
+  }
+
+  async create(incident: Partial<Incident>): Promise<Incident> {
+    const response = await this.httpClient.post<Incident>(
+      '/incidents',
+      incident,
+      { headers: this.getAuthHeaders() }
+    );
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error creating incident');
+    return response.data;
   }
 }

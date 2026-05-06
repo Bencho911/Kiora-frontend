@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { RegisterUserDto } from '@/services/UserService';
+import { validatePassword } from '@/utils/validation';
 
 interface UserDrawerProps {
   isOpen: boolean;
@@ -20,6 +21,35 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({
   onSubmit,
   onClose
 }) => {
+  const [errors, setErrors] = useState<{ phone?: string; password?: string }>({});
+
+  const handleLocalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: { phone?: string; password?: string } = {};
+
+    // Validate phone
+    const phone = userData.tel_usu || '';
+    if (phone.length !== 7 && phone.length !== 10) {
+      newErrors.phone = 'El teléfono debe ser fijo (7 dígitos) o celular (10 dígitos).';
+    }
+
+    // Validate password (only if not editing, or if a password is provided)
+    if (!isEditing && userData.password) {
+      const validation = validatePassword(userData.password);
+      if (!validation.isValid) {
+        newErrors.password = validation.message;
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
+    onSubmit(e);
+  };
+
   return (
     <div className={`fixed inset-0 z-99999 transition-all duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
       <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-sm" onClick={onClose}></div>
@@ -33,7 +63,7 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
-          <form onSubmit={onSubmit} id="userForm" className="flex flex-col gap-5">
+          <form onSubmit={handleLocalSubmit} id="userForm" className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-bold text-gray-600">Nombre Completo</label>
               <input 
@@ -65,12 +95,18 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({
                 inputMode="numeric"
                 value={userData.tel_usu}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
                   onUserDataChange({...userData, tel_usu: val});
+                  if (errors.phone) setErrors({ ...errors, phone: undefined });
                 }}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ec131e] focus:ring-4 focus:ring-red-50 transition-all text-[0.95rem] bg-white placeholder:text-gray-300" 
-                placeholder="3000000000" 
+                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-4 transition-all text-[0.95rem] bg-white placeholder:text-gray-300 ${
+                  errors.phone 
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-50' 
+                    : 'border-gray-200 focus:border-[#ec131e] focus:ring-red-50'
+                }`}
+                placeholder="3000000000 o 1234567" 
               />
+              {errors.phone && <span className="text-[11px] font-bold text-red-500 mt-0.5">{errors.phone}</span>}
             </div>
 
             {!isEditing && (
@@ -80,12 +116,24 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({
                   type="password" 
                   required
                   value={userData.password || ''}
-                  onChange={(e) => onUserDataChange({...userData, password: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ec131e] focus:ring-4 focus:ring-red-50 transition-all text-[0.95rem] bg-white placeholder:text-gray-300" 
+                  onChange={(e) => {
+                    onUserDataChange({...userData, password: e.target.value});
+                    if (errors.password) setErrors({ ...errors, password: undefined });
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-4 transition-all text-[0.95rem] bg-white placeholder:text-gray-300 ${
+                    errors.password 
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-50' 
+                      : 'border-gray-200 focus:border-[#ec131e] focus:ring-red-50'
+                  }`}
                   placeholder="Ingresa clave segura"
                   minLength={8}
                   autoComplete="new-password"
                 />
+                {errors.password ? (
+                  <span className="text-[11px] font-bold text-red-500 mt-0.5">{errors.password}</span>
+                ) : (
+                  <p className="text-[10px] text-gray-400 mt-1">Debe incluir al menos una mayúscula, un número y un signo de puntuación.</p>
+                )}
               </div>
             )}
 

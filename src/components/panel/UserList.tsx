@@ -1,6 +1,7 @@
 import React from 'react';
 import type { User } from '@/models/User';
 import { getPaginationPages } from '@/utils/pagination';
+import { getInitials } from '@/utils/userUtils';
 
 interface UserListProps {
   users: (User & { isBlocked: boolean })[];
@@ -10,6 +11,7 @@ interface UserListProps {
   onEdit: (user: User) => void;
   onDelete: (id: string | number) => void;
   onUnlock: (id: string | number, isBlocked: boolean) => void;
+  onResetPassword: (user: User) => void;
   pagination: {
     currentPage: number;
     totalPages: number;
@@ -32,6 +34,7 @@ export const UserList: React.FC<UserListProps> = ({
   onEdit,
   onDelete,
   onUnlock,
+  onResetPassword,
   pagination
 }) => {
   const pageItems = getPaginationPages(
@@ -39,12 +42,6 @@ export const UserList: React.FC<UserListProps> = ({
     pagination.totalPages
   );
 
-  const getInitials = (name: string) => {
-    if (!name) return 'UN';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name.substring(0, 2).toUpperCase();
-  };
 
   const avatarRing = (u: User & { isBlocked: boolean }) => {
     const k = roleKey(u.rol_usu);
@@ -60,8 +57,8 @@ export const UserList: React.FC<UserListProps> = ({
         <div className="flex flex-col gap-6 border-b border-slate-100 bg-[#3E2723]/[0.02] px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <div className="h-1 w-4 rounded-full bg-[#ec131e]"></div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#3E2723]/60">Cuentas Registradas</p>
+              <div className="h-1.5 w-4 rounded-full bg-kiora-red"></div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Cuentas Registradas</p>
             </div>
             <p className="mt-1 text-sm text-slate-500 font-medium">Listado detallado de miembros del equipo</p>
           </div>
@@ -77,7 +74,7 @@ export const UserList: React.FC<UserListProps> = ({
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
                 aria-describedby="userlist-search-hint"
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:border-[#ec131e]/40 focus:outline-none focus:ring-2 focus:ring-[#ec131e]/20"
+                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:border-kiora-red/40 focus:outline-none focus:ring-2 focus:ring-kiora-red/10 transition-all"
               />
               <svg
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
@@ -98,8 +95,8 @@ export const UserList: React.FC<UserListProps> = ({
         <div className="flex flex-col">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16">
-              <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-[#ec131e]" />
-              <span className="text-sm font-medium text-slate-500">Cargando cuentas…</span>
+              <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-100 border-t-kiora-red" />
+              <span className="text-sm font-medium text-slate-500">Sincronizando cuentas…</span>
             </div>
           ) : users.length === 0 ? (
             <div className="px-6 py-14 text-center">
@@ -148,6 +145,16 @@ export const UserList: React.FC<UserListProps> = ({
 
 
                       <div className="flex items-center gap-0.5 rounded-xl bg-slate-100/80 p-0.5 ring-1 ring-slate-200/80">
+                        <button
+                          type="button"
+                          onClick={() => onResetPassword(u)}
+                          className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-amber-600"
+                          title="Cambiar Contraseña"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                          </svg>
+                        </button>
                         <button
                           type="button"
                           onClick={() => onEdit(u)}
@@ -201,9 +208,9 @@ export const UserList: React.FC<UserListProps> = ({
                       key={item}
                       type="button"
                       onClick={() => pagination.onPageChange(item)}
-                      className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+                      className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-lg text-xs font-bold transition-all ${
                         pagination.currentPage === item
-                          ? 'bg-[#ec131e] text-white shadow-sm'
+                          ? 'bg-kiora-red text-white shadow-lg shadow-kiora-red/20'
                           : 'text-slate-600 hover:bg-white hover:ring-1 hover:ring-slate-200'
                       }`}
                     >

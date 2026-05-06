@@ -7,7 +7,7 @@ import * as XLSX from 'xlsx';
 
 export interface CreateOrderDto {
   metodopago_usu: string;
-  items: { cod_prod: number; cantidad: number; precio_unit: number; nom_prod?: string; url_imagen?: string }[];
+  items: { cod_prod: number; cantidad: number; precio_unit: number; nom_prod?: string; url_imagen?: string; stock_actual?: number }[];
 }
 
 export class OrderService {
@@ -21,8 +21,11 @@ export class OrderService {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  private get baseURL(): string {
-    return this.httpClient.baseURL;
+  // Dashboard Stats (Direct from API Gateway)
+  async getDashboardStats(): Promise<any> {
+    const response = await this.httpClient.get<any>('/dashboard/stats', this.getAuthHeaders());
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error al obtener estadísticas del dashboard');
+    return response.data;
   }
 
   // Orders (Sales)
@@ -56,7 +59,7 @@ export class OrderService {
     return res.data;
   }
 
-  async updateOrderStatus(id: number, estado: 'pendiente' | 'completada' | 'cancelada' | 'reembolsada'): Promise<Order> {
+  async updateOrderStatus(id: number, estado: 'pendiente' | 'completada' | 'cancelada' | 'reembolsada' | 'pagado' | 'pagada'): Promise<Order> {
     const res = await this.httpClient.put<Order>(
       `/orders/${id}/status`,
       { estado },
@@ -75,7 +78,7 @@ export class OrderService {
     const res = await this.httpClient.post<any>(
       `/orders/checkout/${orderId}`,
       {
-        success_url: `${window.location.origin}/panel?tab=ventas&status=success`,
+        success_url: `${window.location.origin}/panel?tab=ventas&status=success&order_id=${orderId}`,
         cancel_url: `${window.location.origin}/panel?tab=ventas&status=cancel`,
       },
       { headers: this.getAuthHeaders() }
@@ -99,6 +102,7 @@ export class OrderService {
       doc.setTextColor(100, 100, 100);
       doc.text(`Fecha de generación: ${new Date().toLocaleString()}`, 14, 28);
 
+      const totalMonto = orders.reduce((sum, o) => sum + Number(o.montofinal_vent || 0), 0);
       const tableData = orders.map(o => [
         `#${o.id_vent}`,
         o.fecha_vent ? new Date(o.fecha_vent).toLocaleDateString() : '—',
@@ -111,7 +115,9 @@ export class OrderService {
         startY: 35,
         head: [['ID', 'Fecha', 'Método Pago', 'Estado', 'Monto']],
         body: tableData,
+        foot: [['', '', '', 'TOTAL:', `$${totalMonto.toLocaleString('es-CO')}`]],
         headStyles: { fillColor: [236, 19, 30] },
+        footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
       });
 
       doc.save(`kiora_ventas_${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -123,18 +129,28 @@ export class OrderService {
 
   async exportExcel(): Promise<void> {
     try {
-      const response = await this.httpClient.get<{ data: Order[] }>('/orders?page=1&limit=1000', {
+      const response = await this.httpClient.get<any>('/orders?page=1&limit=1000', {
         headers: this.getAuthHeaders()
       });
-      const orders = response.data || [];
+      const orders = Array.isArray(response.data) ? response.data : (response.data?.data || []);
 
-      const data = orders.map(o => ({
-        'ID Venta': o.id_vent,
-        'Fecha': o.fecha_vent ? new Date(o.fecha_vent).toLocaleString('es-CO') : '—',
-        'Método Pago': (o.metodopago_usu || 'Efectivo').toUpperCase(),
-        'Estado': (o.estado || 'Pendiente').toUpperCase(),
-        'Total ($)': Number(o.montofinal_vent || 0)
-      }));
+      const totalMonto = orders.reduce((sum, o) => sum + Number(o.montofinal_vent || 0), 0);
+      const data = [
+        ...orders.map(o => ({
+          'ID Venta': o.id_vent,
+          'Fecha': o.fecha_vent ? new Date(o.fecha_vent).toLocaleString('es-CO') : '—',
+          'Método Pago': (o.metodopago_usu || 'Efectivo').toUpperCase(),
+          'Estado': (o.estado || 'Pendiente').toUpperCase(),
+          'Total ($)': Number(o.montofinal_vent || 0)
+        })),
+        {
+          'ID Venta': '',
+          'Fecha': '',
+          'Método Pago': '',
+          'Estado': 'TOTAL:',
+          'Total ($)': totalMonto
+        }
+      ];
 
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
@@ -154,36 +170,53 @@ export class OrderService {
   }
 
   async downloadReceipt(orderId: number): Promise<void> {
-    const order = await this.getOrderById(orderId);
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: [80, 200]
-    });
+    try {
+      // Intentar usar el microservicio de reportes del backend (PDF oficial/térmico)
+      const blob = await this.httpClient.download(`/reports/receipt/${orderId}`, this.getAuthHeaders());
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recibo_kiora_${orderId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.warn('Fallo al descargar recibo del backend, usando fallback local jsPDF:', e);
+      
+      // Fallback local: Generar el PDF en el cliente si el microservicio falla o no está disponible
+      const order = await this.getOrderById(orderId);
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [80, 200]
+      });
 
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('KIORA', 40, 15, { align: 'center' });
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('KIORA', 40, 15, { align: 'center' });
 
-    doc.setFontSize(9);
-    doc.text(`Recibo de Compra #${order.id_vent}`, 5, 32);
-    doc.text(`Fecha: ${order.fecha_vent ? new Date(order.fecha_vent).toLocaleString('es-CO') : '—'}`, 5, 37);
+      doc.setFontSize(9);
+      doc.text(`Recibo de Compra #${order.id_vent}`, 5, 32);
+      doc.text(`Fecha: ${order.fecha_vent ? new Date(order.fecha_vent).toLocaleString('es-CO') : '—'}`, 5, 37);
 
-    let y = 45;
-    doc.setFontSize(8);
-    (order.items || []).forEach(item => {
-      doc.text((item.nom_prod || 'Producto').substring(0, 15), 5, y);
-      doc.text(item.cantidad?.toString() || '1', 45, y);
-      doc.text(`$${Number(item.precio_unit).toLocaleString('es-CO')}`, 55, y);
-      y += 5;
-    });
+      let y = 45;
+      doc.setFontSize(8);
+      (order.items || []).forEach(item => {
+        doc.text((item.nom_prod || 'Producto').substring(0, 15), 5, y);
+        doc.text(item.cantidad?.toString() || '1', 45, y);
+        doc.text(`$${Number(item.precio_unit).toLocaleString('es-CO')}`, 55, y);
+        y += 5;
+      });
 
-    y += 10;
-    doc.setFontSize(10);
-    doc.text('TOTAL:', 5, y);
-    doc.text(`$${Number(order.montofinal_vent).toLocaleString('es-CO')}`, 75, y, { align: 'right' });
+      y += 10;
+      doc.setFontSize(10);
+      doc.text('TOTAL:', 5, y);
+      doc.text(`$${Number(order.montofinal_vent).toLocaleString('es-CO')}`, 75, y, { align: 'right' });
 
-    doc.save(`ticket_${order.id_vent}.pdf`);
+      doc.save(`ticket_${order.id_vent}.pdf`);
+    }
   }
 
   // Invoices
@@ -217,6 +250,12 @@ export class OrderService {
     return data ?? { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
   }
 
+  async getInvoiceById(id: number): Promise<Invoice> {
+    const res = await this.httpClient.get<Invoice>(`/invoices/${id}`, this.getAuthHeaders());
+    if (!res.ok || !res.data) throw new Error(res.error ?? 'Factura no encontrada');
+    return this.normalizeInvoice(res.data);
+  }
+
   async createInvoice(dto: any): Promise<Invoice> {
     const res = await this.httpClient.post<Invoice>('/invoices', dto, { headers: this.getAuthHeaders() });
     if (!res.ok || !res.data) throw new Error(res.error ?? 'Error al emitir factura');
@@ -226,15 +265,25 @@ export class OrderService {
   async exportInvoicesExcel(): Promise<void> {
     try {
       const response = await this.getInvoices(1, 1000);
-      const invoices = response.data || [];
+      const invoices = Array.isArray(response.data) ? response.data : (response.data || []);
 
-      const data = invoices.map(f => ({
-        'ID Factura': f.id_fact,
-        'Fecha': f.fecha_fact ? new Date(f.fecha_fact).toLocaleString('es-CO') : '—',
-        'ID Venta': f.id_pedido,
-        'Cantidad Items': f.cantidad_vent,
-        'Monto Total ($)': Number(f.total_fact || 0)
-      }));
+      const totalMonto = invoices.reduce((sum, f) => sum + Number(f.total_fact || 0), 0);
+      const data = [
+        ...invoices.map(f => ({
+          'ID Factura': f.id_fact,
+          'Fecha': f.fecha_fact ? new Date(f.fecha_fact).toLocaleString('es-CO') : '—',
+          'ID Venta': f.id_pedido,
+          'Cantidad Items': f.cantidad_vent,
+          'Monto Total ($)': Number(f.total_fact || 0)
+        })),
+        {
+          'ID Factura': '',
+          'Fecha': '',
+          'ID Venta': '',
+          'Cantidad Items': 'TOTAL:',
+          'Monto Total ($)': totalMonto
+        }
+      ];
 
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();

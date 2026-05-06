@@ -13,12 +13,17 @@ export interface IAlertService {
 
 import Swal from 'sweetalert2';
 import type { NotificationService } from '../../services/NotificationService';
+import type { LogService } from '../LogService';
+import { COLORS } from '../../config/theme';
 
 /**
  * Concrete implementation of IAlertService using SweetAlert2 (SRP).
  */
 export class SweetAlertService implements IAlertService {
-  constructor(private notificationService?: NotificationService) {}
+  constructor(
+    private notificationService?: NotificationService,
+    private logger?: LogService
+  ) {}
 
   private logNotification(type: 'success' | 'info' | 'warning' | 'error', title: string) {
     if (this.notificationService) {
@@ -28,26 +33,35 @@ export class SweetAlertService implements IAlertService {
         type
       });
     }
+    
+    // Log through LogService
+    if (type === 'error') {
+      this.logger?.error(`User Alert: ${title}`, { type, description: title });
+    } else if (type === 'warning') {
+      this.logger?.warn(`User Alert: ${title}`, { type, description: title });
+    } else {
+      this.logger?.info(`User Alert: ${title}`, { type, description: title });
+    }
   }
 
   showSuccess(title: string, text = '') {
     this.logNotification('success', title);
-    Swal.fire({ icon: 'success', title, text, confirmButtonColor: '#ec131e' });
+    Swal.fire({ icon: 'success', title, text, confirmButtonColor: COLORS.primary });
   }
 
   showError(title: string, text = '') {
     this.logNotification('error', title);
-    Swal.fire({ icon: 'error', title, text, confirmButtonColor: '#ec131e' });
+    Swal.fire({ icon: 'error', title, text, confirmButtonColor: COLORS.primary });
   }
 
   showInfo(title: string, text = '') {
     this.logNotification('info', title);
-    Swal.fire({ icon: 'info', title, text, confirmButtonColor: '#ec131e' });
+    Swal.fire({ icon: 'info', title, text, confirmButtonColor: COLORS.primary });
   }
 
   showWarning(title: string, text = '') {
     this.logNotification('warning', title);
-    Swal.fire({ icon: 'warning', title, text, confirmButtonColor: '#ec131e' });
+    Swal.fire({ icon: 'warning', title, text, confirmButtonColor: COLORS.primary });
   }
 
   showToast(icon: 'success' | 'error' | 'warning' | 'info', title: string, timer = 3000) {
@@ -69,8 +83,8 @@ export class SweetAlertService implements IAlertService {
       text,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#ec131e',
-      cancelButtonColor: '#64748b',
+      confirmButtonColor: COLORS.primary,
+      cancelButtonColor: COLORS.text.muted,
       confirmButtonText: confirmText,
       cancelButtonText: cancelText,
     });

@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import type { User } from '@/models/User';
+import { validatePassword } from '@/utils/validation';
+import { alertService } from '@/config/setup';
 
 interface SecurityDrawerProps {
   isOpen: boolean;
-  user: User | null;
-  isResetting: boolean;
+  userName: string;
+  isProcessing: boolean;
   onConfirm: (newPassword: string) => void;
   onClose: () => void;
 }
 
 export const SecurityDrawer: React.FC<SecurityDrawerProps> = ({
   isOpen,
-  user,
-  isResetting,
+  userName,
+  isProcessing,
   onConfirm,
   onClose
 }) => {
@@ -20,7 +22,13 @@ export const SecurityDrawer: React.FC<SecurityDrawerProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword.length < 8) return;
+    
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
+      alertService.showToast('error', validation.message);
+      return;
+    }
+
     onConfirm(newPassword);
     setNewPassword(''); // Limpiar para la próxima vez
   };
@@ -37,16 +45,16 @@ export const SecurityDrawer: React.FC<SecurityDrawerProps> = ({
         </div>
         
         <div className="p-6 flex-1 overflow-y-auto">
-            {user && (
+            {userName && (
                 <div className="mb-8 p-4 bg-white border border-gray-100 rounded-2xl">
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Usuario seleccionado</p>
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-red-50 text-[#ec131e] flex items-center justify-center font-bold">
-                            {user.nom_usu?.substring(0, 2).toUpperCase()}
+                            {userName.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-gray-900">{user.nom_usu}</p>
-                            <p className="text-xs text-gray-400">{user.correo_usu}</p>
+                            <p className="text-sm font-bold text-gray-900">{userName}</p>
+                            <p className="text-xs text-gray-400">Cuenta de usuario</p>
                         </div>
                     </div>
                 </div>
@@ -60,11 +68,10 @@ export const SecurityDrawer: React.FC<SecurityDrawerProps> = ({
                         required
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        minLength={8}
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ec131e] focus:ring-4 focus:ring-red-50 transition-all bg-white text-[0.95rem]"
-                        placeholder="Mínimo 8 caracteres"
+                        placeholder="Mínimo 8 caracteres, Mayús, Núm y Signos"
                     />
-                    <p className="text-[10px] text-gray-400">La nueva contraseña debe tener al menos 8 caracteres para ser aceptada.</p>
+                    <p className="text-[10px] text-gray-400">Debe incluir al menos una mayúscula, un número y un signo de puntuación.</p>
                 </div>
             </form>
         </div>
@@ -73,10 +80,10 @@ export const SecurityDrawer: React.FC<SecurityDrawerProps> = ({
             <button 
                 form="securityForm"
                 type="submit"
-                disabled={isResetting || newPassword.length < 8}
+                disabled={isProcessing || newPassword.length < 1}
                 className="w-full bg-[#ec131e] text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 hover:bg-[#d01019] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-                {isResetting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Actualizar Contraseña'}
+                {isProcessing ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Actualizar Contraseña'}
             </button>
             <button 
                 type="button"
