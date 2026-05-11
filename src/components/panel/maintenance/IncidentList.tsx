@@ -45,43 +45,43 @@ export const IncidentList: React.FC<IncidentListProps> = ({
       ) : (
         <div className="divide-y divide-slate-50">
           {incidents.map(incident => (
-            <div key={incident.id} className="p-8 hover:bg-slate-50/50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-8 group">
+            <div key={incident.id_rep} className="p-8 hover:bg-slate-50/50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-8 group">
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-3">
                   <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ring-1 ${priorityColor(incident.prioridad)}`}>
                     {incident.prioridad}
                   </span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    {incident.categoria} • {formatDate(incident.creado_en)}
+                    Ticket #{incident.id_rep} • {formatDate(incident.fecha_rep)}
                   </span>
                 </div>
-                <h4 className="font-black text-slate-900 text-lg group-hover:text-kiora-red transition-colors">{incident.titulo}</h4>
+                <h4 className="font-black text-slate-900 text-lg group-hover:text-kiora-red transition-colors">{incident.titulo || 'Sin título'}</h4>
                 <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-2xl">{incident.descripcion}</p>
               </div>
               
               <div className="flex items-center gap-6">
                 <div className="text-right hidden md:block">
                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado actual</p>
-                   <p className={`text-xs font-black uppercase tracking-wider ${incident.estado === 'abierto' ? 'text-amber-500' : incident.estado === 'en_progreso' ? 'text-blue-500' : 'text-emerald-500'}`}>
+                   <p className={`text-xs font-black uppercase tracking-wider ${incident.estado === 'pendiente' ? 'text-amber-500' : incident.estado === 'en_proceso' ? 'text-blue-500' : 'text-emerald-500'}`}>
                       {(incident.estado || '').replace('_', ' ')}
                    </p>
                 </div>
                 
-                {isAdmin && incident.estado !== 'cerrado' && (
+                {isAdmin && incident.estado !== 'cerrado' && incident.estado !== 'resuelto' && (
                   <div className="flex gap-2">
-                    {incident.estado === 'abierto' && (
+                    {incident.estado === 'pendiente' && (
                       <button 
-                        onClick={() => onUpdateStatus(incident.id!, 'en_progreso')}
+                        onClick={() => onUpdateStatus(incident.id_rep!, 'en_proceso')}
                         className="px-5 py-2.5 rounded-xl bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all shadow-sm active:scale-95"
                       >
                         Atender
                       </button>
                     )}
                     <button 
-                      onClick={() => onUpdateStatus(incident.id!, 'cerrado')}
+                      onClick={() => onUpdateStatus(incident.id_rep!, 'resuelto')}
                       className="px-5 py-2.5 rounded-xl bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all shadow-sm active:scale-95"
                     >
-                      Cerrar
+                      Resolver
                     </button>
                   </div>
                 )}

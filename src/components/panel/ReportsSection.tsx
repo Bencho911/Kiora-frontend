@@ -1,309 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { reportService, productService, alertService, incidentService } from '@/config/setup';
+import React from 'react';
 import type { ReportFilters as Filters, DetailedSalesReport, ProductRankingReport } from '@/services/ReportService';
 import type { Category } from '@/models/Product';
+import type { Incident } from '@/models/Incident';
 import { ReportFilters } from './reports/ReportFilters';
 import { ReportTable } from './reports/ReportTable';
 import { SavedReportsList } from './reports/SavedReportsList';
 import { EmailPreviewModal } from './reports/EmailPreviewModal';
-import type { Product } from '@/models/Product';
-import type { Incident } from '@/services/IncidentService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge'; // I'll assume Badge exists or I'll use a div
-import { 
-  BarChart3, 
-  History, 
-  Bell, 
-  LifeBuoy, 
-  Download, 
-  CheckCircle2, 
-  Clock, 
+import { Badge } from '@/components/ui/badge';
+import { useInventoryStore } from '@/store/useInventoryStore';
+import {
+  BarChart3,
+  History,
+  Bell,
+  LifeBuoy,
+  Download,
+  CheckCircle2,
+  Clock,
   AlertTriangle,
   Mail,
   FileSpreadsheet,
   FileText
 } from 'lucide-react';
 
+import { useReportsManager } from '@/hooks/useReportsManager';
+
 export function ReportsSection() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [filters, setFilters] = useState<Filters>({
-    startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
-    grouping: 'dia',
-    reportType: 'ventas_detalladas',
-    topN: 10,
-    category: undefined
-  });
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [reportData, setReportData] = useState<any[]>([]);
-  const [savedReports, setSavedReports] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('kiora_saved_reports');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
-  const [activeTab, setActiveTab] = useState('generar');
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [previewData, setPreviewData] = useState<{ isOpen: boolean; type: 'stock' | 'expired'; product: any }>({
-    isOpen: false,
-    type: 'stock',
-    product: null
-  });
-
-  useEffect(() => {
-    localStorage.setItem('kiora_saved_reports', JSON.stringify(savedReports));
-  }, [savedReports]);
-
-  useEffect(() => {
-    void loadCategories();
-    void loadAlerts();
-    void loadIncidents();
-  }, []);
-
-  const loadIncidents = async () => {
-    setIsLoading(true);
-    try {
-      const data = await incidentService.getAll();
-      setIncidents(data);
-    } catch (e) {
-      console.error('Error loading incidents:', e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const updateIncidentStatus = async (id: number, status: Incident['estado']) => {
-    try {
-      await incidentService.updateStatus(id, status);
-      alertService.showSuccess('Estado Actualizado', `El incidente ha sido marcado como ${status}`);
-      void loadIncidents();
-    } catch (e) {
-      alertService.showError('Error', 'No se pudo actualizar el estado del incidente');
-    }
-  };
-
-  const loadAlerts = async () => {
-    try {
-      const [lowRes, expRes] = await Promise.all([
-        productService.getLowStock(),
-        productService.getExpiredProducts()
-      ]);
-      const lowStock = (lowRes?.data || []).map((p: any) => ({ ...p, alertType: 'stock' }));
-      const expired = (expRes || []).map((p: any) => ({ ...p, alertType: 'expired' }));
-      setAlerts([...lowStock, ...expired]);
-    } catch (e) {
-      console.error('Error loading alerts:', e);
-    }
-  };
-
-  const loadCategories = async () => {
-    try {
-      const res = await productService.getCategories();
-      setCategories(res.data || []);
-    } catch (e) {
-      console.error('Error loading categories:', e);
-    }
-  };
-
-  const handleSaveReport = () => {
-    if (reportData.length === 0) return;
-    const newReport = {
-      id: Date.now(),
-      filters: { ...filters },
-      date: new Date().toLocaleString(),
-      name: `Reporte ${filters.reportType === 'ventas_detalladas' ? 'Ventas' : 'Ranking'} (${filters.startDate} a ${filters.endDate})`
-    };
-    setSavedReports([newReport, ...savedReports]);
-    alertService.showSuccess('Guardado', 'El reporte ha sido marcado para consulta posterior');
-  };
-
-  const deleteSavedReport = (id: number) => {
-    setSavedReports(savedReports.filter(r => r.id !== id));
-  };
-
-  const loadSavedReport = (report: any) => {
-    setFilters(report.filters);
-    setActiveTab('generar');
-  };
-
-  const generateReport = async () => {
-    setIsLoading(true);
-    setReportData([]);
-    try {
-      if (filters.reportType === 'ventas_detalladas') {
-        const data = await reportService.getDetailedSales(filters);
-        setReportData(data);
-      } else {
-        const data = await reportService.getProductRanking(filters);
-        setReportData(data);
-      }
-    } catch (error: any) {
-      alertService.showError('Error', error.message || 'No se pudo generar el reporte');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleExportExcel = () => {
-    if (reportData.length === 0) return;
-    const fileName = `kiora_reporte_${filters.reportType}_${new Date().toISOString().slice(0, 10)}`;
-    
-    let dataToExport = [...reportData];
-    if (filters.reportType === 'ventas_detalladas') {
-      const totalSales = reportData.reduce((acc, curr) => acc + (curr.totalSales || 0), 0);
-      const totalOrders = reportData.reduce((acc, curr) => acc + (curr.orderCount || 0), 0);
-      dataToExport.push({
-        period: 'TOTAL',
-        totalSales,
-        orderCount: totalOrders,
-        averageTicket: totalSales / (totalOrders || 1)
-      });
-    } else {
-      const totalQty = reportData.reduce((acc, curr) => acc + (curr.quantitySold || 0), 0);
-      const totalRev = reportData.reduce((acc, curr) => acc + (curr.totalRevenue || 0), 0);
-      dataToExport.push({
-        position: '',
-        productName: 'TOTAL',
-        productCode: '',
-        quantitySold: totalQty,
-        totalRevenue: totalRev
-      });
-    }
-
-    reportService.exportToExcel(dataToExport, fileName);
-    alertService.showSuccess('Éxito', 'Reporte exportado a Excel con totales');
-  };
-
-  const handleExportPdf = () => {
-    if (reportData.length === 0) return;
-    const fileName = `kiora_reporte_${filters.reportType}_${new Date().toISOString().slice(0, 10)}`;
-    
-    let title = '';
-    let head: string[][] = [];
-    let body: any[][] = [];
-    let foot: string[][] = [];
-
-    if (filters.reportType === 'ventas_detalladas') {
-      title = 'Reporte de Ventas Detalladas';
-      head = [
-        filters.grouping === 'unidad' 
-          ? ['Producto / Pedido', 'Subtotal', 'Unidades', 'Precio Unitario']
-          : ['Periodo', 'Total Ventas', 'Cant. Pedidos', 'Ticket Promedio']
-      ];
-      body = (reportData as DetailedSalesReport[]).map(d => [
-        d.period,
-        `$${Number(d.totalSales).toLocaleString('es-CO')}`,
-        d.orderCount,
-        `$${Number(d.averageTicket).toLocaleString('es-CO')}`
-      ]);
-      
-      const totalSales = reportData.reduce((acc, curr) => acc + (curr.totalSales || 0), 0);
-      const totalOrders = reportData.reduce((acc, curr) => acc + (curr.orderCount || 0), 0);
-      foot = [['TOTAL', `$${totalSales.toLocaleString('es-CO')}`, totalOrders.toString(), `$${(totalSales / (totalOrders || 1)).toLocaleString('es-CO')}`]];
-    } else {
-      title = filters.reportType === 'mas_vendidos' ? 'Ranking: Productos Más Vendidos' : 'Ranking: Productos Menos Vendidos';
-      head = [['Pos.', 'Producto', 'Código', 'Cantidad', 'Ingresos Totales']];
-      body = (reportData as ProductRankingReport[]).map(d => [
-        d.position,
-        d.productName,
-        d.productCode,
-        d.quantitySold,
-        `$${Number(d.totalRevenue).toLocaleString('es-CO')}`
-      ]);
-
-      const totalQty = reportData.reduce((acc, curr) => acc + (curr.quantitySold || 0), 0);
-      const totalRev = reportData.reduce((acc, curr) => acc + (curr.totalRevenue || 0), 0);
-      foot = [['', 'TOTAL', '', totalQty.toString(), `$${totalRev.toLocaleString('es-CO')}`]];
-    }
-
-    reportService.exportToPdf(title, head, body, fileName, foot);
-    alertService.showSuccess('Éxito', 'Reporte exportado a PDF con totales');
-  };
-
-  const handleExportIncidents = (type: 'excel' | 'pdf') => {
-    if (incidents.length === 0) {
-      alertService.showError('Error', 'No hay incidencias para exportar');
-      return;
-    }
-    const fileName = `kiora_incidencias_${new Date().toISOString().slice(0, 10)}`;
-    
-    if (type === 'excel') {
-      const data = incidents.map(r => ({
-        ID: r.id_rep,
-        Fecha: new Date(r.fecha_rep).toLocaleString(),
-        Título: r.titulo || r.observaciones_tecnicas || 'Sin título',
-        Descripción: r.descripcion,
-        Prioridad: r.prioridad,
-        Estado: r.estado,
-        Producto_Afectado: r.cod_prod || 'N/A'
-      }));
-      reportService.exportToExcel(data, fileName);
-    } else {
-      const title = 'Reporte de Incidencias Técnicas';
-      const head = [['ID', 'Fecha', 'Título', 'Prioridad', 'Estado']];
-      const body = incidents.map(r => [
-        r.id_rep,
-        new Date(r.fecha_rep).toLocaleDateString(),
-        r.titulo || r.observaciones_tecnicas || 'Sin título',
-        r.prioridad.toUpperCase(),
-        r.estado.toUpperCase().replace('_', ' ')
-      ]);
-      reportService.exportToPdf(title, head, body, fileName);
-    }
-    alertService.showSuccess('Éxito', `Incidencias exportadas a ${type.toUpperCase()}`);
-  };
-
-  const handleExportSingleIncident = (inc: Incident) => {
-    const fileName = `incidencia_${inc.id_rep}`;
-    const doc = new (require('jspdf').jsPDF)() as any;
-    
-    // Header
-    doc.setFillColor(236, 19, 30);
-    doc.rect(0, 0, 210, 30, 'F');
-    doc.setFontSize(22);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.text('KIORA - SOPORTE TÉCNICO', 20, 20);
-
-    // Metadata grid
-    doc.setTextColor(40, 40, 40);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    
-    let y = 45;
-    const drawLine = (label: string, value: string) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${label}:`, 20, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(value, 60, y);
-      y += 8;
-    };
-
-    drawLine('ID REPORTE', `#${inc.id_rep}`);
-    drawLine('FECHA', new Date(inc.fecha_rep).toLocaleString());
-    drawLine('ESTADO', inc.estado.toUpperCase().replace('_', ' '));
-    drawLine('PRIORIDAD', inc.prioridad.toUpperCase());
-    drawLine('PRODUCTO', inc.cod_prod ? inc.cod_prod.toString() : 'N/A');
-    drawLine('TITULO', inc.titulo || 'Sin título');
-
-    y += 10;
-    doc.setFont('helvetica', 'bold');
-    doc.text('DESCRIPCIÓN DEL PROBLEMA:', 20, y);
-    y += 10;
-    doc.setFont('helvetica', 'normal');
-    
-    // Split text to fit width
-    const splitDesc = doc.splitTextToSize(inc.descripcion, 170);
-    doc.text(splitDesc, 20, y);
-    
-    doc.save(`${fileName}.pdf`);
-    alertService.showSuccess('Éxito', 'Incidencia exportada a PDF');
-  };
+  const {
+    categories, filters, setFilters,
+    isLoading, reportData, savedReports,
+    activeTab, setActiveTab, alerts,
+    incidents, previewData, setPreviewData,
+    updateIncidentStatus, handleSaveReport,
+    deleteSavedReport, loadSavedReport,
+    generateReport, handleExportExcel,
+    handleExportPdf, handleExportIncidents,
+    handleExportSingleIncident
+  } = useReportsManager();
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -333,11 +68,14 @@ export function ReportsSection() {
             <TabsTrigger value="incidencias" className="px-6 py-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all gap-2 text-[10px] font-black uppercase tracking-widest">
               <LifeBuoy className="w-3.5 h-3.5" /> Incidencias ({incidents.length})
             </TabsTrigger>
+            <TabsTrigger value="inventario" className="px-6 py-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all gap-2 text-[10px] font-black uppercase tracking-widest">
+              <FileSpreadsheet className="w-3.5 h-3.5" /> Inventario
+            </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="generar" className="space-y-12 mt-0 focus-visible:outline-none">
-          <ReportFilters 
+          <ReportFilters
             filters={filters}
             setFilters={setFilters}
             categories={categories}
@@ -345,7 +83,7 @@ export function ReportsSection() {
             isLoading={isLoading}
           />
 
-          <ReportTable 
+          <ReportTable
             data={reportData}
             filters={filters}
             onSave={handleSaveReport}
@@ -355,7 +93,7 @@ export function ReportsSection() {
         </TabsContent>
 
         <TabsContent value="guardados" className="mt-0 focus-visible:outline-none">
-          <SavedReportsList 
+          <SavedReportsList
             reports={savedReports}
             onDelete={deleteSavedReport}
             onLoad={loadSavedReport}
@@ -375,13 +113,13 @@ export function ReportsSection() {
                   </div>
                   <CardTitle className="text-base font-black text-slate-900 line-clamp-2">{alert.nom_prod}</CardTitle>
                   <CardDescription className="font-bold text-slate-400">
-                    {alert.alertType === 'stock' 
+                    {alert.alertType === 'stock'
                       ? `Stock actual: ${alert.stock_actual} (Mín: ${alert.stock_minimo})`
                       : `Venció el: ${alert.fechaven_prod ? new Date(alert.fechaven_prod).toLocaleDateString() : 'Desconocido'}`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button 
+                  <Button
                     variant="secondary"
                     onClick={() => setPreviewData({ isOpen: true, type: alert.alertType, product: alert })}
                     className="w-full rounded-2xl bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-kiora-red hover:text-white h-12 gap-2"
@@ -403,14 +141,14 @@ export function ReportsSection() {
 
         <TabsContent value="incidencias" className="space-y-6 mt-0 focus-visible:outline-none">
           <div className="flex justify-end gap-3 mb-6">
-            <Button 
+            <Button
               variant="outline"
               onClick={() => handleExportIncidents('excel')}
               className="rounded-xl bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all gap-2 text-[10px] font-black uppercase tracking-widest"
             >
               <FileSpreadsheet className="w-4 h-4" /> Excel
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => handleExportIncidents('pdf')}
               className="rounded-xl bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white transition-all gap-2 text-[10px] font-black uppercase tracking-widest"
@@ -418,7 +156,7 @@ export function ReportsSection() {
               <FileText className="w-4 h-4" /> PDF
             </Button>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {incidents.map((inc) => (
               <Card key={inc.id_rep} className="border-none shadow-xl shadow-slate-100/50 rounded-[2.5rem] overflow-hidden bg-white hover:ring-2 hover:ring-kiora-red/10 transition-all">
@@ -426,18 +164,16 @@ export function ReportsSection() {
                   <div className="flex items-start justify-between">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 ${
-                          inc.prioridad === 'alta' ? 'bg-red-100 text-red-600' : 
-                          inc.prioridad === 'media' ? 'bg-amber-100 text-amber-600' : 
-                          'bg-blue-100 text-blue-600'
-                        }`}>
+                        <div className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 ${inc.prioridad === 'alta' ? 'bg-red-100 text-red-600' :
+                            inc.prioridad === 'media' ? 'bg-amber-100 text-amber-600' :
+                              'bg-blue-100 text-blue-600'
+                          }`}>
                           <div className="w-1 h-1 rounded-full bg-current" /> {inc.prioridad}
                         </div>
-                        <div className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 ${
-                          inc.estado === 'resuelto' ? 'bg-emerald-100 text-emerald-600' : 
-                          inc.estado === 'en_proceso' ? 'bg-indigo-100 text-indigo-600' : 
-                          'bg-slate-100 text-slate-600'
-                        }`}>
+                        <div className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 ${inc.estado === 'resuelto' ? 'bg-emerald-100 text-emerald-600' :
+                            inc.estado === 'en_proceso' ? 'bg-indigo-100 text-indigo-600' :
+                              'bg-slate-100 text-slate-600'
+                          }`}>
                           {inc.estado === 'resuelto' ? <CheckCircle2 className="w-2 h-2" /> : <Clock className="w-2 h-2" />}
                           {inc.estado.replace('_', ' ')}
                         </div>
@@ -460,7 +196,7 @@ export function ReportsSection() {
                   <div className="flex items-center gap-2 pt-4 border-t border-slate-50">
                     <span className="text-[10px] font-black uppercase text-slate-400 mr-2">Acciones:</span>
                     {inc.estado !== 'resuelto' && (
-                      <Button 
+                      <Button
                         size="sm"
                         onClick={() => updateIncidentStatus(inc.id_rep, 'resuelto')}
                         className="rounded-xl bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase hover:bg-emerald-600 hover:text-white h-9"
@@ -469,7 +205,7 @@ export function ReportsSection() {
                       </Button>
                     )}
                     {inc.estado === 'pendiente' && (
-                      <Button 
+                      <Button
                         size="sm"
                         onClick={() => updateIncidentStatus(inc.id_rep, 'en_proceso')}
                         className="rounded-xl bg-indigo-50 text-indigo-600 text-[9px] font-black uppercase hover:bg-indigo-600 hover:text-white h-9"
@@ -483,7 +219,7 @@ export function ReportsSection() {
                         Caso Cerrado
                       </span>
                     )}
-                    <Button 
+                    <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleExportSingleIncident(inc)}
@@ -504,10 +240,51 @@ export function ReportsSection() {
             )}
           </div>
         </TabsContent>
+        <TabsContent value="inventario" className="space-y-8 mt-0 focus-visible:outline-none">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="rounded-[2rem] border-none shadow-lg bg-white">
+              <CardHeader>
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-400">Total Productos</CardTitle>
+                <div className="text-4xl font-black text-slate-900">{reportData.length || '---'}</div>
+              </CardHeader>
+            </Card>
+            <Card className="rounded-[2rem] border-none shadow-lg bg-white">
+              <CardHeader>
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-red-400">Bajo Stock</CardTitle>
+                <div className="text-4xl font-black text-red-600">{alerts.filter(a => a.alertType === 'stock').length}</div>
+              </CardHeader>
+            </Card>
+            <Card className="rounded-[2rem] border-none shadow-lg bg-white">
+              <CardHeader>
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-amber-400">Próximos a Vencer</CardTitle>
+                <div className="text-4xl font-black text-amber-600">{alerts.filter(a => a.alertType === 'expired').length}</div>
+              </CardHeader>
+            </Card>
+          </div>
+
+          <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
+            <CardHeader className="border-b border-slate-50 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-black">Estado General del Inventario</CardTitle>
+                <CardDescription>Resumen de existencias y valorización estimada</CardDescription>
+              </div>
+              <Button onClick={() => useInventoryStore.getState().notifyStockChange()} size="sm" variant="outline" className="rounded-xl font-bold">
+                Actualizar Datos
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="p-8 text-center bg-slate-50/50">
+                <BarChart3 className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                <p className="text-slate-500 font-medium">Gráficos de rotación de inventario próximamente disponibles.</p>
+                <p className="text-xs text-slate-400 mt-1">Utiliza la pestaña "Generar" para obtener tablas detalladas de existencias.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {previewData.isOpen && (
-        <EmailPreviewModal 
+        <EmailPreviewModal
           isOpen={previewData.isOpen}
           type={previewData.type}
           product={previewData.product}

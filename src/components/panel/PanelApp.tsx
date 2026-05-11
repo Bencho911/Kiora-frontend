@@ -1,908 +1,171 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import * as Sentry from "@sentry/astro";
-import Fuse from 'fuse.js';
-import { authService, userService, alertService, productService, orderService, notificationService } from '@/config/setup';
+import { useState, useEffect, useMemo } from 'react';
+import { authService, userService, alertService, productService, notificationService } from '@/config/setup';
 import { SessionManager } from '@/services/SessionManager';
 import type { User } from '@/models/User';
-import type { Product, Category } from '@/models/Product';
-import type { CreateOrderDto } from '@/services/OrderService';
+import type { Product } from '@/models/Product';
 import type { RegisterUserDto } from '@/services/UserService';
 
-// Modular Components
+// Hooks
+import { useAuth } from '@/hooks/useAuth';
+import { useAppStore } from '@/store/useAppStore';
+import { useSalesStore } from '@/store/useSalesStore';
+import { useInventoryStore } from '@/store/useInventoryStore';
+import { useUserManagement } from '@/features/users/hooks/useUserManagement';
+
+// Modular Components — shell/nav
 import { AdminNavbar } from './AdminNavbar';
 import { AdminSubNav } from './AdminSubNav';
-import { UserList } from './UserList';
-import { UserDrawer } from './UserDrawer';
-import { LegalSection } from './LegalSection';
-import { ProfileDrawer } from './ProfileDrawer';
-import { RolesSection } from './RolesSection';
-import { SecurityDrawer } from './SecurityDrawer';
 import { DashboardSection } from './DashboardSection';
-import { InventarioSection } from './InventarioSection';
-import { CategoriasSection } from './CategoriasSection';
-import { ComingSoonSection } from './ComingSoonSection'; 
-import { ProductsSection } from './ProductsSection';
-import { SalesSection } from './SalesSection';
+import { SettingsSection } from './SettingsSection';
+import { LegalSection } from './LegalSection';
 import { MaintenanceSection } from './MaintenanceSection';
-import { OrderDrawer } from './OrderDrawer';
+import { ComingSoonSection } from './ComingSoonSection';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 import { ReportsSection } from './ReportsSection';
-import { StripeQRModal } from './StripeQRModal';
+// Feature: Sales
+import { SalesSection } from '@/features/sales/components/SalesSection';
+import { OrderDrawer } from '@/features/sales/components/OrderDrawer';
+import { StripeQRModal } from '@/features/sales/components/StripeQRModal';
+// Feature: Products
+import { ProductsSection } from '@/features/products/components/ProductsSection';
+import { CategoriasSection } from '@/features/products/components/CategoriasSection';
+// Feature: Inventory
+import { InventarioSection } from '@/features/inventory/components/InventarioSection';
+// Feature: Users
+import { UserList } from '@/features/users/components/UserList';
+import { UserDrawer } from '@/features/users/components/UserDrawer';
+import { ProfileDrawer } from '@/features/users/components/ProfileDrawer';
+import { RolesSection } from '@/features/users/components/RolesSection';
+import { SecurityDrawer } from '@/features/users/components/SecurityDrawer';
 import HelpCenter from '@/components/help/HelpCenter';
-import { StockProvider } from '@/context/StockContext';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { validatePassword } from '@/utils/validation';
 
-const EMPTY_ORDER: CreateOrderDto = {
-  metodopago_usu: 'efectivo',
-  items: [],
-};
-
 export default function PanelApp() {
-  const [user, setUser] = useState<User | null>(() => authService.getUser());
-  const [isAdmin, setIsAdmin] = useState(() => authService.isAdmin());
+  const { user, isAdmin } = useAuth();
+  const { activeTab, setActiveTab } = useAppStore();
+  const { 
+    isOrderDrawerOpen, setIsOrderDrawerOpen, 
+    stripeQR, setStripeQR, resetCart 
+  } = useSalesStore();
   
-  // Tab switching
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('kiora_active_tab') || 'dashboard';
-    }
-    return 'dashboard';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('kiora_active_tab', activeTab);
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const url = new URL(window.location.href);
-    const search = url.searchParams;
-    const status = search.get('status');
-    const tab = search.get('tab');
-    const orderId = search.get('order_id');
-
-    if (tab) {
-      setActiveTab(tab);
-    }
-
-    if (status !== 'success' && status !== 'cancel') return;
-
-    if (status === 'success' && orderId) {
-      // Notificar a Sentry con tags
-      Sentry.withScope((scope) => {
-        scope.setTag("order_id", orderId);
-        scope.setTag("payment_status", "success");
-        Sentry.captureMessage(`Pago exitoso confirmado: Orden #${orderId}`, "info");
-      });
-
-      orderService.updateOrderStatus(Number(orderId), 'completada')
-        .then(() => {
-          window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
-        })
-        .catch(e => {
-          Sentry.captureException(e);
-          console.error('Error auto-confirming payment:', e);
-        });
-    } else if (status === 'cancel') {
-      Sentry.withScope((scope) => {
-        scope.setTag("order_id", orderId || "unknown");
-        scope.setTag("payment_status", "cancel");
-        Sentry.captureMessage(`Pago cancelado por usuario: Orden #${orderId}`, "warning");
-      });
-      window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
-    }
-
-    setPaymentReturnState(status);
-    setActiveTab('ventas');
-    alertService.showToast(
-      status === 'success' ? 'success' : 'info',
-      status === 'success' ? 'Pago confirmado en Stripe' : 'Pago cancelado por el usuario'
-    );
-
-    const clearTimer = window.setTimeout(() => {
-      setPaymentReturnState(null);
-    }, 8000);
-
-    search.delete('status');
-    search.delete('tab');
-    search.delete('order_id');
-    window.history.replaceState({}, document.title, `${url.pathname}${search.toString() ? `?${search.toString()}` : ''}`);
-
-    return () => window.clearTimeout(clearTimer);
-  }, []);
-
-  useEffect(() => {
-    const handleNavigate = (e: any) => {
-      if (e.detail?.tab) setActiveTab(e.detail.tab);
-    };
-    window.addEventListener('kiora_navigate', handleNavigate);
-    return () => window.removeEventListener('kiora_navigate', handleNavigate);
-  }, []);
-
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  // POS State
-  const [isOrderDrawerOpen, setIsOrderDrawerOpen] = useState(false);
-  const [prodSearch, setProdSearch] = useState('');
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [orderForm, setOrderForm] = useState<CreateOrderDto>(EMPTY_ORDER);
-  const [isSavingOrder, setIsSavingOrder] = useState(false);
-  const [paymentReturnState, setPaymentReturnState] = useState<null | 'success' | 'cancel'>(null);
-  const orderSubmitLockRef = useRef(false);
-
-  // Stripe QR Modal State
-  const [stripeQR, setStripeQR] = useState<{ isOpen: boolean; url: string; orderId: number; amount: number }>({
-    isOpen: false,
-    url: '',
-    orderId: 0,
-    amount: 0
-  });
-
-  // Settings view state
+  const userMgmt = useUserManagement(isAdmin || false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [settingsView, setSettingsView] = useState<'main' | 'help' | 'terms' | 'privacy'>('main');
-  
+
+  // Session monitoring and low stock alerts
+  const sessionManager = useMemo(() => new SessionManager(authService, alertService), []);
+
+  useEffect(() => {
+    if (!user) return;
+    sessionManager.startMonitoring();
+    return () => sessionManager.stopMonitoring();
+  }, [user]);
+
   useEffect(() => {
     setSettingsView('main');
   }, [activeTab]);
 
-  const [showHelp, setShowHelp] = useState(false);
-  
-  // Users list state
-  const [usersList, setUsersList] = useState<(User & { isBlocked: boolean })[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const LIMIT = 10;
-
-  // Drawers & Modals
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
-  const [resettingUser, setResettingUser] = useState<User | null>(null);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
-  
-  // Forms state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [newUser, setNewUser] = useState<RegisterUserDto>({
-    nom_usu: '',
-    correo_usu: '',
-    tel_usu: '',
-    rol_usu: ''
-  });
-  const [isRegistering, setIsRegistering] = useState(false);
-
-  const cartKey = user ? `kiora_cart_${user.id_usu}` : null;
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!authService.isAuthenticated()) {
-      window.location.href = '/login/';
-      return;
-    }
-    
-    // Sincronizar datos frescos del perfil (HU01)
-    const refreshProfile = async () => {
-      try {
-        const freshUser = await userService.getMe();
-        setUser(freshUser);
-        setIsAdmin(freshUser.rol_usu?.toLowerCase().includes('admin') || false);
-        // Actualizar localstorage para persistencia
-        authService.saveSession(authService.getToken() || '', freshUser);
-      } catch (e) {
-        console.warn('[PanelApp] No se pudo refrescar el perfil:', e);
-      }
-    };
-    refreshProfile();
-  }, []);
-
-  // Persistence: Load cart
-  useEffect(() => {
-    if (!cartKey) return;
-    const saved = localStorage.getItem(cartKey);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed.items)) setOrderForm(parsed);
-      } catch (e) { console.error('Error loading cart:', e); }
-    }
-  }, [cartKey]);
-
-  // Persistence: Save cart
-  useEffect(() => {
-    if (!cartKey || orderForm === EMPTY_ORDER || ((orderForm.items || []).length === 0 && !localStorage.getItem(cartKey))) return;
-    localStorage.setItem(cartKey, JSON.stringify(orderForm));
-  }, [orderForm, cartKey]);
-
-  // --- Session & Security ---
-  const sessionManager = useMemo(() => new SessionManager(authService, alertService), []);
-  const userIsAdmin = authService.isAdmin();
-
-  const checkLowStock = async () => {
-    if (!userIsAdmin) return;
-    try {
-      const lowStock = await productService.getLowStockProducts();
-      if (Array.isArray(lowStock) && lowStock.length > 0) {
-        notificationService.addNotification({
-          title: 'Alerta de Inventario',
-          description: `Hay ${lowStock.length} productos con stock bajo.`,
-          type: 'warning'
-        });
-      }
-    } catch (err) { console.error('Error checking low stock:', err); }
-  };
-
-  useEffect(() => {
-    if (!authService.isAuthenticated()) { window.location.href = '/login/'; return; }
-    sessionManager.startMonitoring();
-    const currentUser = authService.getUser();
-    if (currentUser) {
-      setUser(currentUser);
-      setIsAdmin(authService.isAdmin());
-    }
-    const handleNav = (e: any) => { if (e.detail?.tab) setActiveTab(e.detail.tab); };
-    window.addEventListener('kiora_navigate', handleNav);
-    window.addEventListener('kiora_reload_inventory', checkLowStock);
-    const timeout = setTimeout(checkLowStock, 2000);
-    return () => {
-      sessionManager.stopMonitoring();
-      window.removeEventListener('kiora_navigate', handleNav);
-      window.removeEventListener('kiora_reload_inventory', checkLowStock);
-      clearTimeout(timeout);
-    };
-  }, [sessionManager, userIsAdmin]);
-
-  const loadUsersList = async (page: number = 1) => {
-    if (!isAdmin) return;
-    setIsLoadingUsers(true);
-    try {
-      const paginated = await userService.fetchUsers(page, LIMIT);
-      const usersArray = Array.isArray(paginated.data) ? paginated.data : [];
-      setUsersList(usersArray.map(u => ({ ...u, isBlocked: userService.isUserBlocked(u) })));
-      setCurrentPage(paginated.pagination?.page || page);
-      setTotalPages(paginated.pagination?.totalPages || 1);
-    } catch (e) { alertService.showToast('error', 'Error al cargar usuarios'); }
-    finally { setIsLoadingUsers(false); }
-  };
-
-  useEffect(() => {
-    if (isAdmin) void loadUsersList(currentPage);
-  }, [isAdmin, currentPage, activeTab]);
-
-  const filteredUsers = useMemo(() => {
-    if (!searchTerm.trim()) return usersList;
-    const lowerSearch = searchTerm.toLowerCase();
-    return usersList.filter(u => 
-      (u.nom_usu || '').toLowerCase().includes(lowerSearch) || 
-      (u.correo_usu || '').toLowerCase().includes(lowerSearch)
-    );
-  }, [usersList, searchTerm]);
-
-  // POS Handlers
-  const loadPOSData = async (): Promise<Product[]> => {
-    try {
-      const [prodRes, catRes] = await Promise.all([
-        productService.getProducts(1, 1000),
-        productService.getCategories()
-      ]);
-      const products = (Array.isArray(prodRes) ? prodRes : (prodRes?.data || [])) as Product[];
-      setAllProducts(products);
-      setCategories(Array.isArray(catRes) ? catRes : (catRes?.data || []));
-      return products;
-    } catch (e) {
-      console.error('Error loading POS data:', e);
-      return [];
-    }
-  };
-
-  useEffect(() => {
-    if (isOrderDrawerOpen) void loadPOSData();
-  }, [isOrderDrawerOpen]);
-
-  const filteredPOSProducts = useMemo(() => {
-    let result = allProducts;
-
-    // Filter by Category
-    if (selectedCategoryId) {
-      result = result.filter(p => p.fk_cod_cats?.includes(selectedCategoryId));
-    }
-
-    // Search with Fuse.js (Typo tolerant)
-    const q = prodSearch.trim();
-    if (q) {
-      const fuse = new Fuse(result, { 
-        keys: ['nom_prod', 'cod_prod'], 
-        threshold: 0.3,
-        distance: 100,
-        includeMatches: true
-      });
-      result = fuse.search(q).map(r => r.item);
-    }
-
-    return result;
-  }, [allProducts, prodSearch, selectedCategoryId]);
-
-  const addToCart = (p: Product) => {
-    const stock = p.stock_actual || 0;
-    if (stock <= 0) {
-      alertService.showToast('error', 'Producto sin stock disponible');
-      return;
-    }
-
-    const existing = orderForm.items.find(i => i.cod_prod === p.cod_prod);
-    if (existing) {
-      if (existing.cantidad >= stock) {
-        alertService.showToast('warning', `Solo hay ${stock} unidades disponibles`);
-        return;
-      }
-      setOrderForm(f => ({
-        ...f,
-        items: f.items.map(i => i.cod_prod === p.cod_prod ? { ...i, cantidad: i.cantidad + 1 } : i)
-      }));
-    } else {
-      setOrderForm(f => ({
-        ...f,
-        items: [...f.items, { 
-          cod_prod: p.cod_prod!, 
-          cantidad: 1, 
-          precio_unit: p.precio_prod,
-          nom_prod: p.nom_prod,
-          url_imagen: p.imagen_prod,
-          stock_actual: stock
-        }]
-      }));
-    }
-  };
-
-  const removeFromCart = (cod_prod: number) => {
-    setOrderForm(f => ({ ...f, items: f.items.filter(i => i.cod_prod !== cod_prod) }));
-  };
-
-  const updateQuantity = (cod_prod: number, delta: number, maxStock?: number) => {
-    setOrderForm(f => ({
-      ...f,
-      items: f.items.map(i => {
-        if (i.cod_prod === cod_prod) {
-          const limit = maxStock ?? i.stock_actual ?? 999;
-          const newCant = Math.max(1, i.cantidad + delta);
-          
-          if (delta > 0 && newCant > limit) {
-            alertService.showToast('warning', `Límite de stock alcanzado (${limit})`);
-            return i;
-          }
-          
-          return { ...i, cantidad: newCant };
-        }
-        return i;
-      })
-    }));
-  };
-
-  const cartTotal = useMemo(() => {
-    return orderForm.items.reduce((acc, item) => acc + (item.cantidad * (item.precio_unit || 0)), 0);
-  }, [orderForm.items]);
-
-  const syncCartWithLatestStock = (currentOrder: CreateOrderDto, latestProducts: Product[]) => {
-    const stockByProduct = new Map<number, number>();
-    latestProducts.forEach((product) => {
-      if (product.cod_prod !== undefined) {
-        stockByProduct.set(product.cod_prod, product.stock_actual ?? 0);
-      }
-    });
-
-    let removedItems = 0;
-    let adjustedItems = 0;
-    let changed = false;
-
-    const items = currentOrder.items.flatMap((item) => {
-      const hasLiveStock = stockByProduct.has(item.cod_prod);
-      const latestStock = hasLiveStock ? (stockByProduct.get(item.cod_prod) ?? 0) : 0;
-
-      if (latestStock <= 0) {
-        removedItems += 1;
-        changed = true;
-        return [];
-      }
-
-      if (item.cantidad > latestStock) {
-        adjustedItems += 1;
-        changed = true;
-        return [{ ...item, cantidad: latestStock, stock_actual: latestStock }];
-      }
-
-      if (item.stock_actual !== latestStock) {
-        changed = true;
-      }
-
-      return [{ ...item, stock_actual: latestStock }];
-    });
-
-    const nextOrderForm: CreateOrderDto = {
-      ...currentOrder,
-      items
-    };
-
-    if (changed) {
-      setOrderForm(nextOrderForm);
-    }
-
-    if (removedItems > 0 || adjustedItems > 0) {
-      alertService.showToast(
-        'warning',
-        `Stock actualizado: ${removedItems} producto(s) agotado(s) y ${adjustedItems} ajustado(s) en el carrito.`
-      );
-    }
-
-    return {
-      nextOrderForm,
-      hasCriticalChanges: removedItems > 0 || adjustedItems > 0
-    };
-  };
-
-  const isStockConflictError = (error: unknown) => {
-    const message = getErrorMessage(error, '').toLowerCase();
-    return message.includes('stock') || message.includes('insuficiente') || message.includes('agotado') || message.includes('409');
-  };
-  const extractProductCodeFromStockError = (error: unknown): number | null => {
-    const message = getErrorMessage(error, '');
-    const match = message.match(/producto\s+(\d+)/i);
-    return match ? Number(match[1]) : null;
-  };
-
-  const validateCartAgainstLiveProducts = async (currentOrder: CreateOrderDto): Promise<{ hasCriticalChanges: boolean; nextOrderForm: CreateOrderDto }> => {
-    const checks = await Promise.all(
-      currentOrder.items.map(async (item) => {
-        try {
-          const product = await productService.getProductById(item.cod_prod);
-          return { cod_prod: item.cod_prod, stock_actual: product.stock_actual ?? 0 };
-        } catch {
-          return { cod_prod: item.cod_prod, stock_actual: 0 };
-        }
-      })
-    );
-
-    const stockByProduct = new Map<number, number>();
-    checks.forEach(({ cod_prod, stock_actual }) => stockByProduct.set(cod_prod, stock_actual));
-
-    let removedItems = 0;
-    let adjustedItems = 0;
-    let changed = false;
-
-    const nextItems = currentOrder.items.flatMap((item) => {
-      const latestStock = stockByProduct.get(item.cod_prod) ?? 0;
-      if (latestStock <= 0) {
-        removedItems += 1;
-        changed = true;
-        return [];
-      }
-      if (item.cantidad > latestStock) {
-        adjustedItems += 1;
-        changed = true;
-        return [{ ...item, cantidad: latestStock, stock_actual: latestStock }];
-      }
-      if (item.stock_actual !== latestStock) changed = true;
-      return [{ ...item, stock_actual: latestStock }];
-    });
-
-    const nextOrderForm: CreateOrderDto = { ...currentOrder, items: nextItems };
-    if (changed) {
-      setOrderForm(nextOrderForm);
-    }
-
-    if (removedItems > 0 || adjustedItems > 0) {
-      alertService.showToast(
-        'warning',
-        `Stock actualizado: ${removedItems} agotado(s) y ${adjustedItems} ajustado(s).`
-      );
-    }
-
-    return {
-      hasCriticalChanges: removedItems > 0 || adjustedItems > 0,
-      nextOrderForm
-    };
-  };
-
-  const handleCreateOrder = async () => {
-    if (!orderForm.items.length) return;
-    if (orderSubmitLockRef.current) return;
-
-    orderSubmitLockRef.current = true;
-    setIsSavingOrder(true);
-    try {
-      let candidateOrder: CreateOrderDto = orderForm;
-      const maxAttempts = 2;
-
-      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-        const liveValidation = await validateCartAgainstLiveProducts(candidateOrder);
-        candidateOrder = liveValidation.nextOrderForm;
-
-        if (!candidateOrder.items.length) {
-          alertService.showToast('warning', 'No hay productos disponibles para procesar la venta.');
-          return;
-        }
-
-        if (liveValidation.hasCriticalChanges) {
-          if (attempt < maxAttempts) {
-            alertService.showToast('info', 'Ajustamos el carrito por stock en vivo. Reintentando cobro...');
-            continue;
-          }
-          alertService.showToast('info', 'Se actualizó el carrito con stock real. Revisa y vuelve a intentar.');
-          return;
-        }
-
-        const order = await orderService.createOrder(candidateOrder);
-
-        if (candidateOrder.metodopago_usu === 'tarjeta' && order.id_vent) {
-          try {
-            const { checkoutUrl } = await orderService.createCheckoutSession(order.id_vent);
-            if (!checkoutUrl) {
-              throw new Error('No se recibió URL de checkout.');
-            }
-
-            const totalToCharge = candidateOrder.items.reduce(
-              (acc, item) => acc + item.cantidad * (item.precio_unit || 0),
-              0
-            );
-
-            setStripeQR({
-              isOpen: true,
-              url: checkoutUrl,
-              orderId: order.id_vent,
-              amount: totalToCharge
-            });
-
-            // Tracking de inicio de pago
-            Sentry.withScope((scope) => {
-              scope.setTag("order_id", order.id_vent);
-              scope.setContext("checkout", {
-                amount: totalToCharge,
-                url: checkoutUrl
-              });
-              Sentry.captureMessage(`Checkout Stripe iniciado: Orden #${order.id_vent}`, "info");
-            });
-            return;
-          } catch (checkoutError) {
-            if (!isStockConflictError(checkoutError)) {
-              throw checkoutError;
-            }
-
-            try {
-              await orderService.deleteOrder(order.id_vent);
-            } catch (cleanupError) {
-              console.warn('No se pudo limpiar la orden pendiente tras conflicto de stock:', cleanupError);
-            }
-
-            const postCheckoutValidation = await validateCartAgainstLiveProducts(candidateOrder);
-            candidateOrder = postCheckoutValidation.nextOrderForm;
-            const conflictProductCode = extractProductCodeFromStockError(checkoutError);
-            if (conflictProductCode) {
-              candidateOrder = {
-                ...candidateOrder,
-                items: candidateOrder.items.filter((item) => item.cod_prod !== conflictProductCode)
-              };
-              setOrderForm(candidateOrder);
-            }
-            window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
-            window.dispatchEvent(new CustomEvent('kiora_reload_inventory'));
-
-            if (!candidateOrder.items.length) {
-              alertService.showToast('error', 'No se pudo iniciar el pago: los productos del carrito se agotaron.');
-              return;
-            }
-
-            if (attempt < maxAttempts) {
-              alertService.showToast('warning', 'El stock cambió al iniciar checkout. Reintentando automáticamente...');
-              continue;
-            }
-
-            alertService.showToast('error', 'No se pudo iniciar el pago porque el stock cambió. Revisa tu carrito.');
-            return;
-          }
-        }
-
-        alertService.showToast('success', 'Venta realizada con éxito');
-        setOrderForm({ items: [], metodopago_usu: 'efectivo' });
-        setIsOrderDrawerOpen(false);
-        window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
-        window.dispatchEvent(new CustomEvent('kiora_reload_inventory'));
-        return;
-      }
-    } catch (e) {
-      if (isStockConflictError(e)) {
-        const latestProducts = await loadPOSData();
-        syncCartWithLatestStock(orderForm, latestProducts);
-        alertService.showToast('error', 'No se pudo completar la venta porque cambió el stock disponible.');
-        return;
-      }
-      alertService.showToast('error', getErrorMessage(e, 'Error al procesar la venta'));
-    } finally {
-      setIsSavingOrder(false);
-      orderSubmitLockRef.current = false;
-    }
-  };
-  const handleCancelOrder = () => {
-    if (orderForm.items.length === 0) return;
-    alertService.showConfirm('¿Cancelar Pedido?', 'Se borrarán todos los productos del carrito.', 'Sí, cancelar', 'No, mantener')
-      .then(ok => {
-        if (ok) {
-          setOrderForm({ items: [], metodopago_usu: 'efectivo' });
-          if (cartKey) localStorage.removeItem(cartKey);
-          alertService.showToast('info', 'Pedido cancelado');
-        }
-      });
-  };
-
-  const handleLogout = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (await alertService.showConfirm('Salir', '¿Cerrar sesión?', 'Sí', 'No')) await authService.logout();
-  };
-
-  const handleSubmitUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    setIsRegistering(true);
-    try {
-      if (isEditing && editingUser?.id_usu) {
-        // Actualizar datos básicos (sin el rol en el body del patch principal si el backend lo prohíbe)
-        await userService.updateUser(editingUser.id_usu, newUser);
-        if (newUser.rol_usu && newUser.rol_usu !== String(editingUser.rol_usu)) {
-          await userService.updateRole(editingUser.id_usu, newUser.rol_usu);
-        }
-        alertService.showToast('success', 'Usuario actualizado');
-      } else {
-        await userService.registerUser(newUser);
-        alertService.showToast('success', 'Creado');
-      }
-      setIsDrawerOpen(false);
-      loadUsersList(currentPage);
-    } catch (e) { alertService.showToast('error', 'Error al procesar'); }
-    finally { setIsRegistering(false); }
-  };
-
-  const handleConfirmPasswordReset = async (newPassword: string) => {
-    if (!resettingUser?.id_usu) return;
-    setIsResettingPassword(true);
-    try {
-      await userService.adminUpdatePassword(resettingUser.id_usu, newPassword);
-      alertService.showToast('success', 'Contraseña actualizada');
-      setIsSecurityOpen(false);
-    } catch (e) { alertService.showToast('error', 'Error al actualizar'); }
-    finally { setIsResettingPassword(false); }
-  };
-
-  const handleResetPasswordClick = (u: User) => {
-    setResettingUser(u);
-    setIsSecurityOpen(true);
-  };
-
-  const handleEditClick = (u: User) => {
-    setEditingUser(u);
-    setIsEditing(true);
-    setNewUser({
-      nom_usu: u.nom_usu || '',
-      correo_usu: u.correo_usu || '',
-      tel_usu: u.tel_usu || '',
-      rol_usu: String(u.rol_usu)
-    });
-    setIsDrawerOpen(true);
-  };
-
-  const handleDeleteUser = async (id: string | number) => {
-    if (await alertService.showConfirm('¿Eliminar?', '¿Seguro?', 'Eliminar', 'Cancelar')) {
-      try {
-        await userService.deleteUser(Number(id));
-        alertService.showToast('success', 'Eliminado');
-        loadUsersList(currentPage);
-      } catch (e) { alertService.showToast('error', 'Error al eliminar'); }
-    }
-  };
-
-  const handleUnlockUser = async (id: string | number) => {
-    try {
-      await userService.unlockUser(Number(id));
-      alertService.showToast('success', 'Desbloqueado');
-      loadUsersList(currentPage);
-    } catch (e) { alertService.showToast('error', 'Error al desbloquear'); }
-  };
+  // Global navigation listener
 
   if (!user) return null;
 
   return (
-    <StockProvider>
-      <div className="min-h-screen w-full bg-[#FDFCFB]/80 font-[Inter] text-slate-800 antialiased">
-        <AdminNavbar user={user} onLogout={handleLogout} onProfileOpen={() => setIsProfileOpen(true)} />
-      
-        <main className="relative mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:pl-16">
-          {paymentReturnState && (
-            <div className={`mb-6 rounded-2xl border px-5 py-4 shadow-sm animate-in slide-in-from-top-3 duration-300 ${
-              paymentReturnState === 'success'
-                ? 'border-emerald-200 bg-emerald-50/70'
-                : 'border-amber-200 bg-amber-50/70'
-            }`}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className={`mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl ${
-                    paymentReturnState === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
-                  }`}>
-                    {paymentReturnState === 'success' ? (
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <p className={`text-sm font-extrabold ${
-                      paymentReturnState === 'success' ? 'text-emerald-800' : 'text-amber-800'
-                    }`}>
-                      {paymentReturnState === 'success' ? 'Pago completado con Stripe' : 'Pago cancelado'}
-                    </p>
-                    <p className={`mt-0.5 text-xs font-medium ${
-                      paymentReturnState === 'success' ? 'text-emerald-700' : 'text-amber-700'
-                    }`}>
-                      {paymentReturnState === 'success'
-                        ? 'Tu venta fue registrada correctamente. Ya actualizamos el historial.'
-                        : 'No se realizó ningún cargo. Puedes reintentar el pago desde Ventas.'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setPaymentReturnState(null)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-white/80 hover:text-slate-600 transition-colors"
-                  aria-label="Cerrar notificación de pago"
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
+    <div className="min-h-screen bg-[#f8fafc] text-[#1e293b] font-sans selection:bg-[#ec131e]/10 selection:text-[#ec131e]">
+      <AdminNavbar 
+        user={user} 
+        onOpenProfile={() => setIsProfileOpen(true)} 
+        onOpenPOS={() => setIsOrderDrawerOpen(true)}
+        onLogout={() => { authService.logout(); window.location.href = '/'; }}
+      />
 
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
+        <ErrorBoundary>
           {activeTab === 'dashboard' ? (
-            <DashboardSection onSwitchTab={setActiveTab} />
-          ) : activeTab === 'inventario' ? (
-            <InventarioSection />
+            <DashboardSection onNavigate={setActiveTab} isAdmin={isAdmin} />
+          ) : activeTab === 'usuarios' && isAdmin ? (
+            <UserList 
+              users={userMgmt.filteredUsers} 
+              isLoading={userMgmt.isLoadingUsers} 
+              searchTerm={userMgmt.searchTerm} 
+              onSearchChange={userMgmt.setSearchTerm} 
+              onAddUser={() => userMgmt.handleOpenDrawer()} 
+              onEditUser={userMgmt.handleOpenDrawer} 
+              onToggleBlock={userMgmt.handleToggleBlock} 
+              onResetPassword={userMgmt.handleOpenSecurity} 
+              currentPage={userMgmt.currentPage}
+              totalPages={userMgmt.totalPages}
+              onPageChange={userMgmt.loadUsersList}
+            />
           ) : activeTab === 'productos' ? (
             <ProductsSection />
           ) : activeTab === 'categorias' ? (
             <CategoriasSection />
+          ) : activeTab === 'inventario' ? (
+            <InventarioSection />
           ) : activeTab === 'ventas' ? (
-            <SalesSection onOpenPOS={() => setIsOrderDrawerOpen(true)} isAdmin={isAdmin} />
-          ) : activeTab === 'mantenimiento' ? (
+            <SalesSection isAdmin={isAdmin} onOpenPOS={() => setIsOrderDrawerOpen(true)} />
+          ) : activeTab === 'mantenimiento' && isAdmin ? (
             <MaintenanceSection />
-          ) : activeTab === 'reportes' ? (
+          ) : activeTab === 'reportes' && isAdmin ? (
             <ReportsSection />
-          ) : activeTab === 'usuarios' ? (
-            <>
-              <header className="mb-10 flex flex-col gap-6 sm:mb-12 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                  <h1 className="text-3xl font-extrabold text-[#1a1a1a]">Gestión de Usuarios</h1>
-                  <p className="text-slate-500 font-medium">Administra accesos y cuentas del sistema.</p>
-                </div>
-                <button onClick={() => { setEditingUser(null); setIsEditing(false); setNewUser({ nom_usu: '', correo_usu: '', tel_usu: '', rol_usu: '' }); setIsDrawerOpen(true); }} className="rounded-xl bg-[#ec131e] px-5 py-3 text-sm font-bold text-white shadow-lg">Nuevo Usuario</button>
-              </header>
-
-              <div className="space-y-12">
-                <UserList users={filteredUsers} isLoading={isLoadingUsers} searchTerm={searchTerm} onSearchChange={setSearchTerm} onEdit={handleEditClick} onDelete={handleDeleteUser} onUnlock={handleUnlockUser} onResetPassword={handleResetPasswordClick} pagination={{ currentPage, totalPages, onPageChange: loadUsersList }} />
-              </div>
-            </>
+          ) : activeTab === 'roles' && isAdmin ? (
+            <RolesSection />
           ) : activeTab === 'ajustes' ? (
-            <div className="space-y-8">
-              <header className="mb-10">
-                <h1 className="text-3xl font-extrabold text-[#1a1a1a]">Ajustes & Ayuda</h1>
-              </header>
-
-              {settingsView === 'main' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <button onClick={() => setSettingsView('help')} className="flex flex-col p-6 bg-white border border-slate-100 rounded-2xl text-left hover:border-[#ec131e]/30 hover:shadow-lg transition-all group h-full">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-red-50 text-[#ec131e] rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-[#111827] text-lg">Centro de Ayuda</h3>
-                        <p className="text-slate-500 text-sm">Soporte y FAQs.</p>
-                      </div>
-                    </div>
-                  </button>
-
-                  <div className="flex flex-col p-6 bg-white border border-slate-100 rounded-2xl hover:border-[#ec131e]/30 hover:shadow-lg transition-all h-full relative overflow-hidden">
-                    <div className="flex items-center gap-4 mb-5">
-                      <div className="w-14 h-14 bg-slate-50 text-slate-600 rounded-2xl flex items-center justify-center shrink-0">
-                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-[#111827] text-lg">Información Legal</h3>
-                        <p className="text-slate-500 text-sm">Políticas y normas.</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2 mt-auto -ml-6">
-                      <button 
-                        onClick={() => setSettingsView('terms')} 
-                        className="w-fit text-[11px] text-slate-500 hover:text-[#ec131e] font-bold transition-colors bg-white/90 backdrop-blur-md px-4 py-2 rounded-r-xl shadow-md border border-l-0 border-slate-100 hover:border-[#ec131e]/30 inline-flex items-center"
-                      >
-                        Términos y Condiciones
-                      </button>
-                      <button 
-                        onClick={() => setSettingsView('privacy')} 
-                        className="w-fit text-[11px] text-slate-500 hover:text-[#ec131e] font-bold transition-colors bg-white/90 backdrop-blur-md px-4 py-2 rounded-r-xl shadow-md border border-l-0 border-slate-100 hover:border-[#ec131e]/30 inline-flex items-center"
-                      >
-                        Política de Privacidad
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4 p-6 bg-white border border-slate-100 rounded-2xl text-left transition-all md:col-span-2">
-                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
-                      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5a18.022 18.022 0 01-3.827-5.802M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-[#111827] text-lg">Idioma & Traducción</h3>
-                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-widest">Weglot AI</span>
-                      </div>
-                      <div className="flex gap-3">
-                        <button onClick={() => { if (typeof window !== 'undefined' && (window as any).Weglot) { (window as any).Weglot.switchTo('es'); } }} className="px-5 py-2 bg-slate-100 hover:bg-[#ec131e] hover:text-white text-slate-700 text-sm font-bold rounded-lg transition-colors">Español</button>
-                        <button onClick={() => { if (typeof window !== 'undefined' && (window as any).Weglot) { (window as any).Weglot.switchTo('en'); } }} className="px-5 py-2 bg-slate-100 hover:bg-[#ec131e] hover:text-white text-slate-700 text-sm font-bold rounded-lg transition-colors">Inglés</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : settingsView === 'help' ? (
-                <div className="animate-in fade-in slide-in-from-bottom-4">
-                  <button onClick={() => setSettingsView('main')} className="mb-6 flex items-center gap-2 text-slate-400 font-bold hover:text-[#ec131e] transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>Volver</button>
-                  <HelpCenter hideBackButton={true} />
-                </div>
-              ) : (
-                <div className="animate-in fade-in slide-in-from-bottom-4">
-                  <button onClick={() => setSettingsView('main')} className="mb-6 flex items-center gap-2 text-slate-400 font-bold hover:text-[#ec131e] transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>Volver</button>
-                  <LegalSection defaultTab={settingsView === 'terms' ? 'terminos' : 'privacidad'} />
-                </div>
-              )}
-            </div>
+            <SettingsSection 
+              settingsView={settingsView} 
+              setSettingsView={setSettingsView} 
+              onOpenProfile={() => setIsProfileOpen(true)} 
+            />
           ) : (
             <ComingSoonSection tabId={activeTab} />
           )}
-        </main>
+        </ErrorBoundary>
+      </main>
 
-        <AdminSubNav activeId={activeTab} onItemClick={setActiveTab} isAdmin={isAdmin} />
+      <AdminSubNav activeId={activeTab} onItemClick={setActiveTab} isAdmin={isAdmin} />
 
-        <UserDrawer isOpen={isDrawerOpen} isEditing={isEditing} isRegistering={isRegistering} userData={newUser} onUserDataChange={setNewUser} onSubmit={handleSubmitUser} onClose={() => setIsDrawerOpen(false)} />
-        <ProfileDrawer isOpen={isProfileOpen} user={user} onClose={() => setIsProfileOpen(false)} />
-        <SecurityDrawer isOpen={isSecurityOpen} userName={resettingUser?.nom_usu || ''} isProcessing={isResettingPassword} onConfirm={handleConfirmPasswordReset} onClose={() => setIsSecurityOpen(false)} />
-        <OrderDrawer drawerOpen={isOrderDrawerOpen} onClose={() => setIsOrderDrawerOpen(false)} prodSearch={prodSearch} setProdSearch={setProdSearch} filteredProducts={filteredPOSProducts} categories={categories} selectedCategoryId={selectedCategoryId} setSelectedCategoryId={setSelectedCategoryId} addToCart={addToCart} removeFromCart={removeFromCart} updateQuantity={updateQuantity} orderForm={orderForm} setOrderForm={setOrderForm} cartTotal={cartTotal} handleCreateOrder={handleCreateOrder} onCancelOrder={handleCancelOrder} saving={isSavingOrder} safePrice={(v) => (typeof v === 'number' && !isNaN(v)) ? v : Number(v) || 0} />
-        
-        <StripeQRModal 
-          isOpen={stripeQR.isOpen} 
-          checkoutUrl={stripeQR.url} 
-          orderId={stripeQR.orderId}
-          amount={stripeQR.amount}
-          onClose={() => setStripeQR(prev => ({ ...prev, isOpen: false }))}
-          onSuccess={() => {
-            setStripeQR(prev => ({ ...prev, isOpen: false }));
-            setOrderForm({ items: [], metodopago_usu: 'efectivo' });
-            setIsOrderDrawerOpen(false);
-            window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
-            window.dispatchEvent(new CustomEvent('kiora_reload_inventory'));
-          }}
-          onCancel={() => {
-            setStripeQR(prev => ({ ...prev, isOpen: false }));
-            setOrderForm({ items: [], metodopago_usu: 'efectivo' });
-            setIsOrderDrawerOpen(false);
-          }}
-        />
-      </div>
-    </StockProvider>
+      <UserDrawer 
+        isOpen={userMgmt.isDrawerOpen} 
+        isEditing={userMgmt.isEditing} 
+        isRegistering={userMgmt.isRegistering} 
+        userData={userMgmt.newUser} 
+        onUserDataChange={userMgmt.setNewUser} 
+        onSubmit={userMgmt.handleSubmitUser} 
+        onClose={() => userMgmt.setIsDrawerOpen(false)} 
+      />
+      
+      <ProfileDrawer isOpen={isProfileOpen} user={user} onClose={() => setIsProfileOpen(false)} />
+      
+      <SecurityDrawer 
+        isOpen={userMgmt.isSecurityOpen} 
+        userName={userMgmt.resettingUser?.nom_usu || ''} 
+        isProcessing={userMgmt.isResettingPassword} 
+        onConfirm={userMgmt.handleConfirmPasswordReset} 
+        onClose={() => userMgmt.setIsSecurityOpen(false)} 
+      />
+      
+      <OrderDrawer />
+      
+      <StripeQRModal 
+        isOpen={stripeQR.isOpen} 
+        checkoutUrl={stripeQR.url} 
+        orderId={stripeQR.orderId}
+        amount={stripeQR.amount}
+        onClose={() => setStripeQR({ ...stripeQR, isOpen: false })}
+        onSuccess={() => {
+          setStripeQR({ ...stripeQR, isOpen: false });
+          resetCart();
+          setIsOrderDrawerOpen(false);
+          useSalesStore.getState().notifySalesChange();
+          useInventoryStore.getState().notifyStockChange();
+        }}
+        onCancel={() => {
+          setStripeQR({ ...stripeQR, isOpen: false });
+          resetCart();
+          setIsOrderDrawerOpen(false);
+        }}
+      />
+    </div>
   );
-};
+}

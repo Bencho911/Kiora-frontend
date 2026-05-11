@@ -14,6 +14,8 @@ export interface Movement {
   cantidad: number;
   cod_prod: number;
   desc_mov: string;
+  fk_cod_prov?: number;
+  fk_id_vent?: number;
 }
 
 export interface Suministra {

@@ -1,16 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { orderService, alertService, authService, inventoryService, incidentService, reportService } from '@/config/setup';
+import { useMemo } from 'react';
+import { authService, orderService } from '@/config/setup';
 import type { Order, Invoice } from '@/models/Order';
 import type { Movement } from '@/models/Inventory';
-import type { Incident } from '@/services/IncidentService';
-import type { Product } from '@/models/Product';
-import { getErrorMessage } from '@/utils/getErrorMessage';
+import type { Incident } from '@/models/Incident';
 import { OrderDetailModal } from './OrderDetailModal';
-import { MovementDetailModal } from './MovementDetailModal';
-
-// @ts-ignore
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import { MovementDetailModal } from '@/features/inventory/components/MovementDetailModal';
 
 type SalesSubTab = 'ventas' | 'facturas' | 'movimientos' | 'incidencias';
 
@@ -25,427 +19,15 @@ const ESTADO_COLORS: Record<string, string> = {
   resuelto: 'bg-emerald-50 text-emerald-600 border-emerald-100',
 };
 
-import { useStockSync } from '@/context/StockContext';
+import { useInventoryStore } from '@/store/useInventoryStore';
+import { useSalesManager } from '@/hooks/useSalesManager';
 
-export function SalesSection({ onOpenPOS }: { onOpenPOS: () => void; isAdmin?: boolean }) {
-  const { productMap } = useStockSync();
-  const [subTab, setSubTab] = useState<SalesSubTab>('ventas');
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [movements, setMovements] = useState<Movement[]>([]);
-  const [reports, setReports] = useState<Incident[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [searchInvoiceId, setSearchInvoiceId] = useState('');
-  const [detailOrder, setDetailOrder] = useState<Order | null>(null);
-  const [detailMovement, setDetailMovement] = useState<Movement | null>(null);
-  const [isIncidentOpen, setIsIncidentOpen] = useState(false);
-  const [isSavingIncident, setIsSavingIncident] = useState(false);
-  const [incidentForm, setIncidentForm] = useState({
-    titulo: '',
-    descripcion: '',
-    prioridad: 'media' as 'baja' | 'media' | 'alta',
-    cod_prod: null as number | null
-  });
-  const [managingIncident, setManagingIncident] = useState<Incident | null>(null);
+export function SalesSection({ onOpenPOS, isAdmin }: { onOpenPOS: () => void; isAdmin?: boolean }) {
+  const { productMap } = useInventoryStore();
 
-  // Cancel / Refund reason modal state
-  const [reasonModal, setReasonModal] = useState<{
-    isOpen: boolean;
-    type: 'cancel' | 'refund';
-    orderId: number | null;
-    reason: string;
-  }>({ isOpen: false, type: 'cancel', orderId: null, reason: '' });
-
-  const isAdmin = authService.isAdmin();
   const isPaidStatus = (status?: string) => {
     const normalized = String(status ?? '').toLowerCase();
     return normalized === 'completada' || normalized === 'pagado' || normalized === 'pagada';
-  };
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      if (subTab === 'ventas') {
-        const res = await orderService.getOrders();
-        setOrders(Array.isArray(res) ? res : (res.data || []));
-      } else if (subTab === 'facturas') {
-        const data = await orderService.getInvoices();
-        setInvoices(data?.data || []);
-      } else if (subTab === 'movimientos') {
-        const data = await inventoryService.getMovements();
-        setMovements(Array.isArray(data) ? data : (data?.data || []));
-      } else if (subTab === 'incidencias') {
-        const data = await incidentService.getAll();
-        setReports(Array.isArray(data) ? data : []);
-      }
-    } catch (e) {
-      alertService.showToast('error', getErrorMessage(e, 'Error al cargar datos'));
-    } finally {
-      setLoading(false);
-    }
-  }, [subTab]);
-
-  useEffect(() => {
-    void loadData();
-    const handleReload = () => void loadData();
-    window.addEventListener('kiora_reload_orders', handleReload);
-    return () => window.removeEventListener('kiora_reload_orders', handleReload);
-  }, [loadData]);
-
-  const filteredOrders = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return orders;
-    return orders.filter(o =>
-      o.id_vent?.toString().includes(q) ||
-      o.metodopago_usu?.toLowerCase().includes(q) ||
-      o.estado?.toLowerCase().includes(q) ||
-      (o.productos_resumen || '').toLowerCase().includes(q)
-    );
-  }, [orders, search]);
-
-  const handleExport = async (type: 'excel' | 'pdf') => {
-    if (!isAdmin) {
-      alertService.showToast('error', 'No tienes permisos para exportar');
-      return;
-    }
-    try {
-      if (subTab === 'incidencias') {
-        await handleExportIncidents(type);
-        return;
-      }
-      if (type === 'excel') await orderService.exportExcel();
-      else await orderService.exportPdf();
-      alertService.showToast('success', `Reporte ${type.toUpperCase()} generado`);
-    } catch (e) {
-      alertService.showToast('error', 'Error al exportar reporte');
-    }
-  };
-
-  const handleExportIncidents = async (type: 'excel' | 'pdf') => {
-    if (reports.length === 0) {
-      alertService.showToast('warning', 'No hay incidencias para exportar');
-      return;
-    }
-    const fileName = `kiora_incidencias_${new Date().toISOString().slice(0, 10)}`;
-    
-    if (type === 'excel') {
-      const data = reports.map(r => ({
-        ID: r.id_rep,
-        Fecha: new Date(r.fecha_rep).toLocaleString(),
-        Título: r.titulo || r.observaciones_tecnicas || 'Sin título',
-        Descripción: r.descripcion,
-        Prioridad: r.prioridad,
-        Estado: r.estado,
-        Producto_Afectado: r.cod_prod || 'N/A'
-      }));
-      reportService.exportToExcel(data, fileName);
-    } else {
-      const title = 'Reporte de Incidencias Técnicas';
-      const head = [['ID', 'Fecha', 'Título', 'Prioridad', 'Estado']];
-      const body = reports.map(r => [
-        r.id_rep,
-        new Date(r.fecha_rep).toLocaleDateString(),
-        r.titulo || r.observaciones_tecnicas || 'Sin título',
-        r.prioridad.toUpperCase(),
-        r.estado.toUpperCase().replace('_', ' ')
-      ]);
-      reportService.exportToPdf(title, head, body, fileName);
-    }
-    alertService.showToast('success', `Incidencias exportadas a ${type.toUpperCase()}`);
-  };
-
-  const handleExportSingleIncident = (inc: Incident) => {
-    const fileName = `incidencia_${inc.id_rep}`;
-    const doc = new jsPDF() as any;
-    
-    doc.setFillColor(236, 19, 30);
-    doc.rect(0, 0, 210, 30, 'F');
-    doc.setFontSize(22);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.text('KIORA - SOPORTE TÉCNICO', 20, 20);
-
-    doc.setTextColor(40, 40, 40);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    
-    let y = 45;
-    const drawLine = (label: string, value: string) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${label}:`, 20, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(value, 60, y);
-      y += 8;
-    };
-
-    drawLine('ID REPORTE', `#${inc.id_rep}`);
-    drawLine('FECHA', new Date(inc.fecha_rep).toLocaleString());
-    drawLine('ESTADO', inc.estado.toUpperCase().replace('_', ' '));
-    drawLine('PRIORIDAD', inc.prioridad.toUpperCase());
-    drawLine('PRODUCTO', inc.cod_prod ? inc.cod_prod.toString() : 'N/A');
-    drawLine('TITULO', inc.titulo || 'Sin título');
-
-    y += 10;
-    doc.setFont('helvetica', 'bold');
-    doc.text('DESCRIPCIÓN DEL PROBLEMA:', 20, y);
-    y += 10;
-    doc.setFont('helvetica', 'normal');
-    
-    const splitDesc = doc.splitTextToSize(inc.descripcion, 170);
-    doc.text(splitDesc, 20, y);
-    
-    doc.save(`${fileName}.pdf`);
-    alertService.showToast('success', 'Incidencia exportada a PDF');
-  };
-
-  const handleViewDetails = async (id: number) => {
-    try {
-      const fullOrder = await orderService.getOrderById(id);
-      setDetailOrder(fullOrder);
-    } catch (e) {
-      alertService.showToast('error', 'Error al obtener el detalle de la venta');
-    }
-  };
-
-  const handleStatusChange = async (id: number, newStatus: any) => {
-    const currentOrder = orders.find(o => o.id_vent === id);
-    if (currentOrder?.estado === 'cancelada') {
-      alertService.showToast('warning', 'No se puede modificar una venta ya cancelada');
-      void loadData();
-      return;
-    }
-
-    if (newStatus === 'cancelada' || newStatus === 'reembolsada') {
-      setReasonModal({ isOpen: true, type: newStatus === 'cancelada' ? 'cancel' : 'refund', orderId: id, reason: '' });
-      return;
-    }
-
-    try {
-      await orderService.updateOrderStatus(id, newStatus);
-      alertService.showToast('success', `Venta #${id} ahora está ${newStatus}`);
-      void loadData();
-    } catch (e: any) {
-      if (e.message?.includes('409') || e.error?.includes('Stock') || e.status === 409) {
-        alertService.showToast('error', 'Stock insuficiente para completar esta operación');
-      } else {
-        alertService.showToast('error', getErrorMessage(e, 'Error al actualizar estado'));
-      }
-      void loadData();
-    }
-  };
-
-  const handleConfirmReason = async () => {
-    const { orderId, type, reason } = reasonModal;
-    if (!reason.trim()) {
-      alertService.showToast('warning', 'Debes ingresar un motivo para continuar');
-      return;
-    }
-    if (!orderId) return;
-    const targetStatus = 'reembolsada';
-    setReasonModal(prev => ({ ...prev, isOpen: false }));
-    try {
-      await orderService.updateOrderStatus(orderId, targetStatus);
-      alertService.showToast('success', type === 'cancel' ? `Venta #${orderId} cancelada y stock devuelto` : `Reembolso de venta #${orderId} procesado`);
-      setDetailOrder(null);
-      void loadData();
-    } catch (e: any) {
-      if (e.message?.includes('409') || e.status === 409) {
-        alertService.showToast('error', 'Error de conflicto de stock');
-      } else {
-        alertService.showToast('error', getErrorMessage(e, 'Error al procesar la operación'));
-      }
-    }
-  };
-
-  const handleRefund = (id: number) => {
-    setReasonModal({ isOpen: true, type: 'refund', orderId: id, reason: '' });
-  };
-
-  const handleDeleteOrder = (id: number) => {
-    setReasonModal({ isOpen: true, type: 'cancel', orderId: id, reason: '' });
-  };
-
-  const downloadInvoicePDF = async (invoice: Invoice) => {
-    try {
-      alertService.showToast('info', 'Generando factura detallada...');
-      
-      // Obtener el pedido completo para tener el detalle de productos
-      const order = await orderService.getOrderById(invoice.id_pedido);
-      const doc = new jsPDF() as any;
-      
-      // Colores corporativos
-      const PRIMARY_RED = [236, 19, 30];
-      const DARK_GREY = [40, 40, 40];
-      const LIGHT_GREY = [120, 120, 120];
-
-      // --- CABECERA ---
-      doc.setFillColor(...PRIMARY_RED);
-      doc.rect(0, 0, 210, 40, 'F');
-      
-      doc.setFontSize(28);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.text('KIORA', 20, 28);
-      
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text('TECNOLOGÍA Y SERVICIOS', 60, 28);
-
-      // --- INFORMACIÓN DE LA EMPRESA (Derecha) ---
-      doc.setFontSize(8);
-      doc.text('NIT: 900.123.456-7', 150, 15);
-      doc.text('Dirección: Calle 123 #45-67', 150, 20);
-      doc.text('Contacto: KiosKiora@gmail.com', 150, 25);
-      doc.text('Teléfono: +57 300 000 0000', 150, 30);
-
-      // --- TÍTULO Y DATOS DE FACTURA ---
-      doc.setTextColor(...DARK_GREY);
-      doc.setFontSize(18);
-      doc.text('FACTURA DE VENTA', 20, 55);
-      
-      doc.setDrawColor(...PRIMARY_RED);
-      doc.setLineWidth(0.5);
-      doc.line(20, 58, 80, 58);
-
-      doc.setFontSize(10);
-      doc.setTextColor(...LIGHT_GREY);
-      doc.text(`NÚMERO DE FACTURA:`, 140, 55);
-      doc.setTextColor(...PRIMARY_RED);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`FAC-${invoice.id_fact}`, 185, 55, { align: 'right' });
-      
-      doc.setTextColor(...LIGHT_GREY);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`FECHA DE EMISIÓN:`, 140, 60);
-      doc.setTextColor(...DARK_GREY);
-      doc.text(`${new Date(invoice.fecha_fact).toLocaleDateString()}`, 185, 60, { align: 'right' });
-
-      doc.setTextColor(...LIGHT_GREY);
-      doc.text(`ID PEDIDO:`, 140, 65);
-      doc.setTextColor(...DARK_GREY);
-      doc.text(`#${invoice.id_pedido}`, 185, 65, { align: 'right' });
-
-      // --- DETALLES DEL CLIENTE ---
-      doc.setFontSize(12);
-      doc.setTextColor(...DARK_GREY);
-      doc.setFont('helvetica', 'bold');
-      doc.text('DETALLES DEL CLIENTE', 20, 75);
-      
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...LIGHT_GREY);
-      doc.text('Identificador / CC:', 20, 82);
-      doc.setTextColor(...DARK_GREY);
-      doc.text(`${invoice.id_usu || 'Cliente General'}`, 55, 82);
-      
-      doc.setTextColor(...LIGHT_GREY);
-      doc.text('Método de Pago:', 20, 87);
-      doc.setTextColor(...DARK_GREY);
-      doc.text(`${order.metodopago_usu || 'Efectivo'}`, 55, 87);
-
-      doc.setTextColor(...LIGHT_GREY);
-      doc.text('Responsable:', 20, 92);
-      doc.setTextColor(...DARK_GREY);
-      const currentUser = authService.getUser();
-      doc.text(`${currentUser?.nom_usu || 'Cajero Kiora'}`, 55, 92);
-
-      // --- TABLA DE PRODUCTOS ---
-      const tableHead = [['CÓDIGO', 'DESCRIPCIÓN', 'CANT.', 'PRECIO UNIT.', 'SUBTOTAL']];
-      const tableData = (order.items || []).map(item => [
-        item.cod_prod,
-        item.nom_prod || 'Producto Kiora',
-        item.cantidad,
-        `$${Number(item.precio_unit).toLocaleString('es-CO')}`,
-        `$${(item.cantidad * (item.precio_unit || 0)).toLocaleString('es-CO')}`
-      ]);
-
-      doc.autoTable({
-        startY: 100,
-        head: tableHead,
-        body: tableData,
-        theme: 'striped',
-        headStyles: { 
-          fillColor: PRIMARY_RED,
-          textColor: [255, 255, 255],
-          fontSize: 9,
-          fontStyle: 'bold',
-          halign: 'center'
-        },
-        columnStyles: {
-          0: { halign: 'center', cellWidth: 25 },
-          1: { halign: 'left' },
-          2: { halign: 'center', cellWidth: 20 },
-          3: { halign: 'right', cellWidth: 35 },
-          4: { halign: 'right', cellWidth: 35 }
-        },
-        styles: {
-          fontSize: 9,
-          cellPadding: 3
-        }
-      });
-
-      // --- TOTALES ---
-      const finalY = (doc as any).lastAutoTable.finalY + 10;
-      
-      doc.setFillColor(250, 250, 250);
-      doc.rect(130, finalY - 5, 65, 15, 'F');
-      
-      doc.setFontSize(12);
-      doc.setTextColor(...PRIMARY_RED);
-      doc.setFont('helvetica', 'bold');
-      doc.text('TOTAL A PAGAR:', 135, finalY + 5);
-      doc.text(`$${Number(invoice.total_fact).toLocaleString('es-CO')}`, 190, finalY + 5, { align: 'right' });
-
-      // --- PIE DE PÁGINA ---
-      const pageHeight = doc.internal.pageSize.height;
-      
-      doc.setDrawColor(230, 230, 230);
-      doc.line(20, pageHeight - 30, 190, pageHeight - 30);
-      
-      doc.setFontSize(8);
-      doc.setTextColor(...LIGHT_GREY);
-      doc.setFont('helvetica', 'italic');
-      doc.text('Esta factura es un soporte legal de su compra realizada en Kiora.', 20, pageHeight - 22);
-      doc.text('Para soporte técnico o reclamaciones, escriba a KiosKiora@gmail.com', 20, pageHeight - 18);
-      
-      doc.setFont('helvetica', 'bold');
-      doc.text('¡GRACIAS POR SU COMPRA!', 105, pageHeight - 10, { align: 'center' });
-
-      doc.save(`Factura_Kiora_FAC-${invoice.id_fact}.pdf`);
-      alertService.showToast('success', 'Factura generada exitosamente');
-    } catch (e) {
-      console.error('Error generating invoice PDF:', e);
-      alertService.showToast('error', 'No se pudo generar la factura detallada');
-    }
-  };
-
-  const handleCreateIncident = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!incidentForm.titulo || !incidentForm.descripcion) {
-      alertService.showToast('warning', 'Título y descripción son obligatorios');
-      return;
-    }
-    setIsSavingIncident(true);
-    try {
-      const user = authService.getUser();
-      await incidentService.create({
-        titulo: incidentForm.titulo,
-        descripcion: incidentForm.descripcion,
-        cod_prod: incidentForm.cod_prod || undefined,
-        prioridad: incidentForm.prioridad,
-        estado: 'pendiente',
-        fk_id_usu: user?.id_usu || 1
-      });
-      alertService.showToast('success', 'Incidencia reportada correctamente');
-      setIsIncidentOpen(false);
-      setIncidentForm({ titulo: '', descripcion: '', prioridad: 'media', cod_prod: null });
-      void loadData();
-    } catch (e) {
-      alertService.showToast('error', getErrorMessage(e, 'Error al crear la incidencia'));
-    } finally {
-      setIsSavingIncident(false);
-    }
   };
 
   const safePrice = (v: unknown) => {
@@ -453,14 +35,31 @@ export function SalesSection({ onOpenPOS }: { onOpenPOS: () => void; isAdmin?: b
     return isNaN(n) ? 0 : n;
   };
 
-  const handleDownloadReceipt = async (id: number) => {
-    try {
-      await orderService.downloadReceipt(id);
-      alertService.showToast('success', 'Factura descargada');
-    } catch (e) {
-      alertService.showToast('error', 'Error al descargar factura');
-    }
+  const {
+    subTab, setSubTab,
+    orders, invoices, movements, reports,
+    loading, search, setSearch, searchInvoiceId, setSearchInvoiceId,
+    detailOrder, setDetailOrder, detailMovement, setDetailMovement,
+    isIncidentOpen, setIsIncidentOpen, isSavingIncident, incidentForm, setIncidentForm, managingIncident, setManagingIncident,
+    reasonModal, setReasonModal,
+    filteredOrders,
+    handleExport, handleExportIncidents,
+    handleViewDetails, handleStatusChange, handleConfirmReason, handleRefund, handleDeleteOrder,
+    downloadInvoicePDF, handleDownloadReceipt,
+    handleSaveIncident, handleDeleteIncident, handleUpdateIncidentStatus
+  } = useSalesManager(isAdmin || false);
+
+  const handleExportSingleIncident = (inc: any) => {
+    handleExportIncidents('pdf');
   };
+
+  if (loading && filteredOrders.length === 0 && invoices.length === 0 && movements.length === 0 && reports.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="w-12 h-12 border-4 border-[#ec131e]/20 border-t-[#ec131e] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -657,7 +256,7 @@ export function SalesSection({ onOpenPOS }: { onOpenPOS: () => void; isAdmin?: b
                         <td className="px-5 py-4">
                           <p className="text-xs font-black text-[#111827]">
                             <span className="text-[#ec131e] mr-1">[{m.cod_prod}]</span>
-                            {productMap[m.cod_prod] || productMap[String(m.cod_prod)] || 'Producto Desconocido'}
+                            {productMap[String(m.cod_prod)] || 'Producto Desconocido'}
                           </p>
                           <p className="text-[10px] text-slate-400 italic truncate max-w-[150px]">{(m as any).desc_mov || 'Venta automatizada'}</p>
                         </td>
@@ -693,7 +292,7 @@ export function SalesSection({ onOpenPOS }: { onOpenPOS: () => void; isAdmin?: b
                             <span>{r.titulo || r.observaciones_tecnicas || 'Sin título'}</span>
                             {r.cod_prod && (
                               <span className="text-[10px] text-slate-400 font-medium">
-                                Prod: <span className="text-[#ec131e]">[{r.cod_prod}]</span> {productMap[r.cod_prod] || productMap[String(r.cod_prod)] || ''}
+                                Prod: <span className="text-[#ec131e]">[{r.cod_prod}]</span> {productMap[String(r.cod_prod)] || ''}
                               </span>
                             )}
                           </div>
@@ -776,7 +375,7 @@ export function SalesSection({ onOpenPOS }: { onOpenPOS: () => void; isAdmin?: b
                 </button>
               </header>
 
-              <form onSubmit={handleCreateIncident} className="flex-1 space-y-6 overflow-y-auto pr-2">
+              <form onSubmit={(e) => { e.preventDefault(); void handleSaveIncident(); }} className="flex-1 space-y-6 overflow-y-auto pr-2">
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-slate-400">Título / Resumen</label>
                   <input
@@ -882,16 +481,7 @@ export function SalesSection({ onOpenPOS }: { onOpenPOS: () => void; isAdmin?: b
                   {(['pendiente', 'en_proceso', 'resuelto', 'cancelado'] as const).map(s => (
                     <button
                       key={s}
-                      onClick={async () => {
-                        try {
-                          await incidentService.updateStatus(managingIncident.id_rep, s);
-                          alertService.showToast('success', `Estado actualizado a ${s}`);
-                          setManagingIncident(null);
-                          void loadData();
-                        } catch (e) {
-                          alertService.showToast('error', 'No se pudo actualizar el estado');
-                        }
-                      }}
+                      onClick={() => void handleUpdateIncidentStatus(managingIncident.id_rep, s)}
                       className={`px-4 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${managingIncident.estado === s ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
                     >
                       {s.replace('_', ' ')}
@@ -925,7 +515,7 @@ export function SalesSection({ onOpenPOS }: { onOpenPOS: () => void; isAdmin?: b
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
-            onClick={() => { setReasonModal(prev => ({ ...prev, isOpen: false })); void loadData(); }}
+            onClick={() => { setReasonModal(prev => ({ ...prev, isOpen: false })); }}
           />
           <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 animate-in zoom-in-95 duration-300">
             {/* Icon */}
@@ -974,7 +564,7 @@ export function SalesSection({ onOpenPOS }: { onOpenPOS: () => void; isAdmin?: b
 
             <div className="flex gap-3">
               <button
-                onClick={() => { setReasonModal(prev => ({ ...prev, isOpen: false })); void loadData(); }}
+                onClick={() => { setReasonModal(prev => ({ ...prev, isOpen: false })); }}
                 className="flex-1 rounded-2xl border border-slate-200 py-3.5 text-sm font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all"
               >
                 Cancelar

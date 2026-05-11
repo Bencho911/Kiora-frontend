@@ -1,14 +1,10 @@
 import { type IHttpClient } from '../core/http/HttpClient';
 import { type AuthService } from './AuthService';
-import type { Order, PaginatedOrders, Invoice, Paginated } from '../models/Order';
+import type { Order, PaginatedOrders, Invoice, Paginated, CreateOrderDto } from '../models/Order';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
-export interface CreateOrderDto {
-  metodopago_usu: string;
-  items: { cod_prod: number; cantidad: number; precio_unit: number; nom_prod?: string; url_imagen?: string; stock_actual?: number }[];
-}
 
 export class OrderService {
   constructor(
@@ -29,13 +25,22 @@ export class OrderService {
   }
 
   // Orders (Sales)
-  async getOrders(page: number = 1, limit: number = 20): Promise<PaginatedOrders | Order[]> {
+  async getOrders(page: number = 1, limit: number = 20): Promise<PaginatedOrders> {
     const response = await this.httpClient.get<any>(
       `/orders?page=${page}&limit=${limit}`,
       this.getAuthHeaders()
     );
     if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving orders');
-    return response.data;
+    
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return {
+        data: data,
+        pagination: { page, limit, total: data.length, totalPages: 1 }
+      };
+    }
+    
+    return data as PaginatedOrders;
   }
 
   async getOrderById(id: number): Promise<Order> {
@@ -129,14 +134,12 @@ export class OrderService {
 
   async exportExcel(): Promise<void> {
     try {
-      const response = await this.httpClient.get<any>('/orders?page=1&limit=1000', {
-        headers: this.getAuthHeaders()
-      });
+      const response = await this.httpClient.get<any>('/orders?page=1&limit=1000', this.getAuthHeaders());
       const orders = Array.isArray(response.data) ? response.data : (response.data?.data || []);
 
-      const totalMonto = orders.reduce((sum, o) => sum + Number(o.montofinal_vent || 0), 0);
+      const totalMonto = orders.reduce((sum: number, o: any) => sum + Number(o.montofinal_vent || 0), 0);
       const data = [
-        ...orders.map(o => ({
+        ...orders.map((o: any) => ({
           'ID Venta': o.id_vent,
           'Fecha': o.fecha_vent ? new Date(o.fecha_vent).toLocaleString('es-CO') : '—',
           'Método Pago': (o.metodopago_usu || 'Efectivo').toUpperCase(),

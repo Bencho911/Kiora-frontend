@@ -44,9 +44,11 @@ const {
             .catch(function(error) { console.error('PWA Registration Failed:', error); });
         });
       }
-      if (window.location.pathname.startsWith('/panel')) {
-        document.body.classList.add('is-panel');
-      }
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.location.pathname.startsWith('/panel')) {
+          document.body.classList.add('is-panel');
+        }
+      });
     </script>
     <script is:inline>
       document.documentElement.setAttribute('data-path', window.location.pathname);

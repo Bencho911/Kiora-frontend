@@ -14,7 +14,17 @@ import { ReportService } from "../services/ReportService";
 
 // Punto de entrada único (API Gateway)
 export const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000/api";
+export const IMG_BASE = API_URL.replace('/api', '');
 
+/** Construye la URL absoluta de una imagen del servidor */
+export function getImageUrl(path?: string): string {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  if (path.startsWith('data:')) return path;
+  const cleanBase = IMG_BASE.endsWith('/') ? IMG_BASE.slice(0, -1) : IMG_BASE;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${cleanBase}${cleanPath}`;
+}
 
 
 // Servicios de infraestructura

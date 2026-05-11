@@ -8,15 +8,13 @@ interface UserListProps {
   isLoading: boolean;
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  onEdit: (user: User) => void;
-  onDelete: (id: string | number) => void;
-  onUnlock: (id: string | number, isBlocked: boolean) => void;
+  onAddUser: () => void;
+  onEditUser: (user: User) => void;
+  onToggleBlock: (user: User) => void;
   onResetPassword: (user: User) => void;
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    onPageChange: (page: number) => void;
-  };
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
 function roleKey(rol?: string): 'admin' | 'cliente' | 'other' {
@@ -31,15 +29,17 @@ export const UserList: React.FC<UserListProps> = ({
   isLoading,
   searchTerm,
   onSearchChange,
-  onEdit,
-  onDelete,
-  onUnlock,
+  onAddUser,
+  onEditUser,
+  onToggleBlock,
   onResetPassword,
-  pagination
+  currentPage,
+  totalPages,
+  onPageChange
 }) => {
   const pageItems = getPaginationPages(
-    pagination.currentPage,
-    pagination.totalPages
+    currentPage,
+    totalPages
   );
 
 
@@ -62,11 +62,14 @@ export const UserList: React.FC<UserListProps> = ({
             </div>
             <p className="mt-1 text-sm text-slate-500 font-medium">Listado detallado de miembros del equipo</p>
           </div>
-          <div className="w-full sm:max-w-sm">
-            <label htmlFor="user-search" className="sr-only">
-              Filtrar en esta página
-            </label>
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:max-w-2xl">
+            <button 
+              onClick={onAddUser}
+              className="w-full sm:w-auto rounded-xl bg-kiora-red px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-kiora-red/20 transition-all hover:bg-kiora-red-hover active:scale-95"
+            >
+              + Nuevo Usuario
+            </button>
+            <div className="relative flex-1 w-full">
               <input
                 id="user-search"
                 type="search"
@@ -130,7 +133,7 @@ export const UserList: React.FC<UserListProps> = ({
                         <div className="flex flex-col items-end gap-1">
                           <button
                             type="button"
-                            onClick={() => onUnlock(u.id_usu as string, true)}
+                            onClick={() => onToggleBlock(u)}
                             className="rounded-full bg-red-100 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-red-700 ring-1 ring-red-200 transition-colors hover:bg-red-200 animate-pulse"
                           >
                             Bloqueado
@@ -138,9 +141,13 @@ export const UserList: React.FC<UserListProps> = ({
                           <span className="text-[9px] text-red-400 font-bold uppercase">Click para liberar</span>
                         </div>
                       ) : (
-                        <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200/80">
+                        <button
+                          type="button"
+                          onClick={() => onToggleBlock(u)}
+                          className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200/80 hover:bg-emerald-100 transition-colors"
+                        >
                           Activo
-                        </span>
+                        </button>
                       )}
 
 
@@ -155,24 +162,14 @@ export const UserList: React.FC<UserListProps> = ({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                           </svg>
                         </button>
-                        <button
+                         <button
                           type="button"
-                          onClick={() => onEdit(u)}
+                          onClick={() => onEditUser(u)}
                           className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-sky-600"
                           title="Editar"
                         >
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => u.id_usu && onDelete(u.id_usu)}
-                          className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-red-600"
-                          title="Eliminar"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
                       </div>
@@ -183,12 +180,12 @@ export const UserList: React.FC<UserListProps> = ({
             </ul>
           )}
 
-          {pagination.totalPages > 1 && !isLoading && (
+          {totalPages > 1 && !isLoading && (
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:px-6">
-              <button
+               <button
                 type="button"
-                disabled={pagination.currentPage <= 1}
-                onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+                disabled={currentPage <= 1}
+                onClick={() => onPageChange(currentPage - 1)}
                 className="text-xs font-semibold text-slate-600 transition-colors hover:text-[#ec131e] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 ← Anterior
@@ -207,9 +204,9 @@ export const UserList: React.FC<UserListProps> = ({
                     <button
                       key={item}
                       type="button"
-                      onClick={() => pagination.onPageChange(item)}
+                      onClick={() => onPageChange(item)}
                       className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-lg text-xs font-bold transition-all ${
-                        pagination.currentPage === item
+                        currentPage === item
                           ? 'bg-kiora-red text-white shadow-lg shadow-kiora-red/20'
                           : 'text-slate-600 hover:bg-white hover:ring-1 hover:ring-slate-200'
                       }`}
@@ -221,8 +218,8 @@ export const UserList: React.FC<UserListProps> = ({
               </div>
               <button
                 type="button"
-                disabled={pagination.currentPage >= pagination.totalPages}
-                onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                onClick={() => onPageChange(currentPage + 1)}
                 className="text-xs font-semibold text-slate-600 transition-colors hover:text-[#ec131e] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Siguiente →

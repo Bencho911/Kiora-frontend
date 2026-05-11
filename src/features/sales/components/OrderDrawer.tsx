@@ -1,61 +1,65 @@
-import type { CreateOrderDto } from '@/services/OrderService';
 import type { Product } from '@/models/Product';
-import React from 'react';
+import { getImageUrl } from '@/config/setup';
+import React, { useMemo } from 'react';
+import { ProductGridSkeleton } from '@/components/ui/ProductSkeleton';
+import { useSalesStore } from '@/store/useSalesStore';
+import { useInventoryStore } from '@/store/useInventoryStore';
+import Fuse from 'fuse.js';
 
-const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000/api';
-const IMG_BASE = API_URL.replace('/api', '');
+export function OrderDrawer() {
+  const { 
+    isOrderDrawerOpen: drawerOpen, 
+    setIsOrderDrawerOpen,
+    prodSearch, 
+    setProdSearch,
+    selectedCategoryId,
+    setSelectedCategoryId,
+    orderForm,
+    setOrderForm,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    resetCart,
+    handleCreateOrder,
+    isSavingOrder: saving
+  } = useSalesStore();
 
-function getImageUrl(path?: string): string {
-  if (!path) return '';
-  if (path.startsWith('http')) return path;
-  if (path.startsWith('data:')) return path;
-  const cleanBase = IMG_BASE.endsWith('/') ? IMG_BASE.slice(0, -1) : IMG_BASE;
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${cleanBase}${cleanPath}`;
-}
+  const { products: allProducts, categories, isLoading, fetchProducts, fetchCategories } = useInventoryStore();
 
-interface OrderDrawerProps {
-  drawerOpen: boolean;
-  onClose: () => void;
-  prodSearch: string;
-  setProdSearch: (v: string) => void;
-  filteredProducts: Product[];
-  categories: Category[];
-  selectedCategoryId: number | null;
-  setSelectedCategoryId: (id: number | null) => void;
-  addToCart: (p: Product) => void;
-  removeFromCart: (cod_prod: number) => void;
-  updateQuantity: (cod_prod: number, delta: number, stock?: number) => void;
-  orderForm: CreateOrderDto;
-  setOrderForm: React.Dispatch<React.SetStateAction<CreateOrderDto>>;
-  cartTotal: number;
-  handleCreateOrder: () => Promise<void>;
-  onCancelOrder: () => void;
-  saving: boolean;
-  safePrice: (v: unknown) => number;
-}
+  React.useEffect(() => {
+    if (drawerOpen) {
+      void fetchProducts();
+      void fetchCategories();
+    }
+  }, [drawerOpen, fetchProducts, fetchCategories]);
 
-export function OrderDrawer({
-  drawerOpen,
-  onClose,
-  prodSearch,
-  setProdSearch,
-  filteredProducts,
-  categories,
-  selectedCategoryId,
-  setSelectedCategoryId,
-  addToCart,
-  removeFromCart,
-  updateQuantity,
-  orderForm,
-  setOrderForm,
-  cartTotal,
-  handleCreateOrder,
-  onCancelOrder,
-  saving,
-  safePrice,
-}: OrderDrawerProps) {
+  const filteredProducts = useMemo(() => {
+    let result = allProducts;
+    if (selectedCategoryId) {
+      result = result.filter(p => p.fk_cod_cats?.includes(selectedCategoryId));
+    }
+    const q = prodSearch.trim();
+    if (q) {
+      const fuse = new Fuse(result, { 
+        keys: ['nom_prod', 'cod_prod'], 
+        threshold: 0.3,
+        distance: 100
+      });
+      result = fuse.search(q).map(r => r.item);
+    }
+    return result;
+  }, [allProducts, prodSearch, selectedCategoryId]);
+
+  const cartTotal = useMemo(() => {
+    return orderForm.items.reduce((acc, item) => acc + (item.cantidad * (item.precio_unit || 0)), 0);
+  }, [orderForm.items]);
+
+  const safePrice = (v: unknown) => Number(v) || 0;
+
   if (!drawerOpen) return null;
+
+  const onClose = () => setIsOrderDrawerOpen(false);
+  const onCancelOrder = () => resetCart();
 
   return (
     <div className="fixed inset-0 z-[100] flex animate-in fade-in duration-300">
@@ -130,53 +134,11 @@ export function OrderDrawer({
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 content-start">
-              {filteredProducts.map((p) => {
-                const stock = p.stock_actual ?? 0;
-                const min = p.stock_minimo ?? 0;
-                const outOfStock = stock <= 0;
-
-                return (
-                  <button
-                    key={p.cod_prod}
-                    onClick={() => addToCart(p)}
-                    disabled={outOfStock}
-                    className="group flex flex-col text-left rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md hover:border-[#ec131e]/30 transition-all focus:outline-none focus:ring-2 focus:ring-[#ec131e]/20 active:scale-[0.98] disabled:opacity-60 disabled:bg-slate-50 disabled:active:scale-100 disabled:hover:border-slate-100 disabled:hover:shadow-sm disabled:cursor-not-allowed"
-                  >
-                    {/* Product Image - No zoom/scale */}
-                    <div className="w-full h-28 rounded-xl overflow-hidden bg-white mb-2 border border-slate-50">
-                      {p.imagen_prod ? (
-                        <img
-                          src={getImageUrl(p.imagen_prod)}
-                          alt={p.nom_prod}
-                          className="w-full h-full object-contain p-2"
-                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=No+Image'; }}
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-slate-100 font-black text-2xl bg-slate-50">?</div>
-                      )}
-                    </div>
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">COD: {p.cod_prod}</span>
-                    </div>
-                    <h4 className="font-bold text-slate-800 line-clamp-2 group-hover:text-[#ec131e] transition-colors leading-tight min-h-[2.5rem] text-sm">
-                      {p.nom_prod}
-                    </h4>
-                    <div className="mt-auto flex items-end justify-between pt-3 w-full">
-                      <span className="text-lg font-black text-[#111827]">
-                        <span className="text-xs font-bold text-[#ec131e] mr-0.5">$</span>
-                        {safePrice(p.precio_prod).toLocaleString('es-CO')}
-                      </span>
-                      <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wider border flex items-center gap-1 ${outOfStock ? 'bg-slate-100 text-slate-500 border-slate-200' :
-                          stock <= min ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                            'bg-emerald-50 text-emerald-600 border-emerald-200'
-                        }`}>
-                        {outOfStock ? 'Agotado' : `Stock: ${stock}`}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-              {filteredProducts.length === 0 && (
+              {isLoading ? (
+                <div className="col-span-full">
+                  <ProductGridSkeleton count={8} />
+                </div>
+              ) : filteredProducts.length === 0 ? (
                 <div className="col-span-full py-16 flex flex-col items-center justify-center text-center bg-slate-50 rounded-2xl border border-slate-100 border-dashed">
                   <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-slate-300 mb-3">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -184,6 +146,53 @@ export function OrderDrawer({
                   <p className="text-sm font-bold text-slate-600">No se encontraron productos</p>
                   <p className="text-xs text-slate-500 mt-1">Intenta cambiar la categoría o el término de búsqueda.</p>
                 </div>
+              ) : (
+                filteredProducts.map((p) => {
+                  const stock = p.stock_actual || 0;
+                  const min = p.stock_minimo || 5;
+                  const outOfStock = stock <= 0;
+
+                  return (
+                    <button
+                      key={p.cod_prod}
+                      onClick={() => !outOfStock && addToCart(p)}
+                      disabled={outOfStock}
+                      className={`group flex flex-col items-start bg-white p-3 rounded-2xl border border-slate-100 text-left transition-all relative overflow-hidden ${outOfStock ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'hover:border-[#ec131e]/30 hover:shadow-xl hover:shadow-[#ec131e]/5 hover:-translate-y-1'
+                        }`}
+                    >
+                      <div className="w-full aspect-square rounded-xl overflow-hidden bg-slate-50 mb-3 border border-slate-50 relative shrink-0">
+                        {p.imagen_prod ? (
+                          <img
+                            src={getImageUrl(p.imagen_prod)}
+                            alt={p.nom_prod}
+                            className="w-full h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-200">
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                          </div>
+                        )}
+                      </div>
+
+                      <h4 className="font-bold text-slate-800 line-clamp-2 group-hover:text-[#ec131e] transition-colors leading-tight min-h-[2.5rem] text-sm">
+                        {p.nom_prod}
+                      </h4>
+                      <div className="mt-auto flex items-end justify-between pt-3 w-full">
+                        <span className="text-lg font-black text-[#111827]">
+                          <span className="text-xs font-bold text-[#ec131e] mr-0.5">$</span>
+                          {safePrice(p.precio_prod).toLocaleString('es-CO')}
+                        </span>
+                        <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wider border flex items-center gap-1 ${outOfStock ? 'bg-slate-100 text-slate-500 border-slate-200' :
+                            stock <= min ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                              'bg-emerald-50 text-emerald-600 border-emerald-200'
+                          }`}>
+                          {outOfStock ? 'Agotado' : `Stock: ${stock}`}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
@@ -273,7 +282,7 @@ export function OrderDrawer({
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
-                      onClick={() => setOrderForm(f => ({ ...f, metodopago_usu: 'efectivo' }))}
+                      onClick={() => setOrderForm({ ...orderForm, metodopago_usu: 'efectivo' })}
                       className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl border-2 transition-all active:scale-95 ${orderForm.metodopago_usu === 'efectivo'
                           ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-md shadow-emerald-200/50'
                           : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
@@ -289,7 +298,7 @@ export function OrderDrawer({
 
                     <button
                       type="button"
-                      onClick={() => setOrderForm(f => ({ ...f, metodopago_usu: 'tarjeta' }))}
+                      onClick={() => setOrderForm({ ...orderForm, metodopago_usu: 'tarjeta' })}
                       className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl border-2 transition-all active:scale-95 ${orderForm.metodopago_usu === 'tarjeta'
                           ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-md shadow-blue-200/50'
                           : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
@@ -305,7 +314,7 @@ export function OrderDrawer({
 
                     <button
                       type="button"
-                      onClick={() => setOrderForm(f => ({ ...f, metodopago_usu: 'digital' }))}
+                      onClick={() => setOrderForm({ ...orderForm, metodopago_usu: 'digital' })}
                       className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl border-2 transition-all active:scale-95 ${orderForm.metodopago_usu === 'digital'
                           ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-md shadow-purple-200/50'
                           : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'

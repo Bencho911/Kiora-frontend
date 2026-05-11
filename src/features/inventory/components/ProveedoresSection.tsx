@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { inventoryService, alertService } from '../../config/setup';
-import { productService } from '../../config/setup';
+import { inventoryService, alertService, productService } from '@/config/setup';
 import type { Supplier, Suministra } from '@/models/Inventory';
 import { SupplierDrawer } from './SupplierDrawer';
 

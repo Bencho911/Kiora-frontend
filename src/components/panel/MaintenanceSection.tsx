@@ -17,7 +17,7 @@ export function MaintenanceSection() {
   const loadIncidents = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await incidentService.getIncidents();
+      const data = await incidentService.getAll();
       setIncidents(Array.isArray(data) ? data : []);
     } catch (e) {
       console.warn('Error loading incidents:', e);
@@ -34,9 +34,9 @@ export function MaintenanceSection() {
     
     setIsSaving(true);
     try {
-      await incidentService.createIncident({
+      await incidentService.create({
         ...dto,
-        fk_id_usu: user.id_usu
+        fk_id_usu: Number(user.id_usu)
       });
       alertService.showToast('success', 'Reporte enviado correctamente');
       setShowForm(false);
@@ -50,7 +50,7 @@ export function MaintenanceSection() {
 
   const updateStatus = async (id: number, status: Incident['estado']) => {
     try {
-      await incidentService.updateIncidentStatus(id, status);
+      await incidentService.updateStatus(id, status);
       alertService.showToast('success', 'Estado actualizado');
       void loadIncidents();
     } catch (e) {

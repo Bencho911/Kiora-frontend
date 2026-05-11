@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import type { Product, Category } from '@/models/Product';
 import type { Movement } from '@/models/Inventory';
 import type { CreateProductDto } from '@/services/ProductService';
-import { alertService } from '@/config/setup';
+import { alertService, getImageUrl } from '@/config/setup';
 import { getErrorMessage } from '@/utils/getErrorMessage';
-import { ProductStockTab } from './inventory/ProductStockTab';
+import { ProductStockTab } from '@/components/panel/inventory/ProductStockTab';
 
 interface ProductDrawerProps {
   isOpen: boolean;
@@ -15,7 +15,7 @@ interface ProductDrawerProps {
   movements: Movement[];
   loadingMovements: boolean;
   onSave: (product: CreateProductDto, isEdit: boolean) => Promise<void>;
-  onSaveMovement: (movement: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; cod_prod: number }) => Promise<void>;
+  onSaveMovement: (movement: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; cod_prod: number; fk_cod_prov?: number }) => Promise<void>;
   onLoadMovements: (productId: number) => Promise<void>;
   onViewMovement?: (movement: Movement) => void;
 }
@@ -28,18 +28,6 @@ const EMPTY_PRODUCT: CreateProductDto = {
   stock_minimo: 0,
   fk_cod_cats: [],
 };
-
-const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000/api';
-const IMG_BASE = API_URL.replace('/api', '');
-
-function getImageUrl(path?: string): string {
-  if (!path) return '';
-  if (path.startsWith('http')) return path;
-  if (path.startsWith('data:')) return path;
-  const cleanBase = IMG_BASE.endsWith('/') ? IMG_BASE.slice(0, -1) : IMG_BASE;
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${cleanBase}${cleanPath}`;
-}
 
 export function ProductDrawer({ 
   isOpen, 
@@ -92,10 +80,10 @@ export function ProductDrawer({
     }
   }, [activeTab, product?.cod_prod, onLoadMovements]);
 
-  const handleSaveMovement = async (movForm: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string }) => {
+  const handleSaveMovement = async (movForm: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; fk_cod_prov?: number }) => {
     if (!product?.cod_prod) return;
     
-    if (!movForm.desc_mov.trim()) {
+    if (!movForm.fk_cod_prov && !movForm.desc_mov.trim()) {
       alertService.showToast('warning', 'La justificación es obligatoria');
       return;
     }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { alertService, orderService } from '@/config/setup';
+import { useSalesStore } from '@/store/useSalesStore';
 
 interface StripeQRModalProps {
   isOpen: boolean;
@@ -126,7 +127,7 @@ export function StripeQRModal({ isOpen, onClose, checkoutUrl, orderId, amount, o
                       alertService.showToast('info', 'Pago cancelado correctamente.');
                       if (onCancel) onCancel();
                       else onClose();
-                      window.dispatchEvent(new CustomEvent('kiora_reload_orders'));
+                      useSalesStore.getState().notifySalesChange();
                     } catch (error) {
                       console.error('Error al cancelar la orden:', error);
                     }

@@ -1,13 +1,14 @@
 import React from 'react';
 import type { Product } from '@/models/Product';
 import type { Movement } from '@/models/Inventory';
-import { alertService } from '@/config/setup';
+import { alertService, inventoryService } from '@/config/setup';
+import type { Supplier } from '@/models/Inventory';
 
 interface ProductStockTabProps {
   product: Product;
   movements: Movement[];
   isLoading: boolean;
-  onSaveMovement: (movement: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string }) => Promise<void>;
+  onSaveMovement: (movement: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; fk_cod_prov?: number }) => Promise<void>;
   onViewMovement?: (movement: Movement) => void;
   saving: boolean;
 }
@@ -20,11 +21,22 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
   onViewMovement,
   saving
 }) => {
-  const [movForm, setMovForm] = React.useState<{ tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string }>({
+  const [movForm, setMovForm] = React.useState<{ tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; fk_cod_prov?: number; stock_minimo: number }>({
     tipo_mov: 'entrada',
     cantidad: 1,
-    desc_mov: ''
+    desc_mov: '',
+    fk_cod_prov: undefined,
+    stock_minimo: product.stock_minimo || 5
   });
+
+  const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
+  const [isAbastecimiento, setIsAbastecimiento] = React.useState(false);
+
+  React.useEffect(() => {
+    inventoryService.getSuppliers(1, 1000).then(res => {
+      setSuppliers(res.data || []);
+    }).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,12 +58,34 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
       finalType = diff > 0 ? 'entrada' : 'salida';
     }
 
+    if (isAbastecimiento && finalType === 'entrada') {
+      if (!movForm.fk_cod_prov) {
+        alertService.showToast('warning', 'Debes seleccionar un proveedor');
+        return;
+      }
+      try {
+        // Register Suministra relation first
+        await inventoryService.upsertSuministra({
+          fk_cod_prov: movForm.fk_cod_prov,
+          cod_prod: product.cod_prod!,
+          stock_minimo: movForm.stock_minimo,
+          stock: product.stock_actual || 0 // Conservar el stock actual
+        });
+      } catch (err) {
+        alertService.showToast('error', 'Error configurando relación con proveedor');
+        return;
+      }
+    }
+
     await onSaveMovement({ 
       tipo_mov: finalType, 
       cantidad: finalAmount, 
-      desc_mov: movForm.desc_mov + (movForm.tipo_mov === 'ajuste' ? ' (Ajuste de inventario)' : '')
+      desc_mov: isAbastecimiento ? `Abastecimiento de mercancía` : movForm.desc_mov + (movForm.tipo_mov === 'ajuste' ? ' (Ajuste de inventario)' : ''),
+      fk_cod_prov: isAbastecimiento ? movForm.fk_cod_prov : undefined
     });
-    setMovForm({ tipo_mov: 'entrada', cantidad: 1, desc_mov: '' });
+    
+    setMovForm({ tipo_mov: 'entrada', cantidad: 1, desc_mov: '', fk_cod_prov: undefined, stock_minimo: product.stock_minimo || 5 });
+    setIsAbastecimiento(false);
   };
 
   return (
@@ -64,7 +98,10 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tipo</label>
             <select
               value={movForm.tipo_mov}
-              onChange={e => setMovForm(f => ({ ...f, tipo_mov: e.target.value as 'entrada' | 'salida' | 'ajuste' }))}
+              onChange={e => {
+                setMovForm(f => ({ ...f, tipo_mov: e.target.value as 'entrada' | 'salida' | 'ajuste' }));
+                if (e.target.value !== 'entrada') setIsAbastecimiento(false);
+              }}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
             >
               <option value="entrada">Entrada (+)</option>
@@ -84,17 +121,58 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
             />
           </div>
         </div>
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Justificación / Origen *</label>
-          <input
-            type="text"
-            required
-            placeholder="Ej. Compra a proveedor, merma, ajuste..."
-            value={movForm.desc_mov}
-            onChange={e => setMovForm(f => ({ ...f, desc_mov: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
-          />
-        </div>
+        {movForm.tipo_mov === 'entrada' && (
+          <div className="flex items-center gap-2 pt-1">
+            <input 
+              type="checkbox" 
+              id="isAbastecimiento" 
+              checked={isAbastecimiento}
+              onChange={(e) => setIsAbastecimiento(e.target.checked)}
+              className="rounded border-slate-300 text-kiora-red focus:ring-kiora-red"
+            />
+            <label htmlFor="isAbastecimiento" className="text-[11px] font-bold text-slate-600 cursor-pointer">
+              ¿Es un abastecimiento de proveedor?
+            </label>
+          </div>
+        )}
+
+        {isAbastecimiento && movForm.tipo_mov === 'entrada' ? (
+          <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Proveedor *</label>
+              <select
+                required
+                value={movForm.fk_cod_prov || ''}
+                onChange={e => setMovForm(f => ({ ...f, fk_cod_prov: Number(e.target.value) }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
+              >
+                <option value="">Seleccionar...</option>
+                {suppliers.map(s => <option key={s.cod_prov} value={s.cod_prov}>{s.nom_prov}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stock Mínimo (Alerta)</label>
+              <input
+                type="number" required min="0"
+                value={movForm.stock_minimo}
+                onChange={e => setMovForm(f => ({ ...f, stock_minimo: Number(e.target.value) }))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Justificación / Origen *</label>
+            <input
+              type="text"
+              required
+              placeholder="Ej. Compra a proveedor, merma, ajuste..."
+              value={movForm.desc_mov}
+              onChange={e => setMovForm(f => ({ ...f, desc_mov: e.target.value }))}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
+            />
+          </div>
+        )}
         <button
           type="submit"
           disabled={saving}

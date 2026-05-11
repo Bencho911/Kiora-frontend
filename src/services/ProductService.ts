@@ -1,6 +1,7 @@
 import type { IHttpClient } from '../core/http/HttpClient';
 import type { AuthService } from './AuthService';
 import type { Product, Category, PaginatedProducts } from '../models/Product';
+import { ProductSchema } from '../models/schemas';
 
 export interface CreateProductDto {
   nom_prod: string;
@@ -31,17 +32,28 @@ export class ProductService {
   }
 
   private normalizeProduct(p: any): Product {
-    return {
+    const raw = {
       ...p,
+      cod_prod: p.cod_prod ?? p.id_prod ?? p.id,
       precio_prod: p.precio_prod ?? p.precio_unitario ?? 0,
+      stock_actual: p.stock_actual ?? p.stock ?? p.existencia ?? p.cantidad ?? 0,
       desc_prod: p.desc_prod ?? p.descrip_prod,
+      descrip_prod: p.descrip_prod ?? p.desc_prod, // Para compatibilidad con esquema si hiciera falta
       imagen_prod: p.imagen_prod ?? p.url_imagen,
       fk_cod_cats: p.fk_cod_cats || (p.fk_cod_cat ? [p.fk_cod_cat] : [])
     };
+
+    // Validamos con Zod (solo para loguear advertencias, no modificamos el objeto)
+    const result = ProductSchema.safeParse(raw);
+    if (!result.success) {
+      console.warn('Product validation failed:', result.error.format());
+    }
+    
+    return raw as Product;
   }
 
   // Products
-  async getProducts(page: number = 1, limit: number = 20): Promise<Product[] | PaginatedProducts> {
+  async getProducts(page: number = 1, limit: number = 20): Promise<PaginatedProducts> {
     const response = await this.httpClient.get<any>(
       `/products?page=${page}&limit=${limit}`,
       this.getAuthHeaders()
@@ -52,8 +64,14 @@ export class ProductService {
     }
 
     const data = response.data;
+    console.log('[ProductService] raw data from /products:', data);
+    
     if (Array.isArray(data)) {
-      return data.map(p => this.normalizeProduct(p));
+      const normalized = data.map(p => this.normalizeProduct(p));
+      return {
+        data: normalized,
+        pagination: { page, limit, total: normalized.length, totalPages: 1 }
+      };
     }
 
     if (data.data && Array.isArray(data.data)) {
@@ -63,7 +81,10 @@ export class ProductService {
       };
     }
 
-    return [];
+    return {
+      data: [],
+      pagination: { page, limit, total: 0, totalPages: 0 }
+    };
   }
 
   async getProductById(id: number): Promise<Product> {

@@ -1,18 +1,46 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { productService, orderService } from '@/config/setup';
+import { useInventoryStore } from '@/store/useInventoryStore';
 import type { Product } from '@/models/Product';
 import type { Order } from '@/models/Order';
 import { SystemAlerts } from './SystemAlerts';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
 
 interface DashboardSectionProps {
-  onSwitchTab: (tab: string) => void;
+  onNavigate: (tab: string) => void;
+  isAdmin?: boolean;
 }
 
-export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
-  const [criticalStock, setCriticalStock] = useState<Product[]>([]);
+export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps) {
+  const { lowStockItems: criticalStock, fetchLowStock } = useInventoryStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statsData, setStatsData] = useState<any>(null);
+
+  // Datos simulados para evolución si no hay suficientes datos reales
+  const evolutionData = useMemo(() => {
+    if (!statsData?.evolucion_ventas) {
+      return [
+        { name: 'Lunes', total: 4000 },
+        { name: 'Martes', total: 3000 },
+        { name: 'Miércoles', total: 5000 },
+        { name: 'Jueves', total: 2780 },
+        { name: 'Viernes', total: 1890 },
+        { name: 'Sábado', total: 2390 },
+        { name: 'Domingo', total: 3490 },
+      ];
+    }
+    return statsData.evolucion_ventas;
+  }, [statsData]);
+
   const isPaidStatus = (status?: string) => {
     const normalized = String(status ?? '').toLowerCase();
     return normalized === 'completada' || normalized === 'pagado' || normalized === 'pagada';
@@ -21,15 +49,12 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [stockRes, statsRes, orderRes] = await Promise.all([
-        productService.getLowStock().catch(() => null),
+      const [statsRes, orderRes] = await Promise.all([
         orderService.getDashboardStats().catch(() => null),
         orderService.getOrders(1, 10).catch(() => null)
       ]);
-
-      if (stockRes && stockRes.data && Array.isArray(stockRes.data)) {
-        setCriticalStock(stockRes.data);
-      }
+      
+      void fetchLowStock();
 
       if (statsRes) {
         setStatsData(statsRes);
@@ -44,7 +69,7 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchLowStock]);
 
   useEffect(() => {
     void loadDashboardData();
@@ -95,14 +120,6 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
     },
   ];
 
-  const trafficData = [
-    { hour: '8AM', height: '30%' },
-    { hour: '10AM', height: '45%' },
-    { hour: '12PM', height: '80%', highlight: true },
-    { hour: '2PM', height: '55%' },
-    { hour: '4PM', height: '25%' },
-  ];
-
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <header className="flex items-center justify-between">
@@ -138,31 +155,70 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <section className="rounded-[2.5rem] bg-white p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] ring-1 ring-slate-100/50 transition-all hover:shadow-xl duration-500">
+          <section className="rounded-[2.5rem] bg-white p-8 shadow-[0_20px_50px_rgba(0,0,0,0.04)] ring-1 ring-slate-100/50 transition-all hover:shadow-xl duration-500">
             <div className="mb-8 flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest">Tráfico de Pedidos</h3>
-              <select className="rounded-xl bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none ring-1 ring-slate-200">
-                <option>Hoy</option>
-                <option>Semana</option>
-              </select>
-            </div>
-            <div className="flex h-48 items-end justify-between gap-2 px-4">
-              {trafficData.map((bar) => (
-                <div key={bar.hour} className="group flex flex-1 flex-col items-center gap-3">
-                  <div 
-                    className={`w-full max-w-[40px] rounded-t-2xl transition-all duration-700 ease-out group-hover:scale-105 ${bar.highlight ? 'bg-[#ec131e] shadow-xl shadow-[#ec131e]/20' : 'bg-[#ec131e]/10'}`}
-                    style={{ height: bar.height }}
-                  ></div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{bar.hour}</span>
+              <div>
+                <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest">Evolución de Ventas</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Rendimiento semanal</p>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-lg">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Alza +15%</span>
                 </div>
-              ))}
+              </div>
+            </div>
+            
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={evolutionData}>
+                  <defs>
+                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ec131e" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#ec131e" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+                    dy={10}
+                  />
+                  <YAxis 
+                    hide
+                  />
+                  <Tooltip 
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-slate-900 text-white p-3 rounded-xl shadow-2xl border border-white/10 backdrop-blur-md">
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-1">{payload[0].payload.name}</p>
+                            <p className="text-sm font-black">${Number(payload[0].value).toLocaleString()}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="total" 
+                    stroke="#ec131e" 
+                    strokeWidth={4}
+                    fillOpacity={1} 
+                    fill="url(#colorTotal)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </section>
 
           <section className="bg-white rounded-[2.5rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.04)] ring-1 ring-slate-100/50">
             <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
               <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Ventas Recientes</h3>
-              <button onClick={() => onSwitchTab('ventas')} className="text-[10px] font-bold text-[#ec131e] hover:underline uppercase tracking-widest">Ver Todas</button>
+              <button onClick={() => onNavigate('ventas')} className="text-[10px] font-bold text-[#ec131e] hover:underline uppercase tracking-widest">Ver Todas</button>
             </div>
             <div className="divide-y divide-slate-50">
               {orders.slice(0, 5).map(order => (
@@ -234,7 +290,7 @@ export function DashboardSection({ onSwitchTab }: DashboardSectionProps) {
                   </div>
                 ))}
                 <button 
-                  onClick={() => onSwitchTab('inventario')}
+                  onClick={() => onNavigate('inventario')}
                   className="w-full mt-4 py-3 rounded-2xl bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
                 >
                   Ver Todo el Inventario

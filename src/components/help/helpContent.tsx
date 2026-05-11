@@ -52,7 +52,7 @@ export const HELP_TOPICS: { title: string; icon: React.ReactNode }[] = [
 ];
 
 export const HELP_FAQS = [
-  // ── Inicio de sesión ──
+  // ── Inicio de sesión y cuenta ──
   {
     question: '¿Cómo inicio sesión en Kiora?',
     answer:
@@ -63,22 +63,74 @@ export const HELP_FAQS = [
     answer:
       'En la pantalla de inicio de sesión elige «¿Olvidaste tu contraseña?», ingresa tu correo y revisa tu bandeja (y spam) para el enlace de restablecimiento.',
   },
-  // ── Roles ──
+  
+  // ── Gestión de productos y stock ──
+  {
+    question: '¿Cómo puedo agregar un nuevo producto?',
+    answer:
+      'En el módulo de "Productos", haz clic en el botón "Nuevo Producto". Llena los detalles como nombre, categoría, precio y stock inicial. También puedes subir una imagen.',
+  },
+  {
+    question: '¿Cómo actualizo el stock de un producto?',
+    answer:
+      'Puedes ajustar el inventario manualmente buscando el producto en la lista y editando su stock actual, o el sistema lo descontará automáticamente al realizar una venta en el POS.',
+  },
+  {
+    question: '¿Qué es el Stock Mínimo?',
+    answer:
+      'Es el umbral de alerta. Cuando las existencias caen por debajo de este valor, el sistema genera una alerta visual y en el panel de notificaciones para que realices un pedido a proveedores.',
+  },
+  
+  // ── Ventas y facturación ──
+  {
+    question: '¿Cómo registro una nueva venta?',
+    answer:
+      'Abre el "Carrito" o "POS" desde el botón flotante o el menú lateral. Selecciona los productos, elige el método de pago y confirma. Podrás ver el resumen de la orden de inmediato.',
+  },
+  {
+    question: '¿Qué métodos de pago soporta el sistema?',
+    answer:
+      'Kiora soporta Efectivo, Tarjeta y Pagos Digitales (Stripe/QR). Para pagos con QR, el sistema generará un código dinámico que el cliente puede escanear.',
+  },
+  {
+    question: '¿Cómo veo el historial de ventas?',
+    answer:
+      'Ve a la sección de "Ventas". Allí encontrarás un listado cronológico de todas las transacciones realizadas, con detalles de items, totales y estados de pago.',
+  },
+
+  // ── Usuarios y roles (Admin) ──
   {
     question: '¿Qué diferencia hay entre Admin y Vendedor?',
     answer:
-      'Los Administradores tienen acceso total a la gestión de usuarios, auditoría de salud del sistema y facturación histórica. Los Vendedores solo pueden gestionar el stock y realizar pedidos.',
+      'Los Administradores tienen acceso total: gestión de usuarios, configuración del sistema, reportes financieros avanzados y mantenimiento. Los Empleados solo pueden gestionar stock, realizar ventas y ver transacciones operativas.',
   },
-  // ── Mantenimiento ──
   {
-    question: '¿Cómo descargo una factura?',
+    question: '¿Cómo bloqueo a un usuario?',
     answer:
-      'En la sección de «Pedidos», ve a la pestaña de «Facturación Histórica» y haz clic en el botón «Descargar PDF» de la factura deseada.',
+      'En el panel de "Usuarios", haz clic en el botón de candado junto al usuario. Un usuario bloqueado no podrá iniciar sesión hasta que un administrador lo desbloquee.',
   },
-  // ── Configuración ──
+
+  // ── Inventario y proveedores ──
   {
-    question: '¿Para qué sirve el monitor de Salud?',
+    question: '¿Cómo descargo un reporte de inventario?',
     answer:
-      'Permite verificar en tiempo real si todos los microservicios (Usuarios, Productos, Inventario, Órdenes) están en línea y respondiendo correctamente.',
+      'En la sección "Reportes", ve a la pestaña "Generar", elige el tipo de reporte "Inventario" y exporta a Excel o PDF según tu preferencia.',
+  },
+  {
+    question: '¿Puedo organizar productos por categorías?',
+    answer:
+      'Sí, utiliza el módulo de "Categorías" para crear agrupaciones. Al editar un producto, puedes asignarlo a una o varias categorías para facilitar la búsqueda en el POS.',
+  },
+
+  // ── Reportes y mantenimiento ──
+  {
+    question: '¿Cómo funciona el Centro de Reportes?',
+    answer:
+      'El centro de reportes permite filtrar ventas por fechas, periodos (día, semana, mes) y tipos (ventas totales o ranking de productos). Toda la información es descargable.',
+  },
+  {
+    question: '¿Qué hacer ante una falla técnica?',
+    answer:
+      'Utiliza la sección de "Incidencias" dentro de Reportes para notificar fallos. Un administrador o soporte técnico revisará el caso y actualizará su estado hasta que sea resuelto.',
   },
 ];

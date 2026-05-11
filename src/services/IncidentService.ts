@@ -1,18 +1,7 @@
 import type { IHttpClient } from '../core/http/HttpClient';
 import type { AuthService } from './AuthService';
 
-export interface Incident {
-  id_rep: number;
-  titulo: string;
-  descripcion: string;
-  prioridad: 'baja' | 'media' | 'alta';
-  estado: 'pendiente' | 'en_proceso' | 'resuelto' | 'cancelado';
-  fk_id_usu: number;
-  cod_prod?: number;
-  fecha_rep: string;
-  observaciones_tecnicas?: string;
-  nombre_usuario?: string; // Si el backend hace join
-}
+import type { Incident } from '../models/Incident';
 
 export class IncidentService {
   constructor(
@@ -49,5 +38,23 @@ export class IncidentService {
     );
     if (!response.ok || !response.data) throw new Error(response.error || 'Error creating incident');
     return response.data;
+  }
+
+  async update(id: number, incident: Partial<Incident>): Promise<Incident> {
+    const response = await this.httpClient.put<Incident>(
+      `/incidents/${id}`,
+      incident,
+      { headers: this.getAuthHeaders() }
+    );
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error updating incident');
+    return response.data;
+  }
+
+  async delete(id: number): Promise<void> {
+    const response = await this.httpClient.delete<void>(
+      `/incidents/${id}`,
+      { headers: this.getAuthHeaders() }
+    );
+    if (!response.ok) throw new Error(response.error || 'Error deleting incident');
   }
 }

@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import type { User } from '@/models/User';
 import type { Product } from '@/models/Product';
-import { alertService } from '@/config/setup';
-import { useStockSync } from '@/context/StockContext';
+import { alertService, authService } from '@/config/setup';
+import { useInventoryStore } from '@/store/useInventoryStore';
+import { useAppStore } from '@/store/useAppStore';
 import { getInitials } from '@/utils/userUtils';
 import { COLORS } from '@/config/theme';
 
 interface AdminNavbarProps {
   user: User;
-  onLogout: (e: React.MouseEvent) => void;
-  onProfileOpen: () => void;
+  onLogout?: (e: React.MouseEvent) => void;
+  onOpenProfile: () => void;
+  onOpenPOS: () => void;
 }
 
-export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProfileOpen }) => {
-  const { lowStockItems: alerts } = useStockSync();
+export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpenProfile, onOpenPOS }) => {
+  const { lowStockItems: alerts } = useInventoryStore();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const isLoading = false; // El contexto maneja la carga, simplificamos aquí
 
@@ -84,7 +86,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
                           key={alert.cod_prod} 
                           className="p-4 hover:bg-red-50 transition-colors border-b border-gray-50 last:border-0 group cursor-pointer"
                           onClick={() => {
-                            window.dispatchEvent(new CustomEvent('kiora_navigate', { detail: { tab: 'productos' } }));
+                            useAppStore.getState().setActiveTab('productos');
                             setIsNotificationsOpen(false);
                           }}
                         >
@@ -112,11 +114,11 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
                       </div>
                     )}
                   </div>
-
+ 
                   {alerts.length > 0 && (
                     <button
                       onClick={() => {
-                        window.dispatchEvent(new CustomEvent('kiora_navigate', { detail: { tab: 'productos' } }));
+                        useAppStore.getState().setActiveTab('productos');
                         setIsNotificationsOpen(false);
                       }}
                       className="w-full p-3 bg-gray-50 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-gray-100 transition-colors border-t border-gray-100"
@@ -132,7 +134,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
           {/* User Profile */}
           <div className="flex items-center gap-3">
             <button
-              onClick={onProfileOpen}
+              onClick={onOpenProfile}
               className="group flex items-center transition-all hover:opacity-90 active:scale-95"
             >
               <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-kiora-red text-sm font-bold text-white shadow-xl ring-2 ring-white/10">
@@ -140,7 +142,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProf
               </div>
             </button>
             <button
-              onClick={onLogout}
+              onClick={onLogout || (() => { authService.logout(); window.location.href = '/'; })}
               className="ml-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-white transition-all hover:bg-white/15 active:bg-white/20"
             >
               Salir

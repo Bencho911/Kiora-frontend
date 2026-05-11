@@ -11,7 +11,7 @@ export interface OrderItem {
   id?: number;
   cod_prod: number;
   cantidad: number;
-  precio_unit?: number;
+  precio_unit: number;
   nom_prod?: string;
   url_imagen?: string;
   stock_actual?: number;
@@ -55,4 +55,8 @@ export interface Paginated<T> {
     total: number;
     totalPages: number;
   };
+}
+export interface CreateOrderDto {
+  metodopago_usu: string;
+  items: OrderItem[];
 }

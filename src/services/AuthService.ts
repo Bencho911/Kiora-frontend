@@ -57,8 +57,12 @@ export class AuthService {
 
   saveSession(token: string, user: User | null) {
     if (user) {
+      const normalizedUser = {
+        ...user,
+        tel_usu: user.tel_usu || (user as any).telefono || (user as any).phone || ''
+      };
       localStorage.setItem('kiora_token', token);
-      localStorage.setItem('kiora_user', typeof user === 'string' ? user : JSON.stringify(user));
+      localStorage.setItem('kiora_user', JSON.stringify(normalizedUser));
     }
   }
 
@@ -75,7 +79,11 @@ export class AuthService {
     const userStr = localStorage.getItem('kiora_user');
     if (!userStr) return null;
     try {
-      return JSON.parse(userStr) as User;
+      const user = JSON.parse(userStr) as User;
+      return {
+        ...user,
+        tel_usu: user.tel_usu || (user as any).telefono || (user as any).phone || ''
+      };
     } catch {
       this.clearSession();
       return null;
@@ -83,7 +91,18 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    if (!token) return false;
+    try {
+      // Basic check of expiration without full verification (client-side)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // ── Password Recovery (HU05) ────────────────────────────────────────────────
