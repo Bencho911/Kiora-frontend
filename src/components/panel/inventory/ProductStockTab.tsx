@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import type { Product } from '@/models/Product';
 import type { Movement } from '@/models/Inventory';
 import { alertService, inventoryService } from '@/config/setup';
@@ -21,6 +21,9 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
   onViewMovement,
   saving
 }) => {
+  const [movFilter, setMovFilter] = useState<'all' | 'entrada' | 'salida' | 'ajuste'>('all');
+  const [movSearch, setMovSearch] = useState('');
+
   const [movForm, setMovForm] = React.useState<{ tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; fk_cod_prov?: number; stock_minimo: number }>({
     tipo_mov: 'entrada',
     cantidad: 1,
@@ -37,6 +40,16 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
       setSuppliers(res.data || []);
     }).catch(() => {});
   }, []);
+
+  const filteredMovements = useMemo(() => {
+    const q = movSearch.trim().toLowerCase();
+    return movements.filter((m) => {
+      if (movFilter !== 'all' && m.tipo_mov !== movFilter) return false;
+      if (!q) return true;
+      const d = (m.desc_mov || '').toLowerCase();
+      return d.includes(q) || String(m.id_mov).includes(q);
+    });
+  }, [movements, movFilter, movSearch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +179,7 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
             <input
               type="text"
               required
-              placeholder="Ej. Compra a proveedor, merma, ajuste..."
+              placeholder="Ej. Lote L-2025-001, factura proveedor, merma…"
               value={movForm.desc_mov}
               onChange={e => setMovForm(f => ({ ...f, desc_mov: e.target.value }))}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
@@ -183,7 +196,59 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
       </form>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-extrabold text-slate-800">Historial de Movimientos</h3>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-sm font-extrabold text-slate-800">Trazabilidad por movimientos</h3>
+          <button
+            type="button"
+            disabled={!filteredMovements.length}
+            onClick={() => {
+              const rows = filteredMovements.map((m) =>
+                [
+                  m.id_mov,
+                  m.fecha_mov,
+                  m.tipo_mov,
+                  m.cantidad,
+                  (m.desc_mov || '').replace(/"/g, '""'),
+                  product.cod_prod,
+                  product.nom_prod,
+                ].join(',')
+              );
+              const csv = ['id,fecha,tipo,cantidad,descripcion,cod_prod,nombre', ...rows].join('\n');
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `trazabilidad_${product.cod_prod}_${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              alertService.showToast('success', 'Archivo CSV generado');
+            }}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-colors hover:border-kiora-red hover:text-kiora-red disabled:opacity-40"
+          >
+            Exportar CSV
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <select
+            value={movFilter}
+            onChange={(e) => setMovFilter(e.target.value as typeof movFilter)}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+          >
+            <option value="all">Todos los tipos</option>
+            <option value="entrada">Entradas</option>
+            <option value="salida">Salidas</option>
+            <option value="ajuste">Ajustes</option>
+          </select>
+          <input
+            type="search"
+            placeholder="Filtrar por texto en descripción…"
+            value={movSearch}
+            onChange={(e) => setMovSearch(e.target.value)}
+            className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+          />
+        </div>
+
         {isLoading ? (
           <div className="flex justify-center py-5">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-kiora-red" />
@@ -192,9 +257,14 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
           <div className="text-center p-5 bg-white border border-slate-100 rounded-3xl">
             <p className="text-xs text-slate-400 font-bold">No hay movimientos registrados.</p>
           </div>
+        ) : filteredMovements.length === 0 ? (
+          <div className="rounded-3xl border border-amber-100 bg-amber-50/80 p-5 text-center">
+            <p className="text-xs font-bold text-amber-900">No hay movimientos que coincidan con el tipo o el texto de búsqueda.</p>
+            <p className="mt-1 text-[10px] font-medium text-amber-800/80">Prueba con otros filtros o limpia la búsqueda.</p>
+          </div>
         ) : (
           <div className="space-y-2">
-            {movements.map((m) => (
+            {filteredMovements.map((m) => (
               <div 
                 key={m.id_mov} 
                 onClick={() => onViewMovement?.(m)}
@@ -202,7 +272,15 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${m.tipo_mov === 'entrada' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                        m.tipo_mov === 'entrada'
+                          ? 'bg-emerald-50 text-emerald-600'
+                          : m.tipo_mov === 'ajuste'
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'bg-red-50 text-red-600'
+                      }`}
+                    >
                       {m.tipo_mov}
                     </span>
                     <span className="text-[10px] font-black text-slate-800">

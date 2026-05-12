@@ -1,9 +1,9 @@
 import { authService, getImageUrl } from '@/config/setup';
 import type { Product } from '@/models/Product';
 import { ProductDrawer } from './ProductDrawer';
-import { CategoryModal } from './CategoryModal';
 import { MovementDetailModal } from '@/features/inventory/components/MovementDetailModal';
 import { useProductManager } from '@/hooks/useProductManager';
+import { useAppStore } from '@/store/useAppStore';
 
 export function ProductsSection() {
   const isAdmin = authService.isAdmin();
@@ -13,7 +13,6 @@ export function ProductsSection() {
     pendingFilters, setPendingFilters,
     selectedProduct, setSelectedProduct,
     isDrawerOpen, setIsDrawerOpen,
-    isCategoryModalOpen, setIsCategoryModalOpen,
     showFilters, setShowFilters,
     movements, loadingMovements,
     detailMovement, setDetailMovement,
@@ -45,7 +44,13 @@ export function ProductsSection() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
             Filtros
           </button>
-          <button onClick={() => setIsCategoryModalOpen(true)} className="rounded-2xl bg-white px-6 py-3.5 text-sm font-black text-slate-700 ring-1 ring-slate-200 hover:ring-[#ec131e]/30 transition-all">Categorías</button>
+          <button
+            type="button"
+            onClick={() => useAppStore.getState().setActiveTab('categorias')}
+            className="rounded-2xl bg-white px-6 py-3.5 text-sm font-black text-slate-700 ring-1 ring-slate-200 hover:ring-[#ec131e]/30 transition-all"
+          >
+            Categorías
+          </button>
           {isAdmin && (
             <button onClick={() => { setSelectedProduct(null); setIsDrawerOpen(true); }} className="rounded-2xl bg-[#ec131e] px-8 py-3.5 text-sm font-black text-white shadow-xl shadow-[#ec131e]/20 transition-all hover:bg-[#d01019]">Nuevo Producto</button>
           )}
@@ -162,7 +167,6 @@ export function ProductsSection() {
           onClose={() => setDetailMovement(null)}
         />
       )}
-      <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} onSuccess={loadData} />
     </div>
   );
 }

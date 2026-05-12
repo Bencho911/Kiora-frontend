@@ -3,6 +3,7 @@ import { userService, alertService } from '@/config/setup';
 import type { User } from '@/models/User';
 import type { RegisterUserDto } from '@/services/UserService';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import { pushAppNotification } from '@/lib/pushAppNotification';
 import { validatePassword } from '@/utils/validation';
 
 export function useUserManagement(isAdmin: boolean) {
@@ -37,8 +38,9 @@ export function useUserManagement(isAdmin: boolean) {
       setUsersList(usersArray.map(u => ({ ...u, isBlocked: userService.isUserBlocked(u) })));
       setCurrentPage(paginated.pagination?.page || page);
       setTotalPages(paginated.pagination?.totalPages || 1);
-    } catch (e) { 
-      alertService.showToast('error', 'Error al cargar usuarios'); 
+    } catch (e) {
+      alertService.showToast('error', 'Error al cargar usuarios');
+      pushAppNotification('error', 'Usuarios', 'No se pudo cargar el listado de usuarios.', { category: 'user', toast: false });
     } finally { 
       setIsLoadingUsers(false); 
     }
@@ -88,7 +90,9 @@ export function useUserManagement(isAdmin: boolean) {
       setIsDrawerOpen(false);
       void loadUsersList(currentPage);
     } catch (e) {
-      alertService.showToast('error', getErrorMessage(e, 'Error al procesar usuario'));
+      const msg = getErrorMessage(e, 'Error al procesar usuario');
+      alertService.showToast('error', msg);
+      pushAppNotification('error', 'Usuario', msg, { category: 'user' });
     } finally {
       setIsRegistering(false);
     }
@@ -106,8 +110,9 @@ export function useUserManagement(isAdmin: boolean) {
         alertService.showToast('success', 'Usuario bloqueado temporalmente');
       }
       void loadUsersList(currentPage);
-    } catch (e) { 
-      alertService.showToast('error', 'Error al cambiar estado del usuario'); 
+    } catch (e) {
+      alertService.showToast('error', 'Error al cambiar estado del usuario');
+      pushAppNotification('error', 'Usuario', 'No se pudo bloquear o desbloquear el usuario.', { category: 'user' });
     }
   }, [currentPage, loadUsersList]);
 
@@ -120,6 +125,7 @@ export function useUserManagement(isAdmin: boolean) {
     if (!resettingUser || resettingUser.id_usu === undefined) return;
     if (!validatePassword(pass)) {
       alertService.showToast('error', 'Contraseña inválida (mín. 8 caracteres)');
+      pushAppNotification('warning', 'Usuarios', 'La contraseña no cumple la política mínima.', { category: 'user', toast: false });
       return;
     }
     setIsResettingPassword(true);
@@ -127,8 +133,9 @@ export function useUserManagement(isAdmin: boolean) {
       await userService.adminUpdatePassword(resettingUser.id_usu, pass);
       alertService.showToast('success', 'Contraseña restablecida exitosamente');
       setIsSecurityOpen(false);
-    } catch (e) { 
-      alertService.showToast('error', 'Error al restablecer contraseña'); 
+    } catch (e) {
+      alertService.showToast('error', 'Error al restablecer contraseña');
+      pushAppNotification('error', 'Usuarios', 'Fallo al restablecer contraseña.', { category: 'user', toast: false });
     } finally {
       setIsResettingPassword(false);
     }

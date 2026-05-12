@@ -5,6 +5,7 @@ import type { Product } from '@/models/Product';
 import type { CreateOrderDto, OrderItem } from '@/models/Order';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { useInventoryStore } from './useInventoryStore';
+import { pushAppNotification } from '@/lib/pushAppNotification';
 
 interface StripeQR {
   isOpen: boolean;
@@ -197,7 +198,20 @@ export const useSalesStore = create<SalesState>()(
                 set({ isSavingOrder: false });
                 return;
               } catch (checkoutError) {
-                if (!isStockConflict(checkoutError)) throw checkoutError;
+                if (!isStockConflict(checkoutError)) {
+                  const msg = getErrorMessage(
+                    checkoutError,
+                    'No se pudo iniciar la sesión de pago con tarjeta. Puedes reintentar o usar efectivo.'
+                  );
+                  pushAppNotification('error', 'Error al pagar con Stripe', msg, { category: 'payment' });
+                  try {
+                    await orderService.deleteOrder(order.id_vent!);
+                  } catch {
+                    /* ignore */
+                  }
+                  set({ isSavingOrder: false });
+                  return;
+                }
 
                 // Si falló Stripe por stock, limpiamos la orden pendiente
                 try { await orderService.deleteOrder(order.id_vent); } catch (e) { console.warn('Cleanup failed', e); }
@@ -217,6 +231,9 @@ export const useSalesStore = create<SalesState>()(
 
                 if (!candidateOrder.items.length) {
                   alertService.showToast('error', 'Productos agotados durante el proceso de pago.');
+                  pushAppNotification('error', 'Stock en pago', 'No quedó stock para completar el cobro con tarjeta.', {
+                    category: 'stock',
+                  });
                   set({ isSavingOrder: false });
                   return;
                 }
@@ -233,7 +250,9 @@ export const useSalesStore = create<SalesState>()(
             break;
           }
         } catch (e) {
-          alertService.showToast('error', getErrorMessage(e, 'Error al procesar la venta'));
+          const msg = getErrorMessage(e, 'Error al procesar la venta');
+          alertService.showToast('error', msg);
+          pushAppNotification('error', 'Venta', msg, { category: 'payment' });
         } finally {
           set({ isSavingOrder: false });
         }

@@ -10,6 +10,8 @@ export interface Product {
   nom_cat?: string;
   descrip_cat?: string;
   fechaven_prod?: string | null;
+  /** Referencia de lote o trazabilidad (p. ej. en descripción o campo extendido del API). */
+  ref_lote?: string | null;
 
   alerta_stock_critico?: boolean;
 }

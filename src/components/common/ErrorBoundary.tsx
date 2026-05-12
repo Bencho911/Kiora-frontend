@@ -1,4 +1,5 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import * as Sentry from '@sentry/astro';
 import { alertService } from '@/config/setup';
 
 interface Props {
@@ -21,7 +22,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
-    // Integración opcional con Sentry u otro servicio de logs
+    try {
+      Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
+    } catch {
+      /* Sentry no disponible */
+    }
   }
 
   public render() {

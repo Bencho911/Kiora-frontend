@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { orderService, alertService, authService, inventoryService, incidentService, reportService } from '@/config/setup';
+import { pushAppNotification } from '@/lib/pushAppNotification';
 import type { Order, Invoice } from '@/models/Order';
 import type { Movement } from '@/models/Inventory';
 import type { Incident } from '@/models/Incident';
@@ -129,14 +130,14 @@ export function useSalesManager(isAdmin: boolean) {
     alertService.showToast('success', `Incidencias exportadas a ${type.toUpperCase()}`);
   };
 
-  const handleViewDetails = async (id: number) => {
+  const handleViewDetails = useCallback(async (id: number) => {
     try {
       const fullOrder = await orderService.getOrderById(id);
       setDetailOrder(fullOrder);
-    } catch (e) {
+    } catch {
       alertService.showToast('error', 'Error al obtener el detalle de la venta');
     }
-  };
+  }, []);
 
   const handleStatusChange = async (id: number, newStatus: any) => {
     const currentOrder = orders.find(o => o.id_vent === id);
@@ -212,8 +213,31 @@ export function useSalesManager(isAdmin: boolean) {
       alertService.showToast('info', 'Generando recibo...');
       await orderService.downloadReceipt(id);
       alertService.showToast('success', 'Recibo descargado');
+      pushAppNotification('success', 'Comprobante de compra', `Recibo #${id} descargado.`, {
+        category: 'payment',
+        toast: false,
+      });
     } catch (e) {
-      alertService.showToast('error', 'Error al descargar recibo');
+      const msg = getErrorMessage(e, 'Error al descargar recibo');
+      alertService.showToast('error', msg);
+      pushAppNotification('error', 'Comprobante', msg, { category: 'payment', toast: false });
+    }
+  };
+
+  const handleEmitElectronicInvoice = async (order: Order) => {
+    try {
+      alertService.showToast('info', 'Emitiendo factura electrónica...');
+      await orderService.emitInvoiceForOrder(order);
+      alertService.showToast('success', 'Factura emitida correctamente');
+      pushAppNotification('success', 'Factura electrónica', `Registro fiscal para venta #${order.id_vent}.`, {
+        category: 'payment',
+        toast: false,
+      });
+      void loadData();
+    } catch (e) {
+      const msg = getErrorMessage(e, 'No se pudo emitir la factura');
+      alertService.showToast('error', msg);
+      pushAppNotification('error', 'Factura electrónica', msg, { category: 'payment', toast: false });
     }
   };
 
@@ -280,7 +304,7 @@ export function useSalesManager(isAdmin: boolean) {
     filteredOrders,
     handleExport, handleExportIncidents,
     handleViewDetails, handleStatusChange, handleConfirmReason, handleRefund, handleDeleteOrder,
-    downloadInvoicePDF, handleDownloadReceipt,
+    downloadInvoicePDF, handleDownloadReceipt, handleEmitElectronicInvoice,
     handleSaveIncident, handleDeleteIncident, handleUpdateIncidentStatus
   };
 }

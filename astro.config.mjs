@@ -24,7 +24,8 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     build: {
-      sourcemap: false,
+      // Mapas ocultos: útiles para Sentry sin exponer `sourceMappingURL` en el bundle público.
+      sourcemap: 'hidden',
       cssMinify: true,
       minify: 'esbuild',
     },

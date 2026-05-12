@@ -4,6 +4,7 @@ import { productService, alertService, inventoryService } from '@/config/setup';
 import type { Product, Category } from '@/models/Product';
 import type { Movement } from '@/models/Inventory';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import { pushAppNotification } from '@/lib/pushAppNotification';
 
 export function useProductManager() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -21,7 +22,6 @@ export function useProductManager() {
   const [pendingFilters, setPendingFilters] = useState({ ...activeFilters });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -69,7 +69,9 @@ export function useProductManager() {
       }
       loadData();
     } catch (e) {
-      alertService.showToast('error', getErrorMessage(e, 'Error al guardar producto'));
+      const msg = getErrorMessage(e, 'Error al guardar producto');
+      alertService.showToast('error', msg);
+      pushAppNotification('error', 'Productos', msg, { category: 'inventory' });
       throw e;
     }
   };
@@ -81,7 +83,9 @@ export function useProductManager() {
       if (mov.cod_prod) await loadMovements(mov.cod_prod);
       loadData();
     } catch (e) {
-      alertService.showToast('error', getErrorMessage(e, 'Error al registrar movimiento'));
+      const msg = getErrorMessage(e, 'Error al registrar movimiento');
+      alertService.showToast('error', msg);
+      pushAppNotification('error', 'Movimiento de inventario', msg, { category: 'inventory' });
       throw e;
     }
   };
@@ -154,7 +158,6 @@ export function useProductManager() {
     pendingFilters, setPendingFilters,
     selectedProduct, setSelectedProduct,
     isDrawerOpen, setIsDrawerOpen,
-    isCategoryModalOpen, setIsCategoryModalOpen,
     showFilters, setShowFilters,
     movements, loadingMovements,
     detailMovement, setDetailMovement,

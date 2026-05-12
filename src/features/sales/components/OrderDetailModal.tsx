@@ -1,5 +1,6 @@
 import type { Order } from '@/models/Order';
-import React from 'react';
+import React, { useState } from 'react';
+import { ReceiptModal } from './ReceiptModal';
 
 interface OrderDetailModalProps {
   detailOrder: Order;
@@ -9,6 +10,7 @@ interface OrderDetailModalProps {
   productMap?: Record<string | number, string>; // Add this
   onRefund?: (id: number) => void;
   onDownloadReceipt?: (id: number) => void;
+  onEmitElectronicInvoice?: (order: Order) => void | Promise<void>;
 }
 
 export function OrderDetailModal({
@@ -16,17 +18,23 @@ export function OrderDetailModal({
   onClose,
   safePrice,
   estadoColors,
-  productMap = {}, // Add this
+  productMap = {},
   onRefund,
-  onDownloadReceipt
+  onDownloadReceipt,
+  onEmitElectronicInvoice
 }: OrderDetailModalProps) {
+  const [showReceipt, setShowReceipt] = useState(false);
+
   const handleModalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
   const isCompletada = (status?: string) =>
     String(status ?? '').toLowerCase() === 'completada';
 
-  const isPaidStatus = (status?: string) => isCompletada(status);
+  const isPaidStatus = (status?: string) => {
+    const s = String(status ?? '').toLowerCase();
+    return s === 'completada' || s === 'pagado' || s === 'pagada';
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -143,7 +151,13 @@ export function OrderDetailModal({
                         <p className="font-bold text-slate-800 line-clamp-1">
                           {item.nom_prod || productMap[item.cod_prod] || (item.cod_prod ? productMap[String(item.cod_prod)] : '') || `Producto #${item.cod_prod}`}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-wide">Código: {item.cod_prod}</p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-wide">
+                          Código: {item.cod_prod}
+                          {item.lote_ingreso ? ` · Lote: ${item.lote_ingreso}` : ''}
+                          {item.fechaven_prod
+                            ? ` · Vence: ${new Date(item.fechaven_prod).toLocaleDateString('es-CO')}`
+                            : ''}
+                        </p>
                       </td>
                       <td className="px-5 py-4 text-center">
                         <span className="inline-flex items-center justify-center min-w-[24px] h-[24px] px-1.5 rounded-lg bg-slate-100 text-xs font-bold text-slate-700">
@@ -174,15 +188,30 @@ export function OrderDetailModal({
           </div>
 
           <div className="mt-6 flex flex-wrap justify-end gap-3 px-2 border-t border-slate-100 pt-6">
-            {isPaidStatus(detailOrder.estado) && onDownloadReceipt && (
+            {isPaidStatus(detailOrder.estado) && (
               <button
-                onClick={() => onDownloadReceipt(detailOrder.id_vent!)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-xl font-bold transition-all border border-emerald-100 hover:border-emerald-600 shadow-sm"
+                id="btn-open-receipt"
+                onClick={() => setShowReceipt(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-xl font-bold transition-all border border-emerald-100 hover:border-emerald-600 shadow-sm active:scale-95"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                Descargar Factura
+                Imprimir / Comprobante
+              </button>
+            )}
+
+            {isPaidStatus(detailOrder.estado) && onEmitElectronicInvoice && (
+              <button
+                type="button"
+                onClick={() => void onEmitElectronicInvoice(detailOrder)}
+                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-5 py-2.5 font-bold text-slate-800 shadow-sm transition-all hover:border-[#ec131e]/40 hover:bg-white"
+              >
+                <svg className="h-5 w-5 text-[#ec131e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Factura electrónica
               </button>
             )}
 
@@ -200,6 +229,13 @@ export function OrderDetailModal({
           </div>
         </div>
       </div>
+
+      {showReceipt && (
+        <ReceiptModal
+          order={detailOrder}
+          onClose={() => setShowReceipt(false)}
+        />
+      )}
     </div>
   );
 }

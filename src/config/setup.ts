@@ -43,7 +43,7 @@ export const orderService = new OrderService(httpClient, authService);
 
 export const maintenanceService = new MaintenanceService(httpClient, authService);
 export const incidentService = new IncidentService(httpClient, authService);
-export const reportService = new ReportService(httpClient, authService);
+export const reportService = new ReportService(httpClient, authService, productService);
 export const notificationService = new NotificationService();
 
 // AlertService requiere NotificationService para integraciones

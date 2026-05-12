@@ -3,6 +3,7 @@ import type { Product, Category } from '@/models/Product';
 import type { Movement } from '@/models/Inventory';
 import type { CreateProductDto } from '@/services/ProductService';
 import { alertService, getImageUrl } from '@/config/setup';
+import { pushAppNotification } from '@/lib/pushAppNotification';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { ProductStockTab } from '@/components/panel/inventory/ProductStockTab';
 
@@ -27,7 +28,15 @@ const EMPTY_PRODUCT: CreateProductDto = {
   stock_actual: 0,
   stock_minimo: 0,
   fk_cod_cats: [],
+  fechaven_prod: undefined,
 };
+
+function toInputDate(d?: string | null): string {
+  if (!d) return '';
+  const x = new Date(d);
+  if (Number.isNaN(x.getTime())) return '';
+  return x.toISOString().slice(0, 10);
+}
 
 export function ProductDrawer({ 
   isOpen, 
@@ -59,6 +68,7 @@ export function ProductDrawer({
         stock_actual: product.stock_actual || 0,
         stock_minimo: product.stock_minimo || 0,
         fk_cod_cats: product.fk_cod_cats || [],
+        fechaven_prod: toInputDate(product.fechaven_prod) || undefined,
       });
       setImagePreview(product.imagen_prod ? getImageUrl(product.imagen_prod) : null);
     } else {
@@ -100,6 +110,12 @@ export function ProductDrawer({
         cod_prod: product.cod_prod,
       });
       alertService.showToast('success', 'Movimiento registrado');
+      pushAppNotification(
+        'success',
+        'Inventario',
+        `${movForm.tipo_mov === 'ajuste' ? 'Ajuste' : movForm.tipo_mov} de ${movForm.cantidad} uds — ${product.nom_prod ?? 'Producto'}`,
+        { category: 'inventory', toast: false }
+      );
     } catch (e) {
       alertService.showToast('error', getErrorMessage(e, 'Error al registrar movimiento'));
     } finally {
@@ -219,8 +235,24 @@ export function ProductDrawer({
                   value={form.desc_prod}
                   onChange={e => setForm(f => ({ ...f, desc_prod: e.target.value }))}
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium focus:border-kiora-red focus:outline-none focus:ring-4 focus:ring-kiora-red/5 transition-all min-h-[100px]"
-                  placeholder="Detalles del producto..."
+                  placeholder="Detalles del producto. Puedes indicar número de lote o referencia de trazabilidad aquí."
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha de vencimiento</label>
+                <input
+                  type="date"
+                  value={form.fechaven_prod ?? ''}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      fechaven_prod: e.target.value || undefined,
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold focus:border-kiora-red focus:outline-none focus:ring-4 focus:ring-kiora-red/5"
+                />
+                <p className="text-[10px] font-medium text-slate-400">Opcional. Se usa para alertas y reportes de caducidad.</p>
               </div>
 
               <div className="space-y-1.5">
