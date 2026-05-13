@@ -6,7 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Search, ChevronLeft, Mail, Phone, LifeBuoy } from 'lucide-react';
 
-export default function HelpCenter() {
+interface HelpCenterProps {
+  hideBackButton?: boolean;
+}
+
+export default function HelpCenter({ hideBackButton = false }: HelpCenterProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const [searchTerm, setSearchTerm] = useState('');
 
