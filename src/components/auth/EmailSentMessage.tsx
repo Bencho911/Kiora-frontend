@@ -16,7 +16,7 @@ export default function EmailSentMessage() {
       </p>
 
       <a
-        href="/login"
+        href="/login/"
         className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#ec131e] hover:bg-[#d0111a] text-white rounded-lg font-semibold transition-colors shadow-sm no-underline"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

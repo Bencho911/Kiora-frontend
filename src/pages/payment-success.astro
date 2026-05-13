@@ -1,0 +1,34 @@
+---
+import Layout from '@/layouts/mainlayout.astro';
+---
+
+<Layout title="Pago Exitoso | Kiora">
+  <div class="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl p-10 text-center animate-in zoom-in-95 duration-500">
+      <div class="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <h1 class="text-3xl font-black text-slate-800 mb-2">¡Pago Completado!</h1>
+      <p class="text-slate-500 font-medium mb-8">
+        Tu pedido ha sido procesado correctamente. En breve recibirás un correo con el detalle de tu compra.
+      </p>
+      <a
+        id="btn-volver"
+        href="/panel?tab=ventas&status=success"
+        class="inline-block w-full bg-[#ec131e] text-white font-black py-4 rounded-2xl shadow-lg shadow-red-500/20 hover:bg-[#d01019] transition-all active:scale-95 uppercase tracking-widest text-sm"
+      >
+        Volver al Panel
+      </a>
+      <script>
+        const params = new URLSearchParams(window.location.search);
+        const orderId = params.get('order_id');
+        if (orderId) {
+          const btn = document.getElementById('btn-volver');
+          if (btn) btn.setAttribute('href', `/panel?tab=ventas&status=success&order_id=${encodeURIComponent(orderId)}`);
+        }
+      </script>
+    </div>
+  </div>
+</Layout>

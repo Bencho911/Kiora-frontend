@@ -1,5 +1,5 @@
 node_modules
-dist
+# dist (temporarily removed to allow manual build transfer)
 .git
 .github
 .env

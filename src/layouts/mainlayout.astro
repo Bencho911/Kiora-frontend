@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
-import Icono from "../components/icono.jsx";
+import Icono from "../components/icono.tsx";
+import { ViewTransitions } from 'astro:transitions';
 
 const weglotKey = import.meta.env.PUBLIC_WEGLOT_API_KEY;
 
@@ -23,69 +24,81 @@ const {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <Icono />
+    <ViewTransitions />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     
-    <!-- PWA Setup -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#ec131e" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <script>
+    
+    <script is:inline>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
+        window.addEventListener('load', function() {
           navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .catch(error => console.error('PWA Registration Failed:', error));
+            .catch(function(error) { console.error('PWA Registration Failed:', error); });
         });
       }
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.location.pathname.startsWith('/panel')) {
+          document.body.classList.add('is-panel');
+        }
+      });
+    </script>
+    <script is:inline>
+      document.documentElement.setAttribute('data-path', window.location.pathname);
     </script>
     <title>{title}</title>
 
     {weglotKey && (
-      <>
-        <script is:inline src="https://cdn.weglot.com/weglot.min.js"></script>
-        <script is:inline define:vars={{ weglotKey }}>
-          // @ts-ignore
-          if (window.Weglot) {
-            window.Weglot.initialize({ api_key: weglotKey });
-          }
-        </script>
-        <style is:inline>
-          .weglot-container {
-            position: fixed !important;
-            bottom: 1.5rem !important;
-            right: 1.5rem !important;
-            z-index: 9999 !important;
-          }
-          .wg-default, .wg-default .wg-li {
-            background: rgba(255, 255, 255, 0.95) !important;
-            backdrop-filter: blur(8px) !important;
-            border: 1px solid rgba(226, 232, 240, 0.8) !important;
-            border-radius: 0.5rem !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
-            color: #475569 !important;
-            font-family: 'Inter', sans-serif !important;
-            font-size: 0.80rem !important;
-            font-weight: 600 !important;
-            padding: 0.2rem 0.6rem !important;
-            transition: all 0.2s ease !important;
-          }
-          .wg-default:hover, .wg-default.wg-open {
-            border-color: #ec131e !important;
-            color: #ec131e !important;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-            transform: translateY(-2px) !important;
-          }
-        </style>
-      </>
+      <script is:inline src="https://cdn.weglot.com/weglot.min.js"></script>
+    )}
+    {weglotKey && (
+      <script is:inline define:vars={{ weglotKey }}>
+        if (window.Weglot) {
+          window.Weglot.initialize({ api_key: weglotKey });
+        }
+      </script>
+    )}
+    {weglotKey && (
+      <style is:inline>
+        .weglot-container {
+          position: fixed !important;
+          bottom: 1.5rem !important;
+          right: 1.5rem !important;
+          z-index: 9999 !important;
+        }
+        .is-panel .weglot-container {
+          display: none !important;
+        }
+        .wg-default, .wg-default .wg-li {
+          background: rgba(255, 255, 255, 0.95) !important;
+          backdrop-filter: blur(8px) !important;
+          border: 1px solid rgba(226, 232, 240, 0.8) !important;
+          border-radius: 0.5rem !important;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+          color: #475569 !important;
+          font-family: 'Inter', sans-serif !important;
+          font-size: 0.80rem !important;
+          font-weight: 600 !important;
+          padding: 0.2rem 0.6rem !important;
+          transition: all 0.2s ease !important;
+        }
+        .wg-default:hover, .wg-default.wg-open {
+          border-color: #ec131e !important;
+          color: #ec131e !important;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+          transform: translateY(-2px) !important;
+        }
+      </style>
     )}
   </head>
-  <body
-    class="m-0 font-[Inter] bg-[#fafafc] text-[#334155] min-h-screen relative overflow-x-hidden"
-  >
+  <body class="m-0 font-[Inter] bg-[#fafafc] text-[#334155] min-h-screen relative overflow-x-hidden">
     <slot />
   </body>
 </html>

@@ -1,0 +1,38 @@
+
+> kiorafront@0.0.1 typecheck
+> tsc --noEmit
+
+src/components/panel/MovementDrawer.tsx(36,20): error TS2339: Property 'data' does not exist on type 'PaginatedProducts | Product[]'.
+  Property 'data' does not exist on type 'Product[]'.
+src/components/panel/MovementDrawer.tsx(36,46): error TS2339: Property 'data' does not exist on type 'PaginatedProducts | Product[]'.
+  Property 'data' does not exist on type 'Product[]'.
+src/components/panel/MovementDrawer.tsx(56,9): error TS2353: Object literal may only specify known properties, and 'fk_cod_prov' does not exist in type 'Partial<Movement>'.
+src/components/panel/OrderDetailDrawer.tsx(63,94): error TS18048: 'item.precio_unit' is possibly 'undefined'.
+src/components/panel/OrderDrawer.test.tsx(24,8): error TS2739: Type '{ drawerOpen: false; onClose: Mock<Procedure>; prodSearch: string; setProdSearch: Mock<Procedure>; filteredProducts: Product[]; addToCart: Mock<...>; ... 8 more ...; safePrice: (v: unknown) => number; }' is missing the following properties from type 'OrderDrawerProps': categories, selectedCategories, setSelectedCategories
+src/components/panel/OrderDrawer.test.tsx(47,8): error TS2739: Type '{ drawerOpen: true; onClose: Mock<Procedure>; prodSearch: string; setProdSearch: Mock<Procedure>; filteredProducts: Product[]; addToCart: Mock<...>; ... 8 more ...; safePrice: (v: unknown) => number; }' is missing the following properties from type 'OrderDrawerProps': categories, selectedCategories, setSelectedCategories
+src/components/panel/OrderDrawer.test.tsx(74,8): error TS2739: Type '{ drawerOpen: true; onClose: Mock<Procedure>; prodSearch: string; setProdSearch: Mock<Procedure>; filteredProducts: Product[]; addToCart: Mock<...>; ... 8 more ...; safePrice: (v: unknown) => number; }' is missing the following properties from type 'OrderDrawerProps': categories, selectedCategories, setSelectedCategories
+src/components/panel/OrderDrawer.test.tsx(105,8): error TS2739: Type '{ drawerOpen: true; onClose: Mock<Procedure>; prodSearch: string; setProdSearch: Mock<Procedure>; filteredProducts: Product[]; addToCart: Mock<...>; ... 8 more ...; safePrice: (v: unknown) => number; }' is missing the following properties from type 'OrderDrawerProps': categories, selectedCategories, setSelectedCategories
+src/components/panel/PanelApp.tsx(288,111): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/panel/PanelApp.tsx(354,36): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/components/panel/ProveedoresSection.tsx(185,9): error TS2322: Type '{ isOpen: boolean; isEditing: boolean; isSaving: boolean; supplierData: Partial<Supplier>; onDataChange: Dispatch<SetStateAction<Partial<Supplier>>>; onSubmit: (e: FormEvent<...>) => Promise<...>; onClose: () => void; }' is not assignable to type 'IntrinsicAttributes & SupplierDrawerProps'.
+  Property 'isEditing' does not exist on type 'IntrinsicAttributes & SupplierDrawerProps'.
+src/components/panel/SalesSection.tsx(160,45): error TS2345: Argument of type '{ observaciones_tecnicas: string; descripcion: string; cod_prod: number | undefined; estado: "pendiente"; prioridad: "media"; }' is not assignable to parameter of type 'Omit<MaintenanceReport, "id_mante" | "fecha_mante">'.
+  Type '{ observaciones_tecnicas: string; descripcion: string; cod_prod: number | undefined; estado: "pendiente"; prioridad: "media"; }' is missing the following properties from type 'Omit<MaintenanceReport, "id_mante" | "fecha_mante">': id_rep, fk_id_usu, fecha_rep
+src/components/panel/SalesSection.tsx(369,102): error TS2339: Property 'desc_mov' does not exist on type 'Movement'.
+src/services/OrderService.test.ts(4,15): error TS2305: Module '"@/models/Order"' has no exported member 'CreateOrderDto'.
+src/services/OrderService.test.ts(16,11): error TS2739: Type '{ get: Mock<Procedure>; put: Mock<Procedure>; delete: Mock<Procedure>; post: Mock<Procedure>; patch: Mock<Procedure>; }' is missing the following properties from type 'IHttpClient': baseURL, download
+src/services/OrderService.test.ts(23,11): error TS2353: Object literal may only specify known properties, and 'precio_prod_final' does not exist in type 'Order'.
+src/services/OrderService.test.ts(30,11): error TS2353: Object literal may only specify known properties, and 'precio_prod_final' does not exist in type 'Order'.
+src/services/OrderService.test.ts(38,11): error TS2353: Object literal may only specify known properties, and 'precio_prod_final' does not exist in type 'Order'.
+src/services/OrderService.test.ts(51,34): error TS2339: Property 'createCompletedSale' does not exist on type 'OrderService'.
+src/services/OrderService.test.ts(59,11): error TS2739: Type '{ get: Mock<Procedure>; put: Mock<Procedure>; delete: Mock<Procedure>; post: Mock<Procedure>; patch: Mock<Procedure>; }' is missing the following properties from type 'IHttpClient': baseURL, download
+src/services/OrderService.test.ts(65,9): error TS2353: Object literal may only specify known properties, and 'precio_prod_final' does not exist in type 'Order'.
+src/services/OrderService.test.ts(74,11): error TS2353: Object literal may only specify known properties, and 'precio_prod_final' does not exist in type 'Order'.
+src/services/OrderService.test.ts(83,26): error TS2339: Property 'createCompletedSale' does not exist on type 'OrderService'.
+src/services/OrderService.ts(3,48): error TS2305: Module '"../models/Order"' has no exported member 'Paginated'.
+src/test/components/CategoriasSection.test.tsx(54,21): error TS2339: Property 'toHaveNoViolations' does not exist on type 'Assertion<AxeResults>'.
+src/test/services/OrderService.test.ts(27,19): error TS2339: Property 'data' does not exist on type 'PaginatedOrders | Order[]'.
+  Property 'data' does not exist on type 'Order[]'.
+src/test/services/OrderService.test.ts(28,19): error TS2339: Property 'data' does not exist on type 'PaginatedOrders | Order[]'.
+  Property 'data' does not exist on type 'Order[]'.

@@ -50,20 +50,26 @@ export interface HttpResponse<T> {
  * Interface abstracting the HTTP client (DIP).
  */
 export interface IHttpClient {
+  baseURL: string;
   get<T>(url: string, headers?: Record<string, string>): Promise<HttpResponse<T>>;
   post<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
+  put<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
   patch<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
   delete<T>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
 }
+
+import type { LogService } from "../LogService";
 
 /**
  * Fetch-based concrete implementation of the HTTP client (SRP).
  */
 export class FetchHttpClient implements IHttpClient {
   baseURL: string;
+  private logger?: LogService;
 
-  constructor(baseURL: string = '') {
+  constructor(baseURL: string = '', logger?: LogService) {
     this.baseURL = baseURL;
+    this.logger = logger;
   }
 
   private async request<T>(endpoint: string, options: RequestInit): Promise<HttpResponse<T>> {
@@ -75,9 +81,15 @@ export class FetchHttpClient implements IHttpClient {
       const responseData = isJson ? await response.json() : null;
 
       if (!response.ok) {
+        const errorMsg = errorMessageFromResponseBody(responseData, response.status);
+        this.logger?.error(`API Error: ${response.status} on ${endpoint}`, { 
+          status: response.status, 
+          endpoint, 
+          responseData 
+        });
         return {
           data: null,
-          error: errorMessageFromResponseBody(responseData, response.status),
+          error: errorMsg,
           status: response.status,
           ok: false,
         };
@@ -91,6 +103,11 @@ export class FetchHttpClient implements IHttpClient {
       };
     } catch (error: unknown) {
       const err = error as Error;
+      this.logger?.error(`Network Error on ${endpoint}`, { 
+        endpoint, 
+        message: err.message,
+        stack: err.stack 
+      });
       return {
         data: null,
         error: err.message || 'Error de conexión',
@@ -112,26 +129,48 @@ export class FetchHttpClient implements IHttpClient {
 
   async post<T>(url: string, body?: unknown, options: HttpRequestOptions = {}): Promise<HttpResponse<T>> {
     const { headers, ...rest } = options;
+    const isFormData = body instanceof FormData;
+    const finalHeaders: Record<string, string> = { ...headers };
+    if (!isFormData) {
+      finalHeaders['Content-Type'] = 'application/json';
+    }
+
     return this.request<T>(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-      body: body ? JSON.stringify(body) : undefined,
+      headers: finalHeaders,
+      body: isFormData ? (body as any) : (body ? JSON.stringify(body) : undefined),
+      ...rest,
+    });
+  }
+
+  async put<T>(url: string, body?: unknown, options: HttpRequestOptions = {}): Promise<HttpResponse<T>> {
+    const { headers, ...rest } = options;
+    const isFormData = body instanceof FormData;
+    const finalHeaders: Record<string, string> = { ...headers };
+    if (!isFormData) {
+      finalHeaders['Content-Type'] = 'application/json';
+    }
+
+    return this.request<T>(url, {
+      method: 'PUT',
+      headers: finalHeaders,
+      body: isFormData ? (body as any) : (body ? JSON.stringify(body) : undefined),
       ...rest,
     });
   }
 
   async patch<T>(url: string, body?: unknown, options: HttpRequestOptions = {}): Promise<HttpResponse<T>> {
     const { headers, ...rest } = options;
+    const isFormData = body instanceof FormData;
+    const finalHeaders: Record<string, string> = { ...headers };
+    if (!isFormData) {
+      finalHeaders['Content-Type'] = 'application/json';
+    }
+
     return this.request<T>(url, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-      body: body ? JSON.stringify(body) : undefined,
+      headers: finalHeaders,
+      body: isFormData ? (body as any) : (body ? JSON.stringify(body) : undefined),
       ...rest,
     });
   }

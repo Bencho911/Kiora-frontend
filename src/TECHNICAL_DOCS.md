@@ -1,69 +1,74 @@
-# Documentation Técnica Global - Kiora Frontend
+# Documentación Técnica Global - Kiora Frontend
 
-Este documento detalla la arquitectura, módulos y patrones técnicos de **toda** la aplicación frontend de Kiora.
+Este documento detalla la arquitectura, módulos y patrones técnicos de la aplicación frontend de Kiora, incluyendo las últimas actualizaciones de estabilidad y gestión de datos.
 
 ---
 
 ## 1. Arquitectura General
 
-La aplicación está construida con **Astro v5** y **React v19**. Sigue los principios de **Arquitectura Limpia** para separar la infraestructura de la lógica de negocio.
+La aplicación sigue los principios de **Arquitectura Limpia**, separando la infraestructura de la lógica de negocio para facilitar el mantenimiento y la escalabilidad.
 
 ### Estructura de Capas
-- **`src/core/`**: Infraestructura base. Cliente HTTP genérico y servicios de bajo nivel.
-- **`src/services/`**: Casos de uso y reglas de negocio. Independientes del framework.
-- **`src/models/`**: Definiciones de datos e interfaces TypeScript.
-- **`src/components/`**: Capa de presentación modular en React.
+- **`src/core/`**: Infraestructura base. Cliente HTTP con interceptores de seguridad para manejo de tokens y errores 401.
+- **`src/services/`**: Lógica de negocio (Casos de Uso). Aquí se gestiona la comunicación con los microservicios y la lógica de estados.
+- **`src/models/`**: Contratos de datos (Interfaces TypeScript) compartidos en toda la aplicación.
+- **`src/components/`**: Capa de presentación modular construida con React v19.
 
 ---
 
-## 2. Módulos del Sistema
+## 2. Módulos Destacados
 
-### 2.1 Módulo de Autenticación (`src/components/auth/`)
-Gestiona todo el flujo de acceso y seguridad:
-- **`LoginForm.tsx`**: Validación de credenciales y establecimiento de sesión.
-- **`RecoverPasswordForm.tsx`**: Proceso de solicitud de recuperación vía email.
-- **`ResetPasswordForm.tsx`**: Formulario seguro para establecer una nueva contraseña mediante tokens.
-- **`EmailSentMessage.tsx`**: Feedback visual tras acciones de recuperación.
+### 2.1 Punto de Venta (POS) e Inventario
+- **Validación en Cliente**: El `OrderDrawer.tsx` y `PanelApp.tsx` implementan validación reactiva de stock. No se permite agregar más unidades de las disponibles físicamente en el inventario actual.
+- **Sincronización**: Al agregar productos al carrito, se almacena el `stock_actual` para garantizar que la validación persista incluso si el usuario aplica filtros de búsqueda.
+- **Movimientos y Proveedores**: Control de existencias, logística y gestión de proveedores centralizado en el módulo de Inventario.
 
-### 2.2 Módulo Administrativo (`src/components/panel/`)
-El núcleo de gestión del sistema (Refactorizado):
-- **`PanelApp.tsx`**: Orquestador principal del dashboard.
-- **`UserList.tsx`**: Lista paginada de usuarios con filtro **solo sobre la página cargada** (no sustituye búsqueda global en API).
-- **`UserDrawer` / `ProfileDrawer`**: Gestión de datos mediante paneles laterales (Offcanvas).
-- **`AdminNavbar` / `AdminSubNav`**: Sistema de navegación multinivel.
+### 2.2 Gestión de Ventas y Pedidos
+- **Integridad de Estados**: Los pedidos marcados como "cancelados" entran en un estado de solo lectura. El sistema bloquea reversiones de estado para mantener la trazabilidad.
+- **Facturación Histórica**: Sub-módulo dedicado a la visualización de registros contables definitivos, separado del flujo "live" de pedidos pendientes.
 
-### 2.3 Módulo de Ayuda (`src/components/help/`)
-- **`HelpCenter.tsx`**: Centro de soporte para usuarios, con preguntas frecuentes y guías de uso.
+### 2.3 Reportes y Exportación
+- **Motor de Excel**: Utiliza la librería `xlsx` para generar reportes dinámicos.
+- **Exportación Contextual**: El sistema identifica automáticamente qué tipo de reporte generar (Ventas vs. Facturas) basándose en la pestaña activa del usuario.
+- **PDFs**: Generación de tickets de venta y facturas legales mediante `jsPDF` y `autoTable`.
 
-### 2.4 Módulo Global y UI (`src/components/ui/`)
-- **`GlobalControls.tsx`**: Controles transversales a toda la aplicación.
-- **`cargando.jsx`**: Sistema de feedback de carga (Loading overlays).
+### 2.4 Seguridad Administrativa
+- **Reseteo de Credenciales**: Los administradores pueden forzar el reseteo de contraseñas de otros usuarios mediante un flujo seguro de confirmación que invoca el endpoint administrativo del microservicio de autenticación.
+- **AuthService**: Lógica de persistencia de tokens JWT y manejo de sesiones.
 
----
-
-## 3. Patrones de Diseño Implementados
-
-### SRP (Principio de Responsabilidad Única)
-Cada componente tiene una función clara. Por ejemplo, `AuthService` solo sabe de tokens y logins, mientras que `SessionManager` solo sabe de tiempos de expiración e inactividad.
-
-### DIP (Inversión de Dependencias)
-Los componentes no instancian sus servicios. Los servicios se inyectan o se importan desde una capa de configuración (`src/config/setup.ts`), facilitando el reemplazo de implementaciones (ej. cambiar Fetch por Axios).
-
-### Inmutabilidad y Memoización
-Se utiliza `useMemo` y `useCallback` en el Panel Administrativo para garantizar que el filtrado de grandes listas de usuarios no impacte el rendimiento de la UI.
+### 2.5 Módulo de Incidencias
+- Permite a operadores y administradores crear reportes de fallos en el sistema. Consumido a través de la ruta `/incidents` del Gateway.
 
 ---
 
-## 4. Tecnologías Clave
-- **Astro**: Ruteo de alto rendimiento y optimización de assets.
-- **Tailwind CSS v4**: Estilizado mediante utilidades modernas y variables CSS.
-- **SweetAlert2**: Sistema de notificaciones y confirmaciones de alta calidad.
-- **TypeScript**: Tipado estricto para reducir errores en tiempo de desarrollo.
+## 3. Patrones de Diseño
+
+### Saga y Compensación (Integración)
+Aunque el frontend es reactivo, respeta la lógica de **Saga** del backend. Si el backend falla al descontar stock durante una transición a "completada", el frontend captura el error de conflicto (409) y notifica al usuario para evitar inconsistencias visuales.
+
+### Inversión de Dependencias (DI)
+Los servicios se inicializan en `src/config/setup.ts`. Esto permite que los componentes consuman una instancia única y configurada de cada servicio, facilitando la inyección de mocks durante las pruebas unitarias.
 
 ---
 
-## 5. Mantenimiento del Proyecto
+## 4. Tecnologías y Estándares
 
-1. **Evitar Monolitos**: Si un componente React supera las 250 líneas, debe ser dividido en sub-componentes.
-2. **Lógica en Servicios**: Las llamadas a la API (`fetch`) está prohibidas dentro de los componentes. Deben pasar siempre por un `Service`.
-3. **Consistencia Visual**: Utilizar siempre los tokens de color definidos en `global.css` (Ej. `--color-kiora-red`).
+### 4.1 PWA (Progressive Web App)
+La aplicación soporta instalación nativa mediante:
+- **Web Manifest**: Definido en `public/manifest.webmanifest`.
+- **Service Worker**: Gestionado vía Astro para soporte offline básico.
+
+### 4.2 UI y Estilos
+- **Tailwind CSS v4**: Motor de estilos por utilidad de alto rendimiento.
+- **SweetAlert2**: Estandarización de feedbacks y alertas de sistema.
+- **Diseño**: Sistema de diseño "Kiora" con sombras suaves, bordes redondeados `2xl/3xl` y tipografía `Inter`.
+
+---
+
+## 5. Mantenimiento y Buenas Prácticas
+
+1. **Lógica en Servicios**: Las llamadas a la API (`fetch`) están prohibidas dentro de los componentes. Deben pasar siempre por un `Service`.
+2. **Consistencia Visual**: Utilizar siempre los tokens de color definidos en `global.css`.
+3. **Manejo de Errores**: Se debe usar la utilidad `getErrorMessage` para parsear respuestas del servidor y mostrar mensajes legibles al usuario.
+4. **Protección de Estados Finales**: Cualquier cambio destructivo debe requerir una confirmación explícita del usuario vía `AlertService`.
+5. **Rendimiento**: Uso de `useCallback` en cargadores de datos para evitar re-renders innecesarios.

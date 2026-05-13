@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { authService, alertService } from '../../config/setup';
-import Loading from '../cargando'; // Importamos el componente de carga existente
+import Loading from '../cargando';
+import * as Sentry from "@sentry/astro";
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -9,7 +10,13 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!email || !password) {
+      alertService.showError('Campos incompletos', 'Por favor, ingresa tu correo y contraseña.');
+      return;
+    }
+
+    // Evento de prueba para Sentry
+    Sentry.captureMessage(`Intento de login para: ${email}`, "info");
 
     setIsLoading(true);
 
@@ -56,7 +63,7 @@ export default function LoginForm() {
               type="email"
               id="email"
               className="flex-1 border-none bg-transparent py-2.5 text-[0.95rem] text-[#334155] outline-none w-full placeholder-gray-400"
-              placeholder="kiora@gmail.com"
+              placeholder="KiosKiora@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

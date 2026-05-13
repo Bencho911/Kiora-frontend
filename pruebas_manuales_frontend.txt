@@ -1,0 +1,504 @@
+================================================================================
+  KIORA — GUÍA DE PRUEBAS MANUALES DEL FRONTEND
+  Fecha de generación: 2026-04-22
+================================================================================
+
+REQUISITOS PREVIOS:
+  1. Backend corriendo (docker-compose up) en http://localhost:3000
+  2. Frontend corriendo con: cd PROYECTO_KIORAPP && npm run dev
+  3. Tener un usuario admin registrado en la base de datos
+  4. Navegador: Chrome o Firefox (modo desarrollador abierto → F12)
+
+================================================================================
+  SECCIÓN 1: AUTENTICACIÓN (AuthService)
+================================================================================
+
+PRUEBA 1.1 — Login exitoso
+  1. Navegar a http://localhost:4321/login
+  2. Ingresar correo de admin (ej: admin@kiora.com)
+  3. Ingresar contraseña correcta
+  4. Click en "Iniciar Sesión"
+  RESULTADO ESPERADO:
+    - Redirige a /panel
+    - En localStorage: kiora_token y kiora_user deben existir
+    - Verificar en DevTools → Application → Local Storage
+
+PRUEBA 1.2 — Login fallido
+  1. Navegar a http://localhost:4321/login
+  2. Ingresar correo incorrecto o contraseña incorrecta
+  3. Click en "Iniciar Sesión"
+  RESULTADO ESPERADO:
+    - Muestra alerta de error (SweetAlert2)
+    - No redirige
+    - No se guardan tokens en localStorage
+
+PRUEBA 1.3 — Recuperar contraseña
+  1. En /login, click en "¿Olvidaste tu contraseña?"
+  2. Ingresar correo registrado
+  3. Click en enviar
+  RESULTADO ESPERADO:
+    - Debe enviar código al correo (verificar en consola backend)
+    - Mostrar formulario de verificación de código
+
+PRUEBA 1.4 — Verificar código de recuperación
+  1. Ingresar el código recibido por correo
+  2. Click en verificar
+  RESULTADO ESPERADO:
+    - Si es correcto: muestra formulario para nueva contraseña
+    - Si es incorrecto: muestra error
+
+PRUEBA 1.5 — Restablecer contraseña
+  1. Ingresar nueva contraseña
+  2. Confirmar contraseña
+  3. Click en restablecer
+  RESULTADO ESPERADO:
+    - Muestra éxito y redirige a /login
+    - Poder iniciar sesión con la nueva contraseña
+
+PRUEBA 1.6 — Logout
+  1. Estar autenticado en /panel
+  2. Click en ícono de perfil → Cerrar sesión (o el botón de logout)
+  3. Confirmar en el diálogo
+  RESULTADO ESPERADO:
+    - Se eliminan kiora_token y kiora_user de localStorage
+    - Redirige a /login
+
+PRUEBA 1.7 — Sesión expirada por inactividad
+  1. Iniciar sesión
+  2. No interactuar con la app durante 14 minutos
+  RESULTADO ESPERADO:
+    - A los ~14 minutos: aviso "Por favor realice una acción..."
+    - A los 15 minutos: cierre de sesión automático con alerta
+
+================================================================================
+  SECCIÓN 2: PRODUCTOS (ProductService)
+================================================================================
+
+PRUEBA 2.1 — Listar productos
+  1. Ir a /panel → sección "Productos"
+  RESULTADO ESPERADO:
+    - Se muestra tabla/grid con productos del backend
+    - Verificar en Network tab: GET /api/products → 200
+
+PRUEBA 2.2 — Crear producto
+  1. En sección Productos, click en "Agregar producto" o botón "+"
+  2. Llenar formulario: nombre, precio, descripción, stock
+  3. Opcionalmente seleccionar categorías
+  4. Opcionalmente subir imagen
+  5. Click en "Guardar"
+  RESULTADO ESPERADO:
+    - POST /api/products → 201
+    - El producto aparece en la lista
+    - Si se subió imagen: verificar que se muestra
+
+PRUEBA 2.3 — Editar producto
+  1. Click en un producto existente para abrir el drawer de edición
+  2. Modificar el nombre o precio
+  3. Click en "Guardar"
+  RESULTADO ESPERADO:
+    - PUT /api/products/:id → 200
+    - Los cambios se reflejan en la lista
+
+PRUEBA 2.4 — Eliminar producto
+  1. Click en botón de eliminar de un producto
+  2. Confirmar en el diálogo
+  RESULTADO ESPERADO:
+    - DELETE /api/products/:id → 200
+    - El producto desaparece de la lista
+
+PRUEBA 2.5 — Productos con bajo stock
+  1. Crear un producto con stock_actual < stock_minimo
+  2. Verificar en navbar: ícono de alerta con badge
+  RESULTADO ESPERADO:
+    - GET /api/products/low-stock → 200
+    - Se muestra indicador visual de bajo stock
+
+================================================================================
+  SECCIÓN 3: CATEGORÍAS (ProductService)
+================================================================================
+
+PRUEBA 3.1 — Listar categorías
+  1. Ir a /panel → sección "Categorías"
+  RESULTADO ESPERADO:
+    - Se cargan las categorías del backend
+    - GET /api/categories → 200
+
+PRUEBA 3.2 — Crear categoría
+  1. Click en "Agregar categoría"
+  2. Ingresar nombre y descripción
+  3. Click en "Guardar"
+  RESULTADO ESPERADO:
+    - POST /api/categories → 201
+    - La categoría aparece en la lista
+
+PRUEBA 3.3 — Editar categoría
+  1. Click en editar una categoría existente
+  2. Cambiar el nombre
+  3. Guardar
+  RESULTADO ESPERADO:
+    - PUT /api/categories/:id → 200
+
+PRUEBA 3.4 — Eliminar categoría
+  1. Click en eliminar categoría
+  2. Confirmar
+  RESULTADO ESPERADO:
+    - DELETE /api/categories/:id → 200
+
+================================================================================
+  SECCIÓN 4: INVENTARIO (InventoryService)
+================================================================================
+
+PRUEBA 4.1 — Listar proveedores
+  1. Ir a /panel → sección "Proveedores" o "Inventario"
+  RESULTADO ESPERADO:
+    - GET /api/inventory/suppliers → 200
+    - Se muestran los proveedores en tabla
+
+PRUEBA 4.2 — Crear proveedor
+  1. Click en "Agregar proveedor"
+  2. Llenar datos: nombre, teléfono, email, dirección
+  3. Guardar
+  RESULTADO ESPERADO:
+    - POST /api/inventory/suppliers → 201
+    - El proveedor aparece en la lista
+
+PRUEBA 4.3 — Editar proveedor
+  1. Click en editar un proveedor
+  2. Cambiar el nombre
+  3. Guardar
+  RESULTADO ESPERADO:
+    - PUT /api/inventory/suppliers/:id → 200
+
+PRUEBA 4.4 — Eliminar proveedor
+  1. Click en eliminar proveedor
+  2. Confirmar
+  RESULTADO ESPERADO:
+    - DELETE /api/inventory/suppliers/:id → 200
+
+PRUEBA 4.5 — Ver movimientos de inventario
+  1. En sección Inventario o Ventas → pestaña "Movimientos"
+  RESULTADO ESPERADO:
+    - GET /api/inventory/movements → 200
+    - Se listan los movimientos con paginación
+
+PRUEBA 4.6 — Crear movimiento de inventario
+  1. Click en "Nuevo movimiento"
+  2. Seleccionar tipo (entrada/salida), producto, cantidad, proveedor
+  3. Guardar
+  RESULTADO ESPERADO:
+    - POST /api/inventory/movements → 201
+    - El movimiento aparece en la lista
+
+PRUEBA 4.7 — Consultar bajo stock (inventario)
+  1. Verificar en la sección de inventario la lista de productos con bajo stock
+  RESULTADO ESPERADO:
+    - GET /api/inventory/low-stock → 200
+
+PRUEBA 4.8 — Relación suministra
+  1. En sección Proveedores, verificar la tabla de relación proveedor-producto
+  RESULTADO ESPERADO:
+    - GET /api/inventory/suministra → 200
+    - Se muestra la matriz de suministro
+
+PRUEBA 4.9 — Upsert suministra
+  1. Desde el drawer de movimiento o producto, asignar un proveedor a un producto
+  RESULTADO ESPERADO:
+    - POST /api/inventory/suministra → 200
+    - Si stock < mínimo: se envía alerta por email (verificar backend)
+
+================================================================================
+  SECCIÓN 5: VENTAS Y PEDIDOS (OrderService)
+================================================================================
+
+PRUEBA 5.1 — Listar ventas
+  1. Ir a /panel → sección "Ventas"
+  RESULTADO ESPERADO:
+    - GET /api/orders → 200
+    - Se muestran las ventas en tabla
+
+PRUEBA 5.2 — Crear venta (POS)
+  1. Click en "+ Nueva Venta"
+  2. Se abre el POS (Punto de Venta)
+  3. Buscar y agregar productos al carrito
+  4. Verificar cantidades y total
+  5. Seleccionar método de pago (efectivo/tarjeta)
+  6. Click en "REALIZAR COBRO"
+  RESULTADO ESPERADO:
+    - POST /api/orders → 201
+    - Si método = "tarjeta": POST /api/orders/checkout/:id → URL de Stripe
+    - La venta aparece en la lista
+    - Se descuenta stock automáticamente
+
+PRUEBA 5.3 — Ver detalle de venta
+  1. Click en una venta de la lista
+  2. Se abre el modal de detalle
+  RESULTADO ESPERADO:
+    - GET /api/orders/:id → 200
+    - Se muestran: fecha, método de pago, estado, items, total
+
+PRUEBA 5.4 — Cambiar estado de venta
+  1. En la lista de ventas, usar los botones de acción
+  2. Cambiar estado a "completada"
+  RESULTADO ESPERADO:
+    - PUT /api/orders/:id/status → 200
+    - El estado se actualiza visualmente
+
+PRUEBA 5.5 — Cancelar venta
+  1. Click en "Cancelar" en una venta
+  2. Confirmar
+  RESULTADO ESPERADO:
+    - PUT /api/orders/:id/status con estado "cancelada" → 200
+
+PRUEBA 5.6 — Reembolsar venta
+  1. Click en "Reembolsar" en una venta completada
+  2. Confirmar
+  RESULTADO ESPERADO:
+    - PUT /api/orders/:id/status con estado "reembolsada" → 200
+
+PRUEBA 5.7 — Eliminar venta
+  1. Click en eliminar venta
+  2. Confirmar
+  RESULTADO ESPERADO:
+    - DELETE /api/orders/:id → 200
+
+PRUEBA 5.8 — Descargar factura/recibo (PDF local)
+  1. En una venta completada, click en "Factura" o botón de descarga
+  RESULTADO ESPERADO:
+    - Se genera y descarga un PDF localmente (jsPDF)
+    - El PDF contiene: datos de la venta, items, total
+
+PRUEBA 5.9 — Exportar ventas a PDF
+  1. Click en botón "Exportar" en sección ventas
+  2. Seleccionar "PDF"
+  RESULTADO ESPERADO:
+    - Se descarga PDF con todas las ventas
+
+================================================================================
+  SECCIÓN 6: FACTURAS (OrderService)
+================================================================================
+
+PRUEBA 6.1 — Listar facturas
+  1. En sección Ventas → pestaña "Facturas"
+  RESULTADO ESPERADO:
+    - GET /api/invoices → 200
+    - Se muestran las facturas emitidas
+
+PRUEBA 6.2 — Emitir factura
+  1. Verificar el flujo de emisión de factura desde la venta
+  RESULTADO ESPERADO:
+    - POST /api/invoices → 201
+
+================================================================================
+  SECCIÓN 7: USUARIOS (UserService) — Solo Admin
+================================================================================
+
+PRUEBA 7.1 — Listar usuarios
+  1. Ir a /panel → sección "Usuarios"
+  RESULTADO ESPERADO:
+    - GET /api/auth/users → 200
+    - Se muestra la lista con roles y estado
+
+PRUEBA 7.2 — Registrar nuevo usuario
+  1. Click en "Agregar usuario"
+  2. Llenar: nombre, correo, teléfono, rol
+  3. Guardar
+  RESULTADO ESPERADO:
+    - POST /api/auth/register → 201
+
+PRUEBA 7.3 — Editar usuario
+  1. Click en editar un usuario
+  2. Cambiar nombre o teléfono
+  3. Guardar
+  RESULTADO ESPERADO:
+    - PATCH /api/auth/users/:id → 200
+
+PRUEBA 7.4 — Cambiar rol de usuario
+  1. Editar un usuario
+  2. Cambiar el rol (admin ↔ empleado)
+  3. Guardar
+  RESULTADO ESPERADO:
+    - PATCH /api/auth/users/:id/role → 200
+
+PRUEBA 7.5 — Desbloquear usuario
+  1. Un usuario bloqueado (5+ intentos fallidos) debe mostrar botón "Desbloquear"
+  2. Click en "Desbloquear"
+  RESULTADO ESPERADO:
+    - PATCH /api/auth/users/:id/unlock → 200
+    - El usuario se desbloquea
+
+PRUEBA 7.6 — Restablecer contraseña de usuario (Admin)
+  1. Click en "Restablecer contraseña" de un usuario
+  2. Ingresar nueva contraseña
+  RESULTADO ESPERADO:
+    - PATCH /api/auth/users/:id/password → 200
+
+PRUEBA 7.7 — Eliminar usuario
+  1. Click en eliminar un usuario
+  2. Confirmar
+  RESULTADO ESPERADO:
+    - DELETE /api/auth/users/:id → 200
+
+PRUEBA 7.8 — Cambiar contraseña propia
+  1. Abrir drawer de perfil o seguridad
+  2. Ingresar contraseña actual y nueva
+  3. Guardar
+  RESULTADO ESPERADO:
+    - PATCH /api/auth/me/password → 200
+
+================================================================================
+  SECCIÓN 8: DASHBOARD
+================================================================================
+
+PRUEBA 8.1 — Carga del dashboard
+  1. Ir a /panel → sección "Dashboard"
+  RESULTADO ESPERADO:
+    - Se cargan métricas de ventas (total ventas, ingresos)
+    - Se cargan alertas de bajo stock
+    - Verificar en Network: GET /api/orders, GET /api/products/low-stock
+
+================================================================================
+  SECCIÓN 9: HEALTH CHECK
+================================================================================
+
+PRUEBA 9.1 — Panel de salud de servicios
+  1. Ir a /panel → sección con Health Check
+  RESULTADO ESPERADO:
+    - GET /health/all → 200
+    - Se muestra estado de cada microservicio (up/down)
+    - Verificar: users, products, inventory, orders, notifications, reports
+
+================================================================================
+  SECCIÓN 10: INCIDENCIAS (IncidentService)
+================================================================================
+
+PRUEBA 10.1 — Ver incidencias
+  1. En sección Ventas → pestaña "Incidencias"
+  RESULTADO ESPERADO:
+    - GET /api/incidents → 200
+
+PRUEBA 10.2 — Crear incidencia (desde cancelación de venta)
+  1. Cancelar una venta
+  2. Verificar que se registra incidencia
+  RESULTADO ESPERADO:
+    - POST /api/incidents → 201
+
+================================================================================
+  SECCIÓN 11: NOTIFICACIONES (Local)
+================================================================================
+
+PRUEBA 11.1 — Ver notificaciones
+  1. Click en ícono de campana en navbar
+  2. Se abre sidebar de notificaciones
+  RESULTADO ESPERADO:
+    - Se muestran notificaciones almacenadas en localStorage
+    - Badge con contador de no leídas
+
+PRUEBA 11.2 — Marcar como leída
+  1. Click en una notificación
+  RESULTADO ESPERADO:
+    - Se marca como leída
+    - El badge disminuye
+
+PRUEBA 11.3 — Marcar todas como leídas
+  1. Click en "Marcar todas como leídas"
+  RESULTADO ESPERADO:
+    - Todas se marcan como leídas
+    - Badge desaparece
+
+================================================================================
+  SECCIÓN 12: NAVEGACIÓN Y UI
+================================================================================
+
+PRUEBA 12.1 — Navegación entre secciones
+  1. Click en cada sección del menú lateral/inferior:
+     - Dashboard
+     - Ventas
+     - Productos
+     - Categorías
+     - Inventario
+     - Proveedores
+     - Usuarios (solo admin)
+     - Configuración
+  RESULTADO ESPERADO:
+    - Cada sección se carga sin errores en consola
+    - La sección activa se resalta en el menú
+
+PRUEBA 12.2 — Responsive design
+  1. Redimensionar la ventana a tamaño móvil (375px)
+  2. Verificar layout en cada sección
+  RESULTADO ESPERADO:
+    - El menú se adapta (bottom nav o hamburguesa)
+    - Las tablas se adaptan o permiten scroll
+    - Los drawers ocupan pantalla completa
+
+PRUEBA 12.3 — Protección de rutas
+  1. Cerrar sesión
+  2. Intentar navegar directamente a http://localhost:4321/panel
+  RESULTADO ESPERADO:
+    - Redirige automáticamente a /login
+
+================================================================================
+  COMANDOS ÚTILES PARA DEPURACIÓN
+================================================================================
+
+# Ejecutar tests automatizados del frontend:
+cd PROYECTO_KIORAPP && npm test
+
+# Verificar build de producción (errores de compilación):
+cd PROYECTO_KIORAPP && npm run build
+
+# Verificar tipos TypeScript:
+cd PROYECTO_KIORAPP && npm run typecheck
+
+# Ver logs del backend:
+cd kiora-backend && docker-compose logs -f api-gateway
+
+# Ver estado de todos los servicios:
+curl http://localhost:3000/health/all | python3 -m json.tool
+
+# Login rápido por terminal (obtener token):
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"correo_usu":"admin@kiora.com","password":"TuContraseña123"}'
+
+# Listar productos con token:
+curl -X GET http://localhost:3000/api/products \
+  -H "Authorization: Bearer TU_TOKEN_AQUI"
+
+# Listar categorías:
+curl -X GET http://localhost:3000/api/categories \
+  -H "Authorization: Bearer TU_TOKEN_AQUI"
+
+# Listar proveedores:
+curl -X GET http://localhost:3000/api/inventory/suppliers \
+  -H "Authorization: Bearer TU_TOKEN_AQUI"
+
+# Listar ventas:
+curl -X GET http://localhost:3000/api/orders \
+  -H "Authorization: Bearer TU_TOKEN_AQUI"
+
+# Crear venta de prueba:
+curl -X POST http://localhost:3000/api/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TU_TOKEN_AQUI" \
+  -d '{
+    "metodopago_usu": "efectivo",
+    "items": [
+      {"cod_prod": 1, "cantidad": 2, "precio_unit": 1500}
+    ]
+  }'
+
+# Listar facturas:
+curl -X GET http://localhost:3000/api/invoices \
+  -H "Authorization: Bearer TU_TOKEN_AQUI"
+
+# Consultar bajo stock:
+curl -X GET http://localhost:3000/api/products/low-stock \
+  -H "Authorization: Bearer TU_TOKEN_AQUI"
+
+# Health check del gateway:
+curl http://localhost:3000/health
+
+================================================================================
+  FIN DE LA GUÍA DE PRUEBAS
+================================================================================

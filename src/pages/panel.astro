@@ -1,10 +1,19 @@
 ---
 import PanelApp from "../components/panel/PanelApp";
-import GlobalControls from "../components/ui/GlobalControls";
 import MainLayout from "@/layouts/mainlayout.astro";
 ---
 
 <MainLayout title="Panel Principal - Kiora">
-    <PanelApp client:only="react" />
-    <GlobalControls client:load />
+  <script is:inline>
+    (function () {
+      try {
+        if (!localStorage.getItem("kiora_token")) {
+          window.location.replace("/login/");
+        }
+      } catch (e) {
+        window.location.replace("/login/");
+      }
+    })();
+  </script>
+  <PanelApp client:only="react" />
 </MainLayout>

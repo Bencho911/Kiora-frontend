@@ -2,36 +2,45 @@
 
 Esta carpeta contiene el núcleo lógico y visual de la aplicación. Se sigue un patrón de separación de responsabilidades estricto.
 
+## 🚀 Inicio Rápido (Desarrollo)
+
+1.  **Instalación**: `npm install`
+2.  **Ejecución**: `npm run dev`
+    - La aplicación estará disponible en: **`http://localhost:8080`**
+    - Nota: El puerto 8080 está configurado en `astro.config.mjs` para coincidir con el mapeo de Docker.
+
 ## Estructura de Directorios
 
 ### 📂 [`components/`](./components/)
 Contiene todos los componentes de React (`.tsx`, `.jsx`).
 - **`auth/`**: Componentes del flujo de seguridad (Login, Password Reset).
-- **`panel/`**: Componentes modulares del Dashboard administrativo (Navbar, Listas, Drawers).
+- **`panel/`**: Orquestadores del Dashboard administrativo.
+- **`inventory/`**: Gestión de stock, proveedores y movimientos.
+- **`products/`**: CRUD de productos y categorías.
 - **`help/`**: Centro de soporte al usuario.
 - **`ui/`**: Componentes transversales y atómicos.
 
 ### 📂 [`core/`](./core/)
 Abstracciones de infraestructura y herramientas compartidas.
 - **`http/`**: Cliente base para comunicaciones con la API (`HttpClient.ts`).
-- **`ui/`**: Notificaciones globales (Alertas).
+- **`ui/`**: Notificaciones globales y servicios de alerta.
 
 ### 📂 [`services/`](./services/)
-Casos de uso y lógica de negocio.
-Aquí se definen las reglas de negocio (ej. "Cómo validar una sesión") independientemente de cómo se muestren en la UI.
+Lógica de negocio y comunicación con la API.
+- **`ProductService.ts`**: Gestión de catálogo y categorías.
+- **`InventoryService.ts`**: Control de existencias y proveedores.
+- **`OrderService.ts`**: Ventas, facturación y recibos PDF.
+- **`IncidentService.ts`**: Gestión de tickets/reportes de fallo.
+- **`AuthService.ts`**: Seguridad y sesiones JWT.
 
 ### 📂 [`models/`](./models/)
-Interfaces y tipos de TypeScript que definen los contratos de datos del sistema.
+Interfaces y tipos de TypeScript que definen los contratos de datos (Data Models).
 
 ### 📂 [`pages/`](./pages/)
-Rutas de la aplicación gestionadas por **Astro**.
-Cada archivo `.astro` inicializa los componentes de React necesarios para esa ruta.
+Rutas de la aplicación gestionadas por **Astro**. Incluye soporte para PWA mediante el manifiesto.
 
 ### 📂 [`styles/`](./styles/)
-Configuración global de **Tailwind CSS v4** y estilos base de la aplicación.
-
-### 📂 [`config/`](./config/)
-Configuración de entorno e instanciación de servicios globales (`setup.ts`).
+Configuración global de **Tailwind CSS v4**.
 
 ---
 
@@ -43,7 +52,7 @@ Para detalles sobre patrones de diseño, servicios y arquitectura modular:
 
 ## 💡 Reglas para Desarrolladores
 
-1.  **Modularidad**: No crees componentes gigantes en `pages/`. Usa la carpeta `components/` y subdivide si es necesario.
-2.  **Lógica Extraída**: Toda llamada a la API debe vivir en un `Service`, no directamente en el componente React.
-3.  **Tipado**: Usa siempre las interfaces de `models/` para garantizar la consistencia de los datos.
-4.  **Estilos**: Evita el CSS plano; utiliza las clases de utilidad de Tailwind v4 y los tokens de marca.
+1.  **Lógica Extraída**: Toda llamada a la API debe vivir en un `Service`, nunca directamente en el componente React.
+2.  **Sincronización BE**: Sigue estrictamente los contratos definidos en el backend (ver `setup.ts` para la URL base del Gateway en puerto 3000).
+3.  **Tipado**: Usa siempre las interfaces de `models/` para garantizar la consistencia.
+

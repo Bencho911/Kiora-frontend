@@ -1,37 +1,64 @@
 # Seguridad — Kiora Frontend
 
-Este documento describe el **modelo de amenazas del cliente**, límites conocidos y recomendaciones para despliegues reales.
+Este documento describe el modelo de seguridad, controles de acceso y políticas de protección de datos del frontend de Kiora.
 
-## Alcance
+La aplicación es un sitio estático con React en el cliente. La autorización definitiva reside en el **API Gateway (Puerto 3000)** y los microservicios individuales. El frontend gestiona la experiencia de usuario y oculta rutas según el rol, pero no sustituye la validación del lado del servidor.
 
-La aplicación es un sitio **estático (Astro `output: 'static'`)** con **React en el cliente**. La autorización definitiva debe estar siempre en el **backend** (API): el front solo oculta rutas y UX; **no** sustituye controles de acceso en servidor.
+---
 
-## Token JWT y almacenamiento
+## 1. Control de Acceso y Roles
 
-- Hoy el token se guarda en **`localStorage`** (`AuthService`), lo que lo hace accesible a cualquier script en la página.
-- **Riesgo principal:** si se inyecta JavaScript malicioso (XSS), el atacante puede leer el token.
-- **Mitigación recomendada (backend):** sesión con **cookies `HttpOnly` + `Secure` + `SameSite`**, con refresh en servidor; el front solo dispara login/logout y no guarda el JWT en JS.
-- **Mitigación en front:** evitar `dangerouslySetInnerHTML`, sanitizar HTML si se añade contenido rico, y en despliegue configurar **Content-Security-Policy (CSP)** acorde al bundle (sin `'unsafe-inline'` salvo que sea imprescindible).
+El sistema implementa una verificación de roles basada en JWT:
+- **Admin**: Acceso completo a gestión de usuarios, reseteo de claves, edición de inventario y exportación de reportes contables.
+- **Cliente / Operador**: Acceso limitado al Punto de Venta (POS) y visualización básica. No puede modificar roles ni resetear contraseñas de terceros.
 
-## Sesión e inactividad
+**Nota Crítica:** La autorización visual en el frontend es una medida de UX. El **API Gateway** y los microservicios realizan la validación definitiva de permisos en cada petición.
 
-- `SessionManager` cierra sesión por inactividad y avisa antes del corte; renueva el token cuando el JWT está cerca de expirar.
-- Los tiempos son **orientativos en cliente**; la API debe rechazar tokens expirados o revocados.
+---
 
-## Variables de entorno
+## 2. Gestión de Credenciales Administrativas
 
-- `PUBLIC_API_URL`: prefijo público; no coloques secretos en variables `PUBLIC_*` de Astro.
-- `PUBLIC_WEGLOT_API_KEY`: clave del widget de traducción Weglot (opcional). Si no está definida, no se carga el script de Weglot. Las claves Weglot están pensadas para uso en cliente; aun así evita compartirlas en repositorios públicos sin control.
+Se ha implementado un módulo de **Reseteo Administrativo de Contraseñas**:
+- Solo accesible para usuarios con rol `admin`.
+- Requiere una confirmación explícita mediante un diálogo de seguridad antes de proceder.
+- Utiliza un endpoint dedicado (`/auth/users/:id/password`) que invoca el endpoint administrativo del microservicio de autenticación.
 
-## Transporte
+---
 
-- En producción, servir la app y la API solo por **HTTPS**.
+## 3. Integridad de Datos en Ventas
 
-## Despliegue
+Para prevenir el fraude o errores operativos, el sistema aplica reglas de integridad:
+- **Estados Inmutables**: Una vez que una venta se marca como `cancelada`, el frontend bloquea cualquier cambio posterior de estado.
+- **Validación de Inventario**: El Punto de Venta (POS) impide la creación de pedidos con cantidades que excedan el stock validado, reduciendo el riesgo de sobreventa.
 
-- Configurar cabeceras de seguridad en el proveedor (Netlify `_headers`, Vercel, nginx, etc.): al menos **CSP**, **X-Content-Type-Options**, **Referrer-Policy** y **Permissions-Policy** según necesidad.
+---
 
-## Referencias internas
+## 4. Almacenamiento y Sesión
 
+- **JWT (JSON Web Token)**: Actualmente almacenado en `localStorage` para facilitar el soporte de PWA. Se recomienda para producción el uso de cookies `HttpOnly` para mitigar riesgos de XSS.
+- **Monitoreo de Inactividad**: El `SessionManager` cierra la sesión automáticamente tras periodos de inactividad, limpiando datos sensibles.
+- **Sanitización**: Se evita el uso de `dangerouslySetInnerHTML` para prevenir ataques de inyección de scripts (XSS).
+
+---
+
+## 5. Integración con el API Gateway
+
+- Todas las peticiones pasan por el **API Gateway**.
+- La identidad del usuario se propaga mediante cabeceras `Authorization: Bearer <token>`.
+- El frontend no almacena secretos del backend ni claves de API sensibles.
+
+---
+
+## 6. Recomendaciones de Despliegue
+
+1.  **HTTPS Obligatorio**: Nunca desplegar la aplicación sobre HTTP.
+2.  **CSP (Content Security Policy)**: Configurar cabeceras CSP estrictas en el servidor web (Nginx) para mitigar intentos de inyección.
+3.  **Auditoría de Roles**: Verificar periódicamente que los permisos asignados en el microservicio de usuarios coincidan con las necesidades operativas.
+
+---
+
+## 7. Componentes de Seguridad Clave
 - Cliente HTTP: `src/core/http/HttpClient.ts`
+- Gestión de Incidencias: `src/services/IncidentService.ts`
 - Autenticación: `src/services/AuthService.ts`
+- Gestor de Sesiones: `src/services/SessionManager.ts`

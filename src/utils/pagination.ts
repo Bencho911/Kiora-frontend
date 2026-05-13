@@ -7,7 +7,7 @@ export function getPaginationPages(
 ): (number | 'ellipsis')[] {
   if (total < 1) return [];
   if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
+    return Array.from({ length: total }, (unused, i) => i + 1);
   }
 
   const delta = 2;

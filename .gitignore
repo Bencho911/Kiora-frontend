@@ -4,6 +4,7 @@ dist/
 # generated types
 .astro/
 
+build_log.txt
 # dependencies
 node_modules/
 
@@ -22,3 +23,9 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+

@@ -16,12 +16,6 @@ import MainLayout from "@/layouts/mainlayout.astro";
     </header>
 
     <main class="max-w-3xl mx-auto px-4 py-8 relative">
-      {/* Botón Flotante de Descarga */}
-      <button class="hidden md:flex absolute top-12 -right-16 w-12 h-12 bg-[#ec131e] text-white rounded-full items-center justify-center shadow-lg shadow-red-500/30 hover:bg-[#d01019] hover:scale-105 transition-all">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-      </button>
 
       {/* Main Content Card */}
       <div class="bg-[#fcfaf9] rounded-none sm:rounded-2xl p-6 md:p-10 shadow-sm border border-gray-100">
@@ -121,33 +115,20 @@ import MainLayout from "@/layouts/mainlayout.astro";
             </div>
           </section>
 
-          {/* Botón Flotante Mobile */}
-           <div class="md:hidden flex justify-end">
-             <button class="w-12 h-12 bg-[#ec131e] text-white rounded-full flex items-center justify-center shadow-lg shadow-red-500/30">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </button>
-           </div>
            
            <hr class="border-gray-100" />
 
            {/* Contacto de privacidad */}
            <section class="pt-2 pb-6">
               <h4 class="text-sm font-bold text-gray-900 mb-2">Contacto de Privacidad</h4>
-              <p class="text-xs text-gray-500 font-medium mb-4 pr-10">Si tienes alguna pregunta sobre esta política o el tratamiento de tus datos, puedes contactarnos en:</p>
-              <a href="mailto:privacy@kiora.com" class="inline-flex items-center gap-2 bg-[#ec131e] hover:bg-[#d01019] text-white text-xs font-bold py-2.5 px-4 rounded-lg shadow-md transition-colors">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                privacy@kiora.com
-              </a>
+              <p class="text-xs text-gray-500 font-medium mb-4 pr-10">Si tienes alguna pregunta sobre esta política o el tratamiento de tus datos, puedes realizar tu consulta directamente con el personal administrativo en el kiosko.</p>
            </section>
 
         </div>
       </div>
 
       <div class="text-center mt-10 text-[10px] font-bold text-gray-400 uppercase tracking-widest space-y-1">
-        <p>Última actualización: 24 de Mayo, 2024</p>
-        <p class="font-medium tracking-normal text-gray-400/80">© 2024 Kiora S.A. Todos los derechos reservados.</p>
+        <p class="font-medium tracking-normal text-gray-400/80">© Kiora S.A. Todos los derechos reservados.</p>
       </div>
 
     </main>

@@ -93,7 +93,7 @@ export class SessionManager {
         'Sesión Finalizada por Inactividad',
         'Has estado mucho tiempo inactivo. Vuelve a ingresar.'
       );
-      window.location.href = '/login';
+      window.location.href = '/login/';
       return;
     }
 
@@ -122,7 +122,7 @@ export class SessionManager {
           'Sesión Expirada',
           'Tu sesión ha expirado por seguridad.'
         );
-        window.location.href = '/login';
+        window.location.href = '/login/';
       }
     }
   }

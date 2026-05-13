@@ -4,7 +4,7 @@ import Loading from '../cargando';
 
 export default function VerifyCodeForm() {
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
+  const [codeDigits, setCodeDigits] = useState<string[]>(Array(6).fill(''));
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -19,15 +19,16 @@ export default function VerifyCodeForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !code) return;
+    const fullCode = codeDigits.join('');
+    if (!email || fullCode.length < 6) return;
 
     setIsLoading(true);
 
     try {
-      await authService.verifyResetCode(email, code);
+      await authService.verifyResetCode(email, fullCode);
 
       // Redirigir a la página de restablecimiento final
-      window.location.href = `/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
+      window.location.href = `/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(fullCode)}`;
     } catch (error: unknown) {
       const err = error as Error;
       alertService.showError('Error', err.message || 'Error al verificar el código');
@@ -47,29 +48,64 @@ export default function VerifyCodeForm() {
           <p className="text-[0.95rem] text-[#64748b]">Ingresa el código de 6 dígitos enviado a <strong>{email}</strong></p>
         </div>
 
-        <div className="mb-7">
-          <label
-            htmlFor="code"
-            className="block font-semibold text-[0.85rem] text-[#374151] mb-2"
-          >
+        <div className="mb-8">
+          <label className="block font-semibold text-[0.85rem] text-[#374151] mb-3 text-center">
             Código de verificación
           </label>
-          <div className="relative flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden transition-all duration-200 focus-within:border-[#9ca3af] focus-within:ring-[3px] focus-within:ring-gray-400/10">
-            <div className="pl-3.5 pr-2 text-gray-400 flex items-center">
-              <svg fill="none" className="w-5 h-5" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <input
-              type="text"
-              id="code"
-              className="flex-1 border-none bg-transparent py-2.5 text-[0.95rem] text-[#334155] outline-none w-full placeholder-gray-400 text-center tracking-[0.5em] font-bold"
-              placeholder="000000"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              required
-            />
+          <div className="flex justify-center gap-2 sm:gap-3">
+            {codeDigits.map((digit, index) => (
+              <input
+                key={index}
+                type="text"
+                maxLength={1}
+                value={digit}
+                autoFocus={index === 0}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '');
+                  if (!val && e.target.value !== '') return;
+                  
+                  const newDigits = [...codeDigits];
+                  newDigits[index] = val;
+                  setCodeDigits(newDigits);
+                  
+                  // Auto-focus next input
+                  if (val && index < 5) {
+                    const nextInput = document.getElementById(`code-${index + 1}`);
+                    if (nextInput) nextInput.focus();
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Backspace' && !digit && index > 0) {
+                    const prevInput = document.getElementById(`code-${index - 1}`);
+                    if (prevInput) prevInput.focus();
+                  } else if (e.key === 'ArrowLeft' && index > 0) {
+                    const prevInput = document.getElementById(`code-${index - 1}`);
+                    if (prevInput) prevInput.focus();
+                  } else if (e.key === 'ArrowRight' && index < 5) {
+                    const nextInput = document.getElementById(`code-${index + 1}`);
+                    if (nextInput) nextInput.focus();
+                  }
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                  if (pastedData) {
+                    const newDigits = [...codeDigits];
+                    for (let i = 0; i < pastedData.length; i++) {
+                      if (index + i < 6) newDigits[index + i] = pastedData[i];
+                    }
+                    setCodeDigits(newDigits);
+                    const focusIndex = Math.min(index + pastedData.length, 5);
+                    const nextInput = document.getElementById(`code-${focusIndex}`);
+                    if (nextInput) nextInput.focus();
+                  }
+                }}
+                id={`code-${index}`}
+                className="w-12 h-14 border border-gray-300 rounded-xl bg-white text-center text-xl font-black text-[#334155] focus:border-[#ec131e] focus:ring-[3px] focus:ring-red-100 transition-all outline-none"
+                placeholder="-"
+                required
+              />
+            ))}
           </div>
         </div>
 

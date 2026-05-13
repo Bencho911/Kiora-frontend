@@ -1,89 +1,330 @@
 import { type IHttpClient } from '../core/http/HttpClient';
-import type { Order, CreateOrderDto, Invoice } from '../models/Order';
 import { type AuthService } from './AuthService';
-import { type PaginatedResponse } from '../models/Pagination';
+import type { Order, PaginatedOrders, Invoice, Paginated, CreateOrderDto } from '../models/Order';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+
 
 export class OrderService {
   constructor(
     private httpClient: IHttpClient,
     private authService: AuthService
-  ) {}
+  ) { }
 
   private getAuthHeaders(): Record<string, string> {
     const token = this.authService.getToken();
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  // ── Orders ───────────────────────────────────────────────────────────────
+  // Dashboard Stats (Direct from API Gateway)
+  async getDashboardStats(): Promise<any> {
+    const response = await this.httpClient.get<any>('/dashboard/stats', this.getAuthHeaders());
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error al obtener estadísticas del dashboard');
+    return response.data;
+  }
 
-  async fetchOrders(limit: number = 20, offset: number = 0): Promise<Order[]> {
-    const response = await this.httpClient.get<PaginatedResponse<Order>>(
-      `/orders?limit=${limit}&offset=${offset}`,
+  // Orders (Sales)
+  async getOrders(page: number = 1, limit: number = 20): Promise<PaginatedOrders> {
+    const response = await this.httpClient.get<any>(
+      `/orders?page=${page}&limit=${limit}`,
       this.getAuthHeaders()
     );
-    if (!response.ok) throw new Error(response.error ?? 'Error al cargar órdenes');
-    return response.data?.data || [];
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving orders');
+    
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return {
+        data: data,
+        pagination: { page, limit, total: data.length, totalPages: 1 }
+      };
+    }
+    
+    return data as PaginatedOrders;
   }
 
   async getOrderById(id: number): Promise<Order> {
     const response = await this.httpClient.get<Order>(`/orders/${id}`, this.getAuthHeaders());
-    if (!response.ok || !response.data) throw new Error(response.error ?? 'Orden no encontrada');
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving order details');
     return response.data;
   }
 
   async createOrder(dto: CreateOrderDto): Promise<Order> {
-    const response = await this.httpClient.post<Order>('/orders', dto, {
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok || !response.data) throw new Error(response.error ?? 'Error al crear orden');
-    return response.data;
+    const cleanDto = {
+      ...dto,
+      items: dto.items.map(item => ({
+        cod_prod: item.cod_prod,
+        cantidad: item.cantidad,
+        precio_unit: item.precio_unit,
+        nom_prod: item.nom_prod
+      }))
+    };
+    const res = await this.httpClient.post<Order>('/orders', cleanDto, { headers: this.getAuthHeaders() });
+    if (!res.ok || !res.data) throw new Error(res.error ?? 'Error al crear venta');
+    return res.data;
   }
 
-  async createCompletedSale(dto: CreateOrderDto): Promise<Order> {
-    const order = await this.createOrder(dto);
+  async updateOrderStatus(id: number, estado: 'pendiente' | 'completada' | 'cancelada' | 'reembolsada' | 'pagado' | 'pagada'): Promise<Order> {
+    const res = await this.httpClient.put<Order>(
+      `/orders/${id}/status`,
+      { estado },
+      { headers: this.getAuthHeaders() }
+    );
+    if (!res.ok || !res.data) throw new Error(res.error ?? 'Error al actualizar estado');
+    return res.data;
+  }
+
+  async deleteOrder(id: number): Promise<void> {
+    const response = await this.httpClient.delete(`/orders/${id}`, { headers: this.getAuthHeaders() });
+    if (!response.ok) throw new Error(response.error || 'Error deleting order');
+  }
+
+  async createCheckoutSession(orderId: number): Promise<{ checkoutUrl: string }> {
+    const res = await this.httpClient.post<any>(
+      `/orders/checkout/${orderId}`,
+      {
+        success_url: `${window.location.origin}/panel?tab=ventas&status=success&order_id=${orderId}`,
+        cancel_url: `${window.location.origin}/panel?tab=ventas&status=cancel`,
+      },
+      { headers: this.getAuthHeaders() }
+    );
+    if (!res.ok || !res.data) throw new Error(res.error ?? 'Error al generar sesión de pago');
+    return res.data;
+  }
+
+  // Export
+  async exportPdf(): Promise<void> {
     try {
-      return await this.updateOrderStatus(order.id_vent, 'completada');
-    } catch (error) {
-      // Best effort rollback to avoid leaving accidental pending orders.
-      try {
-        await this.updateOrderStatus(order.id_vent, 'cancelada');
-      } catch {
-        // Keep original failure as the root cause.
-      }
-      throw error;
+      const res = await this.getOrders(1, 1000);
+      const orders = Array.isArray(res) ? res : (res.data || []);
+
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.setTextColor(236, 19, 30);
+      doc.text('KIORA - Reporte de Ventas', 14, 20);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Fecha de generación: ${new Date().toLocaleString()}`, 14, 28);
+
+      const totalMonto = orders.reduce((sum, o) => sum + Number(o.montofinal_vent || 0), 0);
+      const tableData = orders.map(o => [
+        `#${o.id_vent}`,
+        o.fecha_vent ? new Date(o.fecha_vent).toLocaleDateString() : '—',
+        (o.metodopago_usu || 'Efectivo').toUpperCase(),
+        (o.estado || 'Pendiente').toUpperCase(),
+        `$${Number(o.montofinal_vent || 0).toLocaleString('es-CO')}`
+      ]);
+
+      autoTable(doc, {
+        startY: 35,
+        head: [['ID', 'Fecha', 'Método Pago', 'Estado', 'Monto']],
+        body: tableData,
+        foot: [['', '', '', 'TOTAL:', `$${totalMonto.toLocaleString('es-CO')}`]],
+        headStyles: { fillColor: [236, 19, 30] },
+        footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+      });
+
+      doc.save(`kiora_ventas_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (e) {
+      console.error(e);
+      throw new Error('Error al generar PDF de ventas');
     }
   }
 
-  async updateOrderStatus(id: number, estado: 'pendiente' | 'completada' | 'cancelada'): Promise<Order> {
-    const response = await this.httpClient.patch<Order>(`/orders/${id}/status`, { estado }, {
-      headers: this.getAuthHeaders()
+  async exportExcel(): Promise<void> {
+    try {
+      const response = await this.httpClient.get<any>('/orders?page=1&limit=1000', this.getAuthHeaders());
+      const orders = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+
+      const totalMonto = orders.reduce((sum: number, o: any) => sum + Number(o.montofinal_vent || 0), 0);
+      const data = [
+        ...orders.map((o: any) => ({
+          'ID Venta': o.id_vent,
+          'Fecha': o.fecha_vent ? new Date(o.fecha_vent).toLocaleString('es-CO') : '—',
+          'Método Pago': (o.metodopago_usu || 'Efectivo').toUpperCase(),
+          'Estado': (o.estado || 'Pendiente').toUpperCase(),
+          'Total ($)': Number(o.montofinal_vent || 0)
+        })),
+        {
+          'ID Venta': '',
+          'Fecha': '',
+          'Método Pago': '',
+          'Estado': 'TOTAL:',
+          'Total ($)': totalMonto
+        }
+      ];
+
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Ventas Kiora");
+
+      // Auto-ajustar anchos de columna básicos
+      const wscols = [
+        { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+      ];
+      worksheet['!cols'] = wscols;
+
+      XLSX.writeFile(workbook, `kiora_reporte_ventas_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (e) {
+      console.error(e);
+      throw new Error('Error al generar Excel de ventas');
+    }
+  }
+
+  async downloadReceipt(orderId: number): Promise<void> {
+    try {
+      // Intentar usar el microservicio de reportes del backend (PDF oficial/térmico)
+      const blob = await this.httpClient.download(`/reports/receipt/${orderId}`, this.getAuthHeaders());
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recibo_kiora_${orderId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.warn('Fallo al descargar recibo del backend, usando fallback local jsPDF:', e);
+      
+      // Fallback local: Generar el PDF en el cliente si el microservicio falla o no está disponible
+      const order = await this.getOrderById(orderId);
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [80, 200]
+      });
+
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('KIORA', 40, 15, { align: 'center' });
+
+      doc.setFontSize(9);
+      doc.text(`Recibo de Compra #${order.id_vent}`, 5, 32);
+      doc.text(`Fecha: ${order.fecha_vent ? new Date(order.fecha_vent).toLocaleString('es-CO') : '—'}`, 5, 37);
+
+      let y = 45;
+      doc.setFontSize(8);
+      (order.items || []).forEach(item => {
+        doc.text((item.nom_prod || 'Producto').substring(0, 15), 5, y);
+        doc.text(item.cantidad?.toString() || '1', 45, y);
+        doc.text(`$${Number(item.precio_unit).toLocaleString('es-CO')}`, 55, y);
+        y += 5;
+      });
+
+      y += 10;
+      doc.setFontSize(10);
+      doc.text('TOTAL:', 5, y);
+      doc.text(`$${Number(order.montofinal_vent).toLocaleString('es-CO')}`, 75, y, { align: 'right' });
+
+      doc.save(`ticket_${order.id_vent}.pdf`);
+    }
+  }
+
+  // Invoices
+  private normalizeInvoice(f: any): Invoice {
+    return {
+      ...f,
+      id_fact: f.id_fact ?? f.id,
+      fecha_fact: f.fecha_fact ?? f.emitida_en,
+      id_pedido: f.id_pedido ?? f.fk_id_vent,
+      total_fact: f.total_fact ?? f.montototal_vent
+    };
+  }
+
+  async getInvoices(page = 1, limit = 20): Promise<Paginated<Invoice>> {
+    const res = await this.httpClient.get<Paginated<Invoice>>(
+      `/invoices?page=${page}&limit=${limit}`,
+      this.getAuthHeaders()
+    );
+    if (!res.ok) {
+      if (res.status === 404) return { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+      throw new Error(res.error ?? 'Error al obtener facturas');
+    }
+
+    const data = res.data;
+    if (data && Array.isArray(data.data)) {
+      return {
+        ...data,
+        data: data.data.map(f => this.normalizeInvoice(f))
+      };
+    }
+    return data ?? { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+  }
+
+  async getInvoiceById(id: number): Promise<Invoice> {
+    const res = await this.httpClient.get<Invoice>(`/invoices/${id}`, this.getAuthHeaders());
+    if (!res.ok || !res.data) throw new Error(res.error ?? 'Factura no encontrada');
+    return this.normalizeInvoice(res.data);
+  }
+
+  async createInvoice(dto: any): Promise<Invoice> {
+    const res = await this.httpClient.post<Invoice>('/invoices', dto, { headers: this.getAuthHeaders() });
+    if (!res.ok || !res.data) throw new Error(res.error ?? 'Error al emitir factura');
+    return this.normalizeInvoice(res.data);
+  }
+
+  /**
+   * Emite factura electrónica (registro en backend) a partir de una venta ya pagada/completada.
+   * Usa totales agregados según el contrato POST /invoices del API.
+   */
+  async emitInvoiceForOrder(order: Order): Promise<Invoice> {
+    const user = this.authService.getUser();
+    const idUsu = user?.id_usu ?? user?.id;
+    if (idUsu === undefined || idUsu === null) {
+      throw new Error('No hay usuario en sesión para emitir la factura.');
+    }
+    if (!order.id_vent) throw new Error('Venta sin identificador.');
+    const items = order.items ?? [];
+    const cantidad = items.reduce((s, it) => s + (it.cantidad || 0), 0) || 1;
+    const total = Number(order.montofinal_vent ?? 0);
+    const precioPromedio = cantidad > 0 ? total / cantidad : total;
+    return this.createInvoice({
+      fk_id_vent: order.id_vent,
+      id_usu: Number(idUsu),
+      cantidad_vent: cantidad,
+      precio_prod: precioPromedio,
+      montototal_vent: total,
     });
-    if (!response.ok || !response.data) throw new Error(response.error ?? 'Error al actualizar estado');
-    return response.data;
   }
 
-  // ── Invoices ─────────────────────────────────────────────────────────────
+  async exportInvoicesExcel(): Promise<void> {
+    try {
+      const response = await this.getInvoices(1, 1000);
+      const invoices = Array.isArray(response.data) ? response.data : (response.data || []);
 
-  async fetchInvoices(): Promise<Invoice[]> {
-    const response = await this.httpClient.get<PaginatedResponse<Invoice>>('/invoices', this.getAuthHeaders());
-    if (!response.ok) throw new Error(response.error ?? 'Error al cargar facturas');
-    return response.data?.data || [];
-  }
+      const totalMonto = invoices.reduce((sum, f) => sum + Number(f.total_fact || 0), 0);
+      const data = [
+        ...invoices.map(f => ({
+          'ID Factura': f.id_fact,
+          'Fecha': f.fecha_fact ? new Date(f.fecha_fact).toLocaleString('es-CO') : '—',
+          'ID Venta': f.id_pedido,
+          'Cantidad Items': f.cantidad_vent,
+          'Monto Total ($)': Number(f.total_fact || 0)
+        })),
+        {
+          'ID Factura': '',
+          'Fecha': '',
+          'ID Venta': '',
+          'Cantidad Items': 'TOTAL:',
+          'Monto Total ($)': totalMonto
+        }
+      ];
 
-  async getInvoiceByOrderId(orderId: number): Promise<Invoice | null> {
-    const response = await this.httpClient.get<Invoice>(`/invoices/order/${orderId}`, this.getAuthHeaders());
-    if (response.status === 404) return null;
-    if (!response.ok) throw new Error(response.error ?? 'Error al buscar factura');
-    return response.data;
-  }
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Facturas Kiora");
 
-  getExportUrl(format: 'pdf' | 'excel'): string {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
-    return `${baseUrl}/orders/export/${format === 'excel' ? 'excel' : 'pdf'}`;
-  }
+      const wscols = [
+        { wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 18 }
+      ];
+      worksheet['!cols'] = wscols;
 
-  async downloadExport(format: 'pdf' | 'excel'): Promise<Blob> {
-    const url = `/orders/export/${format === 'excel' ? 'excel' : 'pdf'}`;
-    return this.httpClient.download(url, this.getAuthHeaders());
+      XLSX.writeFile(workbook, `kiora_reporte_facturas_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (e) {
+      console.error(e);
+      throw new Error('Error al generar Excel de facturas');
+    }
   }
 }
