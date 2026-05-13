@@ -6,11 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Search, ChevronLeft, Mail, Phone, LifeBuoy } from 'lucide-react';
 
-interface HelpCenterProps {
-  hideBackButton?: boolean;
-}
-
-export default function HelpCenter({ hideBackButton = false }: HelpCenterProps) {
+export default function HelpCenter() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -51,7 +47,7 @@ export default function HelpCenter({ hideBackButton = false }: HelpCenterProps) 
       <div className="mb-12 text-center pt-8">
         <h1 className="text-4xl font-black text-[#111827] tracking-tight mb-4">¿En qué podemos <span className="text-[#ec131e]">ayudarte</span>?</h1>
         <p className="text-slate-500 mb-8 font-medium">Encuentra soluciones rápidas o contacta con nuestro equipo técnico.</p>
-        
+
         <div className="relative max-w-2xl mx-auto group">
           <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-[#ec131e] transition-colors" />
           <Input
@@ -70,7 +66,7 @@ export default function HelpCenter({ hideBackButton = false }: HelpCenterProps) 
               <div className="w-1 h-6 bg-[#ec131e] rounded-full" />
               <h2 className="text-xl font-black text-[#111827]">Preguntas Frecuentes</h2>
             </div>
-            
+
             {filteredFaqIndices.length === 0 ? (
               <div className="bg-slate-50 p-8 rounded-3xl border border-dashed border-slate-200 text-center">
                 <Search className="w-8 h-8 text-slate-300 mx-auto mb-3" />
@@ -83,7 +79,7 @@ export default function HelpCenter({ hideBackButton = false }: HelpCenterProps) 
                   const faq = HELP_FAQS[faqIndex];
                   const isActive = openIndex === faqIndex;
                   return (
-                    <Card 
+                    <Card
                       key={faqIndex}
                       className={`overflow-hidden transition-all duration-300 border-none shadow-md hover:shadow-lg ${isActive ? 'ring-2 ring-[#ec131e]/20' : ''}`}
                     >

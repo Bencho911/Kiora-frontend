@@ -1,8 +1,10 @@
+import React from 'react';
+
 interface ComingSoonSectionProps {
   tabId: string;
 }
 
-export function ComingSoonSection({ tabId: _tabId }: ComingSoonSectionProps) {
+export function ComingSoonSection({ tabId }: ComingSoonSectionProps) {
 
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">

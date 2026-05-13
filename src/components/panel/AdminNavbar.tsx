@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useMemo, useEffect } from 'react';
 import type { User } from '@/models/User';
 import type { Product } from '@/models/Product';
@@ -6,6 +7,10 @@ import { useInventoryStore } from '@/store/useInventoryStore';
 import { useAppStore } from '@/store/useAppStore';
 import { getInitials } from '@/utils/userUtils';
 import { useNotificationStore, type AppNotificationCategory } from '@/store/useNotificationStore';
+=======
+import React from 'react';
+import type { User } from '@/models/User';
+>>>>>>> main
 
 interface AdminNavbarProps {
   user: User;
@@ -14,6 +19,7 @@ interface AdminNavbarProps {
   onOpenPOS: () => void;
 }
 
+<<<<<<< HEAD
 const FILTER_LABELS: Record<'all' | AppNotificationCategory, string> = {
   all: 'Todas',
   stock: 'Stock',
@@ -83,6 +89,15 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
   }, [lowStockItems, notifications, alertFilter]);
 
   const badgeCount = lowStockItems.length + unreadApp;
+=======
+export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onProfileOpen }) => {
+  const getInitials = (name: string) => {
+    if (!name) return 'UN';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  };
+>>>>>>> main
 
   return (
     <header className="sticky top-0 z-40 bg-[#3E2723] shadow-lg border-b border-white/5 font-[Inter]">
@@ -100,6 +115,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
         </div>
 
         <div className="flex items-center gap-6">
+<<<<<<< HEAD
           <button
             type="button"
             onClick={onOpenPOS}
@@ -252,6 +268,26 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
               </>
             )}
           </div>
+=======
+          {/* Notifications */}
+          <button className="relative p-1 text-white/80 transition-all hover:scale-110 hover:text-white">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
+            </svg>
+            <div className="absolute right-1 top-1.5 h-2.5 w-2.5 rounded-full bg-[#ec131e] border-2 border-[#3E2723]"></div>
+          </button>
+>>>>>>> main
 
           <div className="flex items-center gap-3">
             <button

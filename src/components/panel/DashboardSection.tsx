@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { productService, orderService } from '@/config/setup';
 import { useInventoryStore } from '@/store/useInventoryStore';
@@ -87,8 +88,13 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
       clearInterval(poll);
     };
   }, [loadDashboardData, salesSyncVersion, stockSyncVersion]);
+=======
+import React from 'react';
+>>>>>>> main
 
+export function DashboardSection() {
   const stats = [
+<<<<<<< HEAD
     { 
       label: 'Ventas de Hoy', 
       value: `$${Number(statsData?.monto_total || 0).toLocaleString('es-CO')}`, 
@@ -124,6 +130,22 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
     },
   ];
 
+=======
+    { label: 'Ventas de Hoy', value: '$1,245,000', icon: 'money', color: 'text-emerald-500', bg: 'bg-emerald-50', iconSvg: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { label: 'Pedidos Kiosco', value: '84', icon: 'clipboard', color: 'text-blue-500', bg: 'bg-blue-50', iconSvg: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+    { label: 'Upselling (IA)', value: '18%', icon: 'sparkles', color: 'text-purple-500', bg: 'bg-purple-50', growth: '+12%', iconSvg: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z' },
+    { label: 'Stock Bajo', value: '2 Productos', icon: 'alert', color: 'text-red-500', bg: 'bg-red-50', iconSvg: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+  ];
+
+  const trafficData = [
+    { hour: '8am', height: '30%' },
+    { hour: '10am', height: '45%' },
+    { hour: '12pm', height: '80%', highlight: true },
+    { hour: '2pm', height: '55%' },
+    { hour: '4pm', height: '25%' },
+  ];
+
+>>>>>>> main
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <header className="flex items-center justify-between">
@@ -157,6 +179,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
         ))}
       </div>
 
+<<<<<<< HEAD
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           <section className="rounded-[2.5rem] bg-white p-8 shadow-[0_20px_50px_rgba(0,0,0,0.04)] ring-1 ring-slate-100/50 transition-all hover:shadow-xl duration-500">
@@ -171,6 +194,25 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
                   <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Alza +15%</span>
                 </div>
               </div>
+=======
+      {/* Traffic Chart */}
+      <section className="rounded-3xl border border-slate-200/60 bg-white p-6 shadow-sm">
+        <div className="mb-8 flex items-center justify-between">
+          <h3 className="text-lg font-bold text-slate-800">Tráfico de Pedidos</h3>
+          <select className="rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 outline-none ring-1 ring-slate-200">
+            <option>Hoy</option>
+            <option>Semana</option>
+          </select>
+        </div>
+        <div className="flex h-48 items-end justify-between gap-2 px-4">
+          {trafficData.map((bar) => (
+            <div key={bar.hour} className="group flex flex-1 flex-col items-center gap-3">
+              <div 
+                className={`w-full max-w-[60px] rounded-t-lg transition-all duration-500 ease-out group-hover:opacity-80 ${bar.highlight ? 'bg-[#ec131e] shadow-lg shadow-[#ec131e]/20' : 'bg-[#ec131e]/20'}`}
+                style={{ height: bar.height }}
+              ></div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{bar.hour}</span>
+>>>>>>> main
             </div>
             
             <div className="h-[300px] w-full">
@@ -224,6 +266,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
               <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Ventas Recientes</h3>
               <button onClick={() => onNavigate('ventas')} className="text-[10px] font-bold text-[#ec131e] hover:underline uppercase tracking-widest">Ver Todas</button>
             </div>
+<<<<<<< HEAD
             <div className="divide-y divide-slate-50">
               {orders.slice(0, 5).map(order => (
                 <div key={order.id_vent} className="p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
@@ -245,6 +288,31 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
               {orders.length === 0 && (
                 <div className="py-12 text-center text-slate-400 text-xs font-bold italic">No hay actividad reciente.</div>
               )}
+=======
+            <div>
+              <h4 className="font-bold text-slate-900">Pico Detectado</h4>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600 font-medium">
+                Alta demanda de "Merengón de Fresa" hoy. Sugerimos preparar <span className="text-[#ec131e] font-bold underline">15 unidades extra</span> para la tarde.
+              </p>
+            </div>
+          </div>
+
+          {/* Stock Insight */}
+          <div className="flex items-start gap-4 rounded-2xl bg-red-50/50 p-6 ring-1 ring-red-200/50">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
+               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-slate-900">Inventario Crítico</h4>
+              <p className="mt-1 text-sm text-slate-600 font-medium">
+                Quedan solo <span className="text-red-600 font-bold">5 Panelitas de Leche</span>. ¿Registrar entrada en inventario?
+              </p>
+              <button className="mt-4 w-full rounded-xl bg-red-100/80 py-2.5 text-xs font-bold uppercase tracking-wider text-red-700 transition-all hover:bg-red-200">
+                Actualizar Stock
+              </button>
+>>>>>>> main
             </div>
           </section>
         </div>

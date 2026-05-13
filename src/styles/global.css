@@ -15,6 +15,7 @@
   --shadow-panel: 0 4px 24px -4px rgb(15 23 42 / 0.07);
   --shadow-premium: 0 20px 50px rgba(0,0,0,0.04);
 }
+<<<<<<< HEAD
 
 /* Ocultar flechas en inputs numericos (no escalables) */
 input::-webkit-outer-spin-button,
@@ -173,3 +174,5 @@ input[type=number] {
     @apply font-sans;
   }
 }
+=======
+>>>>>>> main

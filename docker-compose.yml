@@ -10,8 +10,6 @@ services:
 
     container_name: kiora_frontend_app
     restart: unless-stopped
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "8080:80"
     networks:
