@@ -265,6 +265,30 @@ export class OrderService {
     return this.normalizeInvoice(res.data);
   }
 
+  /**
+   * Emite factura electrónica (registro en backend) a partir de una venta ya pagada/completada.
+   * Usa totales agregados según el contrato POST /invoices del API.
+   */
+  async emitInvoiceForOrder(order: Order): Promise<Invoice> {
+    const user = this.authService.getUser();
+    const idUsu = user?.id_usu ?? user?.id;
+    if (idUsu === undefined || idUsu === null) {
+      throw new Error('No hay usuario en sesión para emitir la factura.');
+    }
+    if (!order.id_vent) throw new Error('Venta sin identificador.');
+    const items = order.items ?? [];
+    const cantidad = items.reduce((s, it) => s + (it.cantidad || 0), 0) || 1;
+    const total = Number(order.montofinal_vent ?? 0);
+    const precioPromedio = cantidad > 0 ? total / cantidad : total;
+    return this.createInvoice({
+      fk_id_vent: order.id_vent,
+      id_usu: Number(idUsu),
+      cantidad_vent: cantidad,
+      precio_prod: precioPromedio,
+      montototal_vent: total,
+    });
+  }
+
   async exportInvoicesExcel(): Promise<void> {
     try {
       const response = await this.getInvoices(1, 1000);

@@ -1,7 +1,7 @@
 import { type IHttpClient } from '../core/http/HttpClient';
 import { type AuthService } from './AuthService';
+import type { ProductService } from './ProductService';
 import type { Order } from '../models/Order';
-import type { Product } from '../models/Product';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -33,7 +33,8 @@ export interface ProductRankingReport {
 export class ReportService {
   constructor(
     private httpClient: IHttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private productService: ProductService
   ) { }
 
   private getAuthHeaders(): Record<string, string> {
@@ -117,10 +118,11 @@ export class ReportService {
     // Fetch product names for missing ones
     let productMap: Record<number, string> = {};
     try {
-      const { productService } = await import('@/config/setup');
-      const pRes = await productService.getProducts(1, 1000);
+      const pRes = await this.productService.getProducts(1, 1000);
       const pList = Array.isArray(pRes) ? pRes : (pRes.data || []);
-      pList.forEach((p: any) => { productMap[p.cod_prod] = p.nom_prod; });
+      pList.forEach((p: { cod_prod: number; nom_prod?: string }) => {
+        productMap[p.cod_prod] = p.nom_prod ?? '';
+      });
     } catch (e) {
       console.warn('Could not load product map for ranking enrichment:', e);
     }

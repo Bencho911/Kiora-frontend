@@ -11,10 +11,10 @@ ENV PUBLIC_WEGLOT_API_KEY=$PUBLIC_WEGLOT_API_KEY
 ENV PUBLIC_SENTRY_DSN=$PUBLIC_SENTRY_DSN
 
 COPY package*.json ./
-# Eliminamos el lock para forzar la descarga de binarios correctos para Linux
-RUN rm -f package-lock.json && npm install
+# Usamos npm ci para instalaciones más limpias y muchísimo más rápidas
+RUN npm ci
 COPY . .
-RUN NODE_OPTIONS=--max-old-space-size=3072 npm run build
+RUN NODE_OPTIONS=--max-old-space-size=1024 npm run build
 
 # Etapa 2: Servidor Web (Nginx)
 FROM nginx:alpine

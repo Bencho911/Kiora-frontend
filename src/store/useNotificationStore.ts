@@ -1,17 +1,25 @@
 import { create } from 'zustand';
 
+export type AppNotificationCategory =
+  | 'stock'
+  | 'payment'
+  | 'inventory'
+  | 'user'
+  | 'system';
+
 export interface Notification {
   id: string;
   title: string;
   description: string;
   type: 'info' | 'success' | 'warning' | 'error';
+  category: AppNotificationCategory;
   timestamp: number;
   read: boolean;
 }
 
 interface NotificationState {
   notifications: Notification[];
-  addNotification: (n: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
+  addNotification: (n: Omit<Notification, 'id' | 'timestamp' | 'read' | 'category'> & { category?: AppNotificationCategory }) => void;
   markAsRead: (id: string) => void;
   clearAll: () => void;
   unreadCount: () => number;
@@ -23,6 +31,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   addNotification: (n) => {
     const newNotif: Notification = {
       ...n,
+      category: n.category ?? 'system',
       id: Math.random().toString(36).substring(7),
       timestamp: Date.now(),
       read: false

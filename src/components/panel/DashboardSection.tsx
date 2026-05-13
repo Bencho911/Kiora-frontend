@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { productService, orderService } from '@/config/setup';
 import { useInventoryStore } from '@/store/useInventoryStore';
+import { useSalesStore } from '@/store/useSalesStore';
 import type { Product } from '@/models/Product';
 import type { Order } from '@/models/Order';
 import { SystemAlerts } from './SystemAlerts';
@@ -24,6 +25,9 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statsData, setStatsData] = useState<any>(null);
+  
+  const { stockSyncVersion } = useInventoryStore();
+  const { salesSyncVersion } = useSalesStore();
 
   // Datos simulados para evolución si no hay suficientes datos reales
   const evolutionData = useMemo(() => {
@@ -82,7 +86,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
       window.removeEventListener('kiora-refresh-alerts', handleRefresh);
       clearInterval(poll);
     };
-  }, [loadDashboardData]);
+  }, [loadDashboardData, salesSyncVersion, stockSyncVersion]);
 
   const stats = [
     { 
@@ -274,7 +278,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
 
           <section className="bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.04)] ring-1 ring-slate-100/50">
              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Alertas de Inventario</h3>
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Stock bajo</h3>
                 <span className="h-5 w-5 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-[10px] font-black">{criticalStock.length}</span>
              </div>
              <div className="space-y-3">
@@ -290,10 +294,11 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
                   </div>
                 ))}
                 <button 
-                  onClick={() => onNavigate('inventario')}
+                  type="button"
+                  onClick={() => onNavigate('productos')}
                   className="w-full mt-4 py-3 rounded-2xl bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
                 >
-                  Ver Todo el Inventario
+                  Ver productos y stock
                 </button>
              </div>
           </section>

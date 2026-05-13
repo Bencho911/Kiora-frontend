@@ -12,6 +12,8 @@ export interface CreateProductDto {
   fk_cod_cats?: number[];
   imagen?: File;
   alerta_stock_critico?: boolean;
+  /** Fecha de vencimiento del producto (ISO yyyy-mm-dd o completo). */
+  fechaven_prod?: string | null;
 }
 
 export class ProductService {
@@ -137,6 +139,10 @@ export class ProductService {
     if (dto.stock_minimo !== undefined) fd.append('stock_minimo', String(dto.stock_minimo));
     if (dto.fk_cod_cats?.length) fd.append('fk_cod_cats', JSON.stringify(dto.fk_cod_cats));
     if (dto.imagen) fd.append('imagen', dto.imagen);
+    if (dto.fechaven_prod) {
+      const d = dto.fechaven_prod.length === 10 ? `${dto.fechaven_prod}T12:00:00.000Z` : dto.fechaven_prod;
+      fd.append('fechaven_prod', d);
+    }
 
     return fd;
   }

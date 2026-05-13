@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { CategoriasSection } from '../../components/panel/CategoriasSection';
+import { CategoriasSection } from '../../features/products/components/CategoriasSection';
 import { productService } from '../../config/setup';
 
 // Mock the services

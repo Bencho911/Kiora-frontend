@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { authService, orderService } from '@/config/setup';
 import type { Order, Invoice } from '@/models/Order';
 import type { Movement } from '@/models/Inventory';
@@ -22,7 +22,17 @@ const ESTADO_COLORS: Record<string, string> = {
 import { useInventoryStore } from '@/store/useInventoryStore';
 import { useSalesManager } from '@/hooks/useSalesManager';
 
-export function SalesSection({ onOpenPOS, isAdmin }: { onOpenPOS: () => void; isAdmin?: boolean }) {
+export function SalesSection({
+  onOpenPOS,
+  isAdmin,
+  initialOpenOrderId,
+  onInitialOrderOpened,
+}: {
+  onOpenPOS: () => void;
+  isAdmin?: boolean;
+  initialOpenOrderId?: number;
+  onInitialOrderOpened?: () => void;
+}) {
   const { productMap } = useInventoryStore();
 
   const isPaidStatus = (status?: string) => {
@@ -45,9 +55,22 @@ export function SalesSection({ onOpenPOS, isAdmin }: { onOpenPOS: () => void; is
     filteredOrders,
     handleExport, handleExportIncidents,
     handleViewDetails, handleStatusChange, handleConfirmReason, handleRefund, handleDeleteOrder,
-    downloadInvoicePDF, handleDownloadReceipt,
+    downloadInvoicePDF, handleDownloadReceipt, handleEmitElectronicInvoice,
     handleSaveIncident, handleDeleteIncident, handleUpdateIncidentStatus
   } = useSalesManager(isAdmin || false);
+
+  const deepLinkHandled = useRef<number | null>(null);
+  useEffect(() => {
+    if (initialOpenOrderId == null || !Number.isFinite(initialOpenOrderId)) {
+      deepLinkHandled.current = null;
+      return;
+    }
+    if (deepLinkHandled.current === initialOpenOrderId) return;
+    deepLinkHandled.current = initialOpenOrderId;
+    void handleViewDetails(initialOpenOrderId).finally(() => {
+      onInitialOrderOpened?.();
+    });
+  }, [initialOpenOrderId, handleViewDetails, onInitialOrderOpened]);
 
   const handleExportSingleIncident = (inc: any) => {
     handleExportIncidents('pdf');
@@ -95,7 +118,7 @@ export function SalesSection({ onOpenPOS, isAdmin }: { onOpenPOS: () => void; is
           { id: 'ventas', label: 'Ventas' },
           { id: 'facturas', label: 'Facturas' },
           { id: 'movimientos', label: 'Movimientos' },
-          { id: 'incidencias', label: 'Incidencias' },
+
         ].map(t => (
           <button
             key={t.id}
@@ -349,6 +372,7 @@ export function SalesSection({ onOpenPOS, isAdmin }: { onOpenPOS: () => void; is
           productMap={productMap}
           onRefund={isAdmin ? handleRefund : undefined}
           onDownloadReceipt={handleDownloadReceipt}
+          onEmitElectronicInvoice={handleEmitElectronicInvoice}
         />
       )}
 

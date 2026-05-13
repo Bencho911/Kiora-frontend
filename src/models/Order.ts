@@ -15,6 +15,9 @@ export interface OrderItem {
   nom_prod?: string;
   url_imagen?: string;
   stock_actual?: number;
+  /** Trazabilidad opcional por línea (si el backend la envía). */
+  lote_ingreso?: string | null;
+  fechaven_prod?: string | null;
 }
 
 export interface Order {

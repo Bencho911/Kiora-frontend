@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { HELP_FAQS, HELP_TOPICS } from './helpContent';
-import { RolesSection } from '@/features/users/components/RolesSection';
 import { authService } from '@/config/setup';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -111,13 +110,7 @@ export default function HelpCenter({ hideBackButton = false }: HelpCenterProps) 
             )}
           </section>
 
-          <section className="pt-12 border-t border-slate-100">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-1 h-6 bg-[#ec131e] rounded-full" />
-              <h2 className="text-xl font-black text-[#111827]">Guía de Roles</h2>
-            </div>
-            <RolesSection />
-          </section>
+
         </div>
 
         <aside className="space-y-8">

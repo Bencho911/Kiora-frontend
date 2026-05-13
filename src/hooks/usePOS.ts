@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import Fuse from 'fuse.js';
 import { productService, orderService, alertService } from '@/config/setup';
 import type { Product, Category } from '@/models/Product';
-import type { CreateOrderDto } from '@/services/OrderService';
+import type { CreateOrderDto, OrderItem } from '@/models/Order';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import { pushAppNotification } from '@/lib/pushAppNotification';
 import { useInventoryStore } from '@/store/useInventoryStore';
 import { useSalesStore } from '@/store/useSalesStore';
 
@@ -89,18 +90,18 @@ export function usePOS(user: any) {
       return;
     }
 
-    const existing = orderForm.items.find(i => i.cod_prod === p.cod_prod);
+    const existing = orderForm.items.find((i: OrderItem) => i.cod_prod === p.cod_prod);
     if (existing) {
       if (existing.cantidad >= stock) {
         alertService.showToast('warning', `Solo hay ${stock} unidades disponibles`);
         return;
       }
-      setOrderForm(f => ({
+      setOrderForm((f: CreateOrderDto) => ({
         ...f,
-        items: f.items.map(i => i.cod_prod === p.cod_prod ? { ...i, cantidad: i.cantidad + 1 } : i)
+        items: f.items.map((i: OrderItem) => i.cod_prod === p.cod_prod ? { ...i, cantidad: i.cantidad + 1 } : i)
       }));
     } else {
-      setOrderForm(f => ({
+      setOrderForm((f: CreateOrderDto) => ({
         ...f,
         items: [...f.items, { 
           cod_prod: p.cod_prod!, 
@@ -115,13 +116,13 @@ export function usePOS(user: any) {
   };
 
   const removeFromCart = (cod_prod: number) => {
-    setOrderForm(f => ({ ...f, items: f.items.filter(i => i.cod_prod !== cod_prod) }));
+    setOrderForm((f: CreateOrderDto) => ({ ...f, items: f.items.filter((i: OrderItem) => i.cod_prod !== cod_prod) }));
   };
 
   const updateQuantity = (cod_prod: number, delta: number, maxStock?: number) => {
-    setOrderForm(f => ({
+    setOrderForm((f: CreateOrderDto) => ({
       ...f,
-      items: f.items.map(i => {
+      items: f.items.map((i: OrderItem) => {
         if (i.cod_prod === cod_prod) {
           const limit = maxStock ?? i.stock_actual ?? 999;
           const newCant = Math.max(1, i.cantidad + delta);
@@ -137,7 +138,10 @@ export function usePOS(user: any) {
   };
 
   const cartTotal = useMemo(() => {
-    return orderForm.items.reduce((acc, item) => acc + (item.cantidad * (item.precio_unit || 0)), 0);
+    return orderForm.items.reduce(
+      (acc: number, item: OrderItem) => acc + (item.cantidad * (item.precio_unit || 0)),
+      0
+    );
   }, [orderForm.items]);
 
   const resetCart = () => {
@@ -158,7 +162,7 @@ export function usePOS(user: any) {
 
   const validateCartAgainstLiveProducts = async (currentOrder: CreateOrderDto): Promise<{ hasCriticalChanges: boolean; nextOrderForm: CreateOrderDto }> => {
     const checks = await Promise.all(
-      currentOrder.items.map(async (item) => {
+      currentOrder.items.map(async (item: OrderItem) => {
         try {
           const product = await productService.getProductById(item.cod_prod);
           return { cod_prod: item.cod_prod, stock_actual: product.stock_actual ?? 0 };
@@ -169,13 +173,15 @@ export function usePOS(user: any) {
     );
 
     const stockByProduct = new Map<number, number>();
-    checks.forEach(({ cod_prod, stock_actual }) => stockByProduct.set(cod_prod, stock_actual));
+    checks.forEach(({ cod_prod, stock_actual }: { cod_prod: number; stock_actual: number }) =>
+      stockByProduct.set(cod_prod, stock_actual)
+    );
 
     let removedItems = 0;
     let adjustedItems = 0;
     let changed = false;
 
-    const nextItems = currentOrder.items.flatMap((item) => {
+    const nextItems = currentOrder.items.flatMap((item: OrderItem) => {
       const latestStock = stockByProduct.get(item.cod_prod) ?? 0;
       if (latestStock <= 0) {
         removedItems += 1;
@@ -245,7 +251,7 @@ export function usePOS(user: any) {
             if (!checkoutUrl) throw new Error('No se recibió URL de checkout.');
 
             const totalToCharge = candidateOrder.items.reduce(
-              (acc, item) => acc + item.cantidad * (item.precio_unit || 0),
+              (acc: number, item: OrderItem) => acc + item.cantidad * (item.precio_unit || 0),
               0
             );
 
@@ -258,7 +264,21 @@ export function usePOS(user: any) {
 
             return;
           } catch (checkoutError) {
-            if (!isStockConflictError(checkoutError)) throw checkoutError;
+            if (!isStockConflictError(checkoutError)) {
+              const msg = getErrorMessage(
+                checkoutError,
+                'No se pudo iniciar la sesión de pago con tarjeta. Reintenta o usa efectivo.'
+              );
+              pushAppNotification('error', 'Error al pagar con Stripe', msg, { category: 'payment' });
+              try {
+                await orderService.deleteOrder(order.id_vent!);
+              } catch {
+                /* ignore */
+              }
+              setIsSavingOrder(false);
+              orderSubmitLockRef.current = false;
+              return;
+            }
 
             try {
               await orderService.deleteOrder(order.id_vent);
@@ -272,7 +292,7 @@ export function usePOS(user: any) {
             if (conflictProductCode) {
               candidateOrder = {
                 ...candidateOrder,
-                items: candidateOrder.items.filter((item) => item.cod_prod !== conflictProductCode)
+                items: candidateOrder.items.filter((item: OrderItem) => item.cod_prod !== conflictProductCode)
               };
               setOrderForm(candidateOrder);
             }
@@ -297,7 +317,9 @@ export function usePOS(user: any) {
         break;
       }
     } catch (e) {
-      alertService.showToast('error', getErrorMessage(e, 'Error al procesar la venta'));
+      const msg = getErrorMessage(e, 'Error al procesar la venta');
+      alertService.showToast('error', msg);
+      pushAppNotification('error', 'Venta (POS)', msg, { category: 'payment' });
     } finally {
       setIsSavingOrder(false);
       orderSubmitLockRef.current = false;
