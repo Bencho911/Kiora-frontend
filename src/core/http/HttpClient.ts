@@ -66,15 +66,30 @@ import type { LogService } from "../LogService";
 export class FetchHttpClient implements IHttpClient {
   baseURL: string;
   private logger?: LogService;
+  private apiKey?: string;
 
-  constructor(baseURL: string = '', logger?: LogService) {
+  constructor(baseURL: string = '', logger?: LogService, apiKey?: string) {
     this.baseURL = baseURL;
     this.logger = logger;
+    this.apiKey = apiKey;
   }
 
   private async request<T>(endpoint: string, options: RequestInit): Promise<HttpResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
+    // Inject API Key if present
+    if (this.apiKey) {
+      options.headers = {
+        ...options.headers,
+        'x-api-key': this.apiKey
+      };
+    }
+
+    // Default credentials if not specified (more CORS friendly)
+    if (!options.credentials) {
+      options.credentials = 'same-origin';
+    }
+
     try {
       const response = await fetch(url, options);
       const isJson = response.headers.get('content-type')?.includes('application/json');

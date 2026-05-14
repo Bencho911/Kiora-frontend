@@ -2,11 +2,13 @@
 FROM node:20 AS build
 WORKDIR /app
 
-# Definir argumentos para el build
+# Definir argumentos para el build (deben coincidir con docker-compose.yml y .env)
 ARG PUBLIC_API_URL
+ARG PUBLIC_KIORA_API_KEY
 ARG PUBLIC_WEGLOT_API_KEY
 ARG PUBLIC_SENTRY_DSN
 ENV PUBLIC_API_URL=$PUBLIC_API_URL
+ENV PUBLIC_KIORA_API_KEY=$PUBLIC_KIORA_API_KEY
 ENV PUBLIC_WEGLOT_API_KEY=$PUBLIC_WEGLOT_API_KEY
 ENV PUBLIC_SENTRY_DSN=$PUBLIC_SENTRY_DSN
 
@@ -14,7 +16,8 @@ COPY package*.json ./
 # Usamos npm ci para instalaciones más limpias y muchísimo más rápidas
 RUN npm ci
 COPY . .
-RUN NODE_OPTIONS=--max-old-space-size=1024 npm run build
+# Forzamos npx para asegurar que encuentre el binario de astro
+RUN NODE_OPTIONS=--max-old-space-size=1024 npx astro build
 
 # Etapa 2: Servidor Web (Nginx)
 FROM nginx:alpine

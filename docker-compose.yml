@@ -4,9 +4,10 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:3000/api}
-        - PUBLIC_WEGLOT_API_KEY=${PUBLIC_WEGLOT_API_KEY:-wg_9377AA8B32}
-        - PUBLIC_SENTRY_DSN=https://939080ed4cff9f9de326409db475b4f1@o4511345952686080.ingest.us.sentry.io/4511346045091840
+        - PUBLIC_API_URL=${PUBLIC_API_URL:-http://20.110.129.152:3000/api/v1}
+        - PUBLIC_KIORA_API_KEY=${PUBLIC_KIORA_API_KEY:-kiosk_secret_key_2024}
+        - PUBLIC_WEGLOT_API_KEY=${PUBLIC_WEGLOT_API_KEY:-}
+        - PUBLIC_SENTRY_DSN=${PUBLIC_SENTRY_DSN:-https://939080ed4cff9f9de326409db475b4f1@o4511345952686080.ingest.us.sentry.io/4511346045091840}
 
     container_name: kiora_frontend_app
     restart: unless-stopped
