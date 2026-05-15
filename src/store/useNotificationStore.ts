@@ -32,7 +32,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     const newNotif: Notification = {
       ...n,
       category: n.category ?? 'system',
-      id: Math.random().toString(36).substring(7),
+      id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       timestamp: Date.now(),
       read: false
     };

@@ -33,7 +33,14 @@ export function SalesSection({
   initialOpenOrderId?: number;
   onInitialOrderOpened?: () => void;
 }) {
-  const { productMap } = useInventoryStore();
+  const { productMap, fetchProducts } = useInventoryStore();
+
+  // Asegurar que el mapa de productos esté cargado para mostrar nombres
+  useEffect(() => {
+    if (Object.keys(productMap).length === 0) {
+      fetchProducts();
+    }
+  }, []);
 
   const isPaidStatus = (status?: string) => {
     const normalized = String(status ?? '').toLowerCase();
@@ -203,7 +210,7 @@ export function SalesSection({
                       <tr key={o.id_vent} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-5 py-4 font-black text-slate-400 text-xs">#{o.id_vent}</td>
                         <td className="px-5 py-4 text-[#111827] text-xs font-bold">
-                          {o.fecha_vent ? new Date(o.fecha_vent).toLocaleDateString('es-CO') : '—'}
+                          {o.fecha_vent ? new Date(o.fecha_vent).toLocaleString('es-CO') : '—'}
                         </td>
                         <td className="px-5 py-4 text-slate-500 text-xs font-bold capitalize max-w-[200px] truncate" title={o.productos_resumen || ''}>
                           {o.productos_resumen || (o.metodopago_usu === 'tarjeta' ? 'Pago con Tarjeta' : 'Venta Directa')}

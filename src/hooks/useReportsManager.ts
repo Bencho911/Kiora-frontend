@@ -28,7 +28,7 @@ export function useReportsManager() {
   const [activeTab, setActiveTab] = useState('generar');
   const [alerts, setAlerts] = useState<any[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [previewData, setPreviewData] = useState<{ isOpen: boolean; type: 'stock' | 'expired'; product: any }>({
+  const [previewData, setPreviewData] = useState<{ isOpen: boolean; type: 'stock' | 'expired'; product: Product | null }>({
     isOpen: false,
     type: 'stock',
     product: null
@@ -72,8 +72,8 @@ export function useReportsManager() {
         productService.getLowStock(),
         productService.getExpiredProducts()
       ]);
-      const lowStock = (lowRes?.data || []).map((p: any) => ({ ...p, alertType: 'stock' }));
-      const expired = (expRes || []).map((p: any) => ({ ...p, alertType: 'expired' }));
+      const lowStock = (lowRes?.data || []).map((p: Product) => ({ ...p, alertType: 'stock' }));
+      const expired = (expRes || []).map((p: Product) => ({ ...p, alertType: 'expired' }));
       setAlerts([...lowStock, ...expired]);
     } catch (e) {
       console.error('Error loading alerts:', e);
@@ -105,7 +105,7 @@ export function useReportsManager() {
     setSavedReports(savedReports.filter(r => r.id !== id));
   };
 
-  const loadSavedReport = (report: any) => {
+  const loadSavedReport = (report: Record<string, unknown>) => {
     setFilters(report.filters);
     setActiveTab('generar');
   };
@@ -121,7 +121,7 @@ export function useReportsManager() {
         const data = await reportService.getProductRanking(filters);
         setReportData(data);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       alertService.showError('Error', error.message || 'No se pudo generar el reporte');
     } finally {
       setIsLoading(false);

@@ -24,12 +24,22 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
   const [movFilter, setMovFilter] = useState<'all' | 'entrada' | 'salida' | 'ajuste'>('all');
   const [movSearch, setMovSearch] = useState('');
 
-  const [movForm, setMovForm] = React.useState<{ tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; fk_cod_prov?: number; stock_minimo: number }>({
+  const [movForm, setMovForm] = React.useState<{
+    tipo_mov: 'entrada' | 'salida' | 'ajuste';
+    cantidad: number;
+    desc_mov: string;
+    fk_cod_prov?: number;
+    stock_minimo: number;
+    numero_lote?: string;
+    fecha_vencimiento?: string;
+  }>({
     tipo_mov: 'entrada',
     cantidad: 1,
     desc_mov: '',
     fk_cod_prov: undefined,
-    stock_minimo: product.stock_minimo || 5
+    stock_minimo: product.stock_minimo || 5,
+    numero_lote: '',
+    fecha_vencimiento: ''
   });
 
   const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
@@ -94,10 +104,11 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
       tipo_mov: finalType, 
       cantidad: finalAmount, 
       desc_mov: isAbastecimiento ? `Abastecimiento de mercancía` : movForm.desc_mov + (movForm.tipo_mov === 'ajuste' ? ' (Ajuste de inventario)' : ''),
-      fk_cod_prov: isAbastecimiento ? movForm.fk_cod_prov : undefined
+      fk_cod_prov: isAbastecimiento ? movForm.fk_cod_prov : undefined,
+      fecha_vencimiento: finalType === 'entrada' && movForm.fecha_vencimiento ? movForm.fecha_vencimiento : undefined
     });
-    
-    setMovForm({ tipo_mov: 'entrada', cantidad: 1, desc_mov: '', fk_cod_prov: undefined, stock_minimo: product.stock_minimo || 5 });
+
+    setMovForm({ tipo_mov: 'entrada', cantidad: 1, desc_mov: '', fk_cod_prov: undefined, stock_minimo: product.stock_minimo || 5, numero_lote: '', fecha_vencimiento: '' });
     setIsAbastecimiento(false);
   };
 
@@ -135,10 +146,22 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
           </div>
         </div>
         {movForm.tipo_mov === 'entrada' && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nro. Lote</label>
+              <input type="text" value={movForm.numero_lote || ''} onChange={e => setMovForm(f => ({ ...f, numero_lote: e.target.value }))} placeholder="Lote-001" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha Vencimiento</label>
+              <input type="date" value={movForm.fecha_vencimiento || ''} onChange={e => setMovForm(f => ({ ...f, fecha_vencimiento: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none" />
+            </div>
+          </div>
+        )}
+        {movForm.tipo_mov === 'entrada' && (
           <div className="flex items-center gap-2 pt-1">
-            <input 
-              type="checkbox" 
-              id="isAbastecimiento" 
+            <input
+              type="checkbox"
+              id="isAbastecimiento"
               checked={isAbastecimiento}
               onChange={(e) => setIsAbastecimiento(e.target.checked)}
               className="rounded border-slate-300 text-kiora-red focus:ring-kiora-red"

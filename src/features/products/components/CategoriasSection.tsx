@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import Fuse from 'fuse.js';
 import { productService, alertService } from '@/config/setup';
 import type { Category } from '@/models/Product';
 import { CategoryDrawer } from './CategoryDrawer';
@@ -75,7 +76,14 @@ export function CategoriasSection() {
     }
   };
 
-  const filtered = categories.filter(c => c.nom_cat.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filtered = useMemo(() => {
+    if (!searchTerm.trim()) return categories;
+    const fuse = new Fuse(categories, {
+      keys: ['nom_cat', 'descrip_cat'],
+      threshold: 0.4,
+    });
+    return fuse.search(searchTerm.trim()).map(r => r.item);
+  }, [categories, searchTerm]);
 
   return (
     <>

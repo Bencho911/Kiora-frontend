@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Incident } from '@/models/Incident';
 import { formatDate } from '@/utils/dateUtils';
 
@@ -15,6 +15,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   isAdmin,
   onUpdateStatus
 }) => {
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
   const priorityColor = (p: string) => {
     switch(p) {
       case 'alta': return 'text-red-600 bg-red-50 ring-red-100';
@@ -30,7 +32,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
         <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Historial de Incidencias</h3>
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{incidents.length} Registros</span>
       </div>
-      
+
       {isLoading ? (
         <div className="py-20 flex justify-center">
           <div className="w-10 h-10 border-4 border-slate-100 border-t-kiora-red rounded-full animate-spin"></div>
@@ -45,47 +47,87 @@ export const IncidentList: React.FC<IncidentListProps> = ({
       ) : (
         <div className="divide-y divide-slate-50">
           {incidents.map(incident => (
-            <div key={incident.id_rep} className="p-8 hover:bg-slate-50/50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-8 group">
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ring-1 ${priorityColor(incident.prioridad)}`}>
-                    {incident.prioridad}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Ticket #{incident.id_rep} • {formatDate(incident.fecha_rep)}
-                  </span>
-                </div>
-                <h4 className="font-black text-slate-900 text-lg group-hover:text-kiora-red transition-colors">{incident.titulo || 'Sin título'}</h4>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-2xl">{incident.descripcion}</p>
-              </div>
-              
-              <div className="flex items-center gap-6">
-                <div className="text-right hidden md:block">
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado actual</p>
-                   <p className={`text-xs font-black uppercase tracking-wider ${incident.estado === 'pendiente' ? 'text-amber-500' : incident.estado === 'en_proceso' ? 'text-blue-500' : 'text-emerald-500'}`}>
-                      {(incident.estado || '').replace('_', ' ')}
-                   </p>
-                </div>
-                
-                {isAdmin && incident.estado !== 'cerrado' && incident.estado !== 'resuelto' && (
-                  <div className="flex gap-2">
-                    {incident.estado === 'pendiente' && (
-                      <button 
-                        onClick={() => onUpdateStatus(incident.id_rep!, 'en_proceso')}
-                        className="px-5 py-2.5 rounded-xl bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all shadow-sm active:scale-95"
-                      >
-                        Atender
-                      </button>
-                    )}
-                    <button 
-                      onClick={() => onUpdateStatus(incident.id_rep!, 'resuelto')}
-                      className="px-5 py-2.5 rounded-xl bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all shadow-sm active:scale-95"
-                    >
-                      Resolver
-                    </button>
+            <div key={incident.id_rep}>
+              <div className="p-8 hover:bg-slate-50/50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-8 group">
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ring-1 ${priorityColor(incident.prioridad)}`}>
+                      {incident.prioridad}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Ticket #{incident.id_rep} • {formatDate(incident.fecha_rep)}
+                    </span>
                   </div>
-                )}
+                  <h4 className="font-black text-slate-900 text-lg group-hover:text-kiora-red transition-colors">{incident.titulo || 'Sin título'}</h4>
+                  <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-2xl">{incident.descripcion}</p>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="text-right hidden md:block">
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado actual</p>
+                     <p className={`text-xs font-black uppercase tracking-wider ${incident.estado === 'pendiente' ? 'text-amber-500' : incident.estado === 'en_proceso' ? 'text-blue-500' : 'text-emerald-500'}`}>
+                        {(incident.estado || '').replace('_', ' ')}
+                     </p>
+                  </div>
+
+                  <button
+                    onClick={() => setExpandedId(expandedId === incident.id_rep ? null : incident.id_rep!)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all shadow-sm active:scale-95"
+                  >
+                    {expandedId === incident.id_rep ? 'Cerrar' : 'Detalles'}
+                  </button>
+
+                  {isAdmin && incident.estado !== 'cerrado' && incident.estado !== 'resuelto' && (
+                    <div className="flex gap-2">
+                      {incident.estado === 'pendiente' && (
+                        <button
+                          onClick={() => onUpdateStatus(incident.id_rep!, 'en_proceso')}
+                          className="px-5 py-2.5 rounded-xl bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all shadow-sm active:scale-95"
+                        >
+                          Atender
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onUpdateStatus(incident.id_rep!, 'resuelto')}
+                        className="px-5 py-2.5 rounded-xl bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all shadow-sm active:scale-95"
+                      >
+                        Resolver
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {expandedId === incident.id_rep && (
+                <div className="px-8 pb-8 pt-0 border-t border-slate-50">
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 rounded-2xl p-6">
+                    {incident.observaciones_tecnicas && (
+                      <div className="col-span-full">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Observaciones Técnicas</p>
+                        <p className="text-sm text-slate-700 font-medium leading-relaxed">{incident.observaciones_tecnicas}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Producto Asociado</p>
+                      <p className="text-sm font-bold text-slate-700">{incident.cod_prod ? `Código #${incident.cod_prod}` : 'No especificado'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Fecha del Reporte</p>
+                      <p className="text-sm font-bold text-slate-700">{incident.fecha_rep ? new Date(incident.fecha_rep).toLocaleString('es-CO') : '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Usuario Reporta</p>
+                      <p className="text-sm font-bold text-slate-700">#{incident.fk_id_usu}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Estado</p>
+                      <p className={`text-sm font-black uppercase ${incident.estado === 'pendiente' ? 'text-amber-500' : incident.estado === 'en_proceso' ? 'text-blue-500' : 'text-emerald-500'}`}>
+                        {(incident.estado || '').replace('_', ' ')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

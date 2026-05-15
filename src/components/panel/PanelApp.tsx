@@ -92,6 +92,28 @@ export default function PanelApp() {
   usePanelUrlSync(activeTab, setActiveTab, setOpenOrderFromUrl, openPOS);
   useRealTimeUpdates();
 
+  // Persistir carrito por usuario
+  const cartKey = user?.id_usu ? `kiora_cart_${user.id_usu}` : null;
+  useEffect(() => {
+    if (!cartKey) return;
+    const saved = localStorage.getItem(cartKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.items)) useSalesStore.getState().setOrderForm(parsed);
+      } catch { /* ignore */ }
+    }
+  }, [cartKey]);
+  useEffect(() => {
+    if (!cartKey) return;
+    const orderForm = useSalesStore.getState().orderForm;
+    if (!orderForm.items.length) {
+      localStorage.removeItem(cartKey);
+      return;
+    }
+    localStorage.setItem(cartKey, JSON.stringify(orderForm));
+  });
+
   useEffect(() => {
     if (!isReady || !user || isAdmin) return;
     if (ADMIN_ONLY_TABS.has(activeTab)) setActiveTab('dashboard');

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import Fuse from 'fuse.js';
 import { orderService, alertService, authService, inventoryService, incidentService, reportService } from '@/config/setup';
 import { pushAppNotification } from '@/lib/pushAppNotification';
 import type { Order, Invoice } from '@/models/Order';
@@ -70,14 +71,13 @@ export function useSalesManager(isAdmin: boolean) {
   }, [loadData, salesSyncVersion]);
 
   const filteredOrders = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return orders;
-    return orders.filter(o =>
-      o.id_vent?.toString().includes(q) ||
-      o.metodopago_usu?.toLowerCase().includes(q) ||
-      o.estado?.toLowerCase().includes(q) ||
-      (o.productos_resumen || '').toLowerCase().includes(q)
-    );
+    if (!search.trim()) return orders;
+    const fuse = new Fuse(orders, {
+      keys: ['id_vent', 'metodopago_usu', 'estado', 'productos_resumen', 'montofinal_vent'],
+      threshold: 0.4,
+      minMatchCharLength: 1,
+    });
+    return fuse.search(search.trim()).map(r => r.item);
   }, [orders, search]);
 
   const handleExport = async (type: 'excel' | 'pdf') => {
@@ -139,7 +139,7 @@ export function useSalesManager(isAdmin: boolean) {
     }
   }, []);
 
-  const handleStatusChange = async (id: number, newStatus: any) => {
+  const handleStatusChange = async (id: number, newStatus: string) => {
     const currentOrder = orders.find(o => o.id_vent === id);
     if (currentOrder?.estado === 'cancelada') {
       alertService.showToast('warning', 'No se puede modificar una venta ya cancelada');
@@ -156,8 +156,10 @@ export function useSalesManager(isAdmin: boolean) {
       await orderService.updateOrderStatus(id, newStatus);
       alertService.showToast('success', `Venta #${id} ahora está ${newStatus}`);
       void loadData();
-    } catch (e: any) {
-      if (e.message?.includes('409') || e.error?.includes('Stock') || e.status === 409) {
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : '';
+      const errStatus = (e as Record<string, unknown>)?.status;
+      if (errMsg.includes('409') || errStatus === 409) {
         alertService.showToast('error', 'Stock insuficiente para completar esta operación');
       } else {
         alertService.showToast('error', getErrorMessage(e, 'Error al actualizar estado'));
@@ -173,15 +175,17 @@ export function useSalesManager(isAdmin: boolean) {
       return;
     }
     if (!orderId) return;
-    const targetStatus = 'reembolsada';
+    const targetStatus = type === 'cancel' ? 'cancelada' : 'reembolsada';
     setReasonModal(prev => ({ ...prev, isOpen: false }));
     try {
       await orderService.updateOrderStatus(orderId, targetStatus);
       alertService.showToast('success', type === 'cancel' ? `Venta #${orderId} cancelada y stock devuelto` : `Reembolso de venta #${orderId} procesado`);
       setDetailOrder(null);
       void loadData();
-    } catch (e: any) {
-      if (e.message?.includes('409') || e.status === 409) {
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : '';
+      const errStatus = (e as Record<string, unknown>)?.status;
+      if (errMsg.includes('409') || errStatus === 409) {
         alertService.showToast('error', 'Error de conflicto de stock');
       } else {
         alertService.showToast('error', getErrorMessage(e, 'Error al procesar la operación'));
