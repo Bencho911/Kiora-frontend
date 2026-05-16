@@ -5,6 +5,20 @@ import MainLayout from "@/layouts/mainlayout.astro";
 ---
 
 <MainLayout title="Iniciar Sesión - Kiora">
+  <script is:inline data-astro-rerun>
+    function checkAuthLogin() {
+      try {
+        if (localStorage.getItem("kiora_token")) {
+          window.location.replace("/panel/");
+        }
+      } catch (e) {}
+    }
+    checkAuthLogin();
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted) checkAuthLogin();
+    });
+    document.addEventListener('astro:page-load', checkAuthLogin);
+  </script>
   <div
     class="flex flex-col items-center justify-center min-h-screen w-full relative z-10 px-4"
   >
