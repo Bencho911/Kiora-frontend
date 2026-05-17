@@ -12,9 +12,21 @@ import { NotificationService } from "../services/NotificationService";
 import { IncidentService } from "../services/IncidentService";
 import { ReportService } from "../services/ReportService";
 
-// Punto de entrada único (API Gateway)
-export const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000/api";
-export const IMG_BASE = API_URL.replace('/api', '');
+// URL leída desde .env (prefijo PUBLIC_ requerido por Astro para exponerla al cliente)
+// Fallback: backend estable en Azure
+// NOTA: Se usa /api (sin v1) porque el v1Proxy del gateway tiene un bug de pathRewrite
+// en la versión actual desplegada en Azure. El fix está en el código pero requiere redeploy.
+// Las rutas /api tienen deprecation header (Sunset: 2027-01-01) pero son totalmente funcionales.
+export const API_URL: string =
+  (import.meta.env.PUBLIC_API_URL as string | undefined) ??
+  "http://20.110.129.152:3000/api";
+
+export const API_KEY: string =
+  (import.meta.env.PUBLIC_KIORA_API_KEY as string | undefined) ??
+  "kiosk_secret_key_2024";
+
+// Base para imágenes: misma raíz que la API sin el path /api o /api/v1
+export const IMG_BASE: string = API_URL.replace(/\/api(\/v1)?\/?$/, "");
 
 /** Construye la URL absoluta de una imagen del servidor */
 export function getImageUrl(path?: string): string {
@@ -26,13 +38,12 @@ export function getImageUrl(path?: string): string {
   return `${cleanBase}${cleanPath}`;
 }
 
-
 // Servicios de infraestructura
 export const logService = new LogService();
 logService.initGlobalHandlers();
 
 // Cliente único para todo el sistema
-export const httpClient = new FetchHttpClient(API_URL, logService);
+export const httpClient = new FetchHttpClient(API_URL, logService, API_KEY);
 
 // Instancias únicas (Singleton Pattern)
 export const authService = new AuthService(httpClient);

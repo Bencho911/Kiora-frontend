@@ -19,7 +19,7 @@ export class NotificationService {
     const notifications = this.getNotifications();
     const newNotification: Notification = {
       ...notification,
-      id: crypto.randomUUID(),
+      id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       timestamp: Date.now(),
       read: false
     };

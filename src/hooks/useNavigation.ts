@@ -13,8 +13,9 @@ export function useNavigation(defaultTab = 'dashboard') {
   }, [activeTab]);
 
   useEffect(() => {
-    const handleNavigate = (e: any) => {
-      if (e.detail?.tab) setActiveTab(e.detail.tab);
+    const handleNavigate = (e: Event) => {
+      const tab = (e as CustomEvent<{ tab: string }>).detail?.tab;
+      if (tab) setActiveTab(tab);
     };
     window.addEventListener('kiora_navigate', handleNavigate);
     return () => window.removeEventListener('kiora_navigate', handleNavigate);

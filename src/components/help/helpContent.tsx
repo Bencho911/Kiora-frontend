@@ -52,85 +52,90 @@ export const HELP_TOPICS: { title: string; icon: React.ReactNode }[] = [
 ];
 
 export const HELP_FAQS = [
-  // ── Inicio de sesión y cuenta ──
+  // ── INICIO DE SESIÓN Y CUENTA ──
   {
-    question: '¿Cómo inicio sesión en Kiora?',
+    question: '¿Cómo inicio sesión por primera vez en Kiora?',
     answer:
-      'Usa el correo y la contraseña que te asignó un administrador. Si no tienes cuenta, pide a un administrador que cree un usuario con tu correo.',
+      'Para ingresar, utiliza el correo electrónico y la contraseña que te fueron proporcionados por el administrador de tu tienda. Si eres el dueño o administrador principal, usa las credenciales enviadas a tu correo de registro. Si el sistema te rechaza, verifica que no haya espacios en blanco al final de tu correo.',
   },
   {
-    question: '¿Qué hago si olvidé mi contraseña?',
+    question: 'No recuerdo mi contraseña, ¿cómo la recupero?',
     answer:
-      'En la pantalla de inicio de sesión elige «¿Olvidaste tu contraseña?», ingresa tu correo y revisa tu bandeja (y spam) para el enlace de restablecimiento.',
-  },
-  
-  // ── Gestión de productos y stock ──
-  {
-    question: '¿Cómo puedo agregar un nuevo producto?',
-    answer:
-      'En el módulo de "Productos", haz clic en el botón "Nuevo Producto". Llena los detalles como nombre, categoría, precio y stock inicial. También puedes subir una imagen.',
+      'En la pantalla principal de "Iniciar Sesión", haz clic en el enlace inferior "¿Olvidaste tu contraseña?". Se te pedirá ingresar tu correo electrónico registrado. En minutos recibirás un código de verificación de 6 dígitos para validar tu identidad y poder crear una nueva contraseña segura.',
   },
   {
-    question: '¿Cómo actualizo el stock de un producto?',
+    question: 'Error Común: "Credenciales inválidas" o "Usuario bloqueado"',
     answer:
-      'Puedes ajustar el inventario manualmente buscando el producto en la lista y editando su stock actual, o el sistema lo descontará automáticamente al realizar una venta en el POS.',
-  },
-  {
-    question: '¿Qué es el Stock Mínimo?',
-    answer:
-      'Es el umbral de alerta. Cuando las existencias caen por debajo de este valor, el sistema genera una alerta visual y en el panel de notificaciones para que realices un pedido a proveedores.',
-  },
-  
-  // ── Ventas y facturación ──
-  {
-    question: '¿Cómo registro una nueva venta?',
-    answer:
-      'Abre el "Carrito" o "POS" desde el botón flotante o el menú lateral. Selecciona los productos, elige el método de pago y confirma. Podrás ver el resumen de la orden de inmediato.',
-  },
-  {
-    question: '¿Qué métodos de pago soporta el sistema?',
-    answer:
-      'Kiora soporta Efectivo, Tarjeta y Pagos Digitales (Stripe/QR). Para pagos con QR, el sistema generará un código dinámico que el cliente puede escanear.',
-  },
-  {
-    question: '¿Cómo veo el historial de ventas?',
-    answer:
-      'Ve a la sección de "Ventas". Allí encontrarás un listado cronológico de todas las transacciones realizadas, con detalles de items, totales y estados de pago.',
+      'Si ves este error, asegúrate de estar ingresando la contraseña respetando mayúsculas y minúsculas. Si después de varios intentos el sistema bloquea tu cuenta por seguridad, deberás contactar a un Administrador para que ingrese a la pestaña "Usuarios" y haga clic en "Desbloquear" junto a tu nombre.',
   },
 
-  // ── Usuarios y roles (Admin) ──
+  // ── GESTIÓN DE PRODUCTOS Y STOCK ──
   {
-    question: '¿Qué diferencia hay entre Admin y Vendedor?',
+    question: '¿Cómo agrego un nuevo producto al inventario?',
     answer:
-      'Los Administradores tienen acceso total: gestión de usuarios, configuración del sistema, reportes financieros avanzados y mantenimiento. Los Empleados solo pueden gestionar stock, realizar ventas y ver transacciones operativas.',
+      '1. Dirígete al módulo de "Productos" desde el menú inferior (icono de caja).\n2. Haz clic en el botón rojo "+ Nuevo Producto".\n3. Llena la información básica: Nombre, Código de Barras (opcional), Categoría y Precio.\n4. Establece el "Stock Actual" (cuántas unidades tienes) y el "Stock Mínimo" (el límite para que el sistema te alerte que se está agotando).\n5. (Opcional) Sube una fotografía del producto para que sea más fácil identificarlo en el Punto de Venta.\n6. Haz clic en Guardar.',
   },
   {
-    question: '¿Cómo bloqueo a un usuario?',
+    question: '¿Cómo funcionan las Alertas de Stock Mínimo?',
     answer:
-      'En el panel de "Usuarios", haz clic en el botón de candado junto al usuario. Un usuario bloqueado no podrá iniciar sesión hasta que un administrador lo desbloquee.',
-  },
-
-  // ── Inventario y proveedores ──
-  {
-    question: '¿Cómo descargo un reporte de inventario?',
-    answer:
-      'En la sección "Reportes", ve a la pestaña "Generar", elige el tipo de reporte "Inventario" y exporta a Excel o PDF según tu preferencia.',
+      'Cuando vendes un producto, Kiora descuenta automáticamente las unidades del inventario. Si la cantidad llega al número que configuraste como "Stock Mínimo" (o menor), el producto aparecerá marcado en rojo en el catálogo y generará una alerta en la pestaña "Alertas de Stock" dentro del módulo de Proveedores.',
   },
   {
-    question: '¿Puedo organizar productos por categorías?',
+    question: 'Error Común: "El archivo de imagen es muy pesado"',
     answer:
-      'Sí, utiliza el módulo de "Categorías" para crear agrupaciones. Al editar un producto, puedes asignarlo a una o varias categorías para facilitar la búsqueda en el POS.',
+      'Al subir una foto para un producto, asegúrate de que el formato sea JPG, PNG o WebP, y que su tamaño no supere los 5MB. Si la imagen es muy grande, recórtala o usa una herramienta web para comprimirla antes de intentarlo nuevamente.',
   },
 
-  // ── Reportes y mantenimiento ──
+  // ── PUNTO DE VENTA (CARRITO) Y FACTURACIÓN ──
   {
-    question: '¿Cómo funciona el Centro de Reportes?',
+    question: '¿Cómo registro una venta rápida (POS)?',
     answer:
-      'El centro de reportes permite filtrar ventas por fechas, periodos (día, semana, mes) y tipos (ventas totales o ranking de productos). Toda la información es descargable.',
+      '1. Ve a "Ventas & Historial" y haz clic en "+ Nueva Venta", o toca el botón rojo con el símbolo de dinero en el centro del menú móvil.\n2. En el catálogo superior, toca los productos que el cliente desea llevar.\n3. En el carrito (parte inferior), ajusta las cantidades si lleva más de un mismo artículo con los botones (+) y (-).\n4. Selecciona el método de pago (Efectivo, Tarjeta, o Digital/QR).\n5. Haz clic en "REALIZAR COBRO". La venta quedará registrada inmediatamente en el historial.',
   },
   {
-    question: '¿Qué hacer ante una falla técnica?',
+    question: '¿Cómo funciona el pago "Digital" con Stripe / Código QR?',
     answer:
-      'Utiliza la sección de "Incidencias" dentro de Reportes para notificar fallos. Un administrador o soporte técnico revisará el caso y actualizará su estado hasta que sea resuelto.',
+      'Si seleccionas el método "Digital" y Kiora está configurado con Stripe (para kioscos o cobros digitales), el sistema generará una sesión de pago remota o un código QR. El cliente lo escanea con su celular, paga con su tarjeta de crédito/débito o Apple/Google Pay, y Kiora detectará automáticamente cuando el pago sea exitoso, cambiando la orden de "Pendiente" a "Completada".',
   },
+  {
+    question: 'Error Común: "Producto Agotado" al intentar vender',
+    answer:
+      'Si un producto aparece en gris con la etiqueta "Agotado", el sistema no te permitirá agregarlo al carrito para evitar descuadres de inventario. Debes ir al módulo de Productos, buscar el ítem y actualizar su "Stock Actual" tras recibir nueva mercancía.',
+  },
+
+  // ── INVENTARIO Y PROVEEDORES ──
+  {
+    question: '¿Para qué sirve el módulo de Proveedores?',
+    answer:
+      'Sirve como tu directorio comercial. Aquí puedes guardar el nombre de la empresa, el NIT/ID Fiscal, y los datos de contacto (teléfono, email) de las personas que te surten mercancía. Es vital para tener todo centralizado cuando las "Alertas de Stock" te avisen que debes hacer un re-pedido.',
+  },
+  {
+    question: '¿Cómo agrupo mis productos? (Uso de Categorías)',
+    answer:
+      'Ve al menú de "Productos" y haz clic en la pestaña "Categorías". Allí puedes crear grupos como "Bebidas", "Lácteos", o "Aseo". Al asignar tus productos a estas categorías, el Punto de Venta generará botones automáticos de filtrado, haciendo que cobrar sea muchísimo más rápido.',
+  },
+
+  // ── REPORTES Y MANTENIMIENTO ──
+  {
+    question: '¿Cómo genero y descargo un reporte de ganancias?',
+    answer:
+      '1. Entra al módulo de "Reportes" (icono de gráfica de barras).\n2. Selecciona qué datos quieres analizar (Ventas, Productos más vendidos, etc.) y elige un rango de fechas (Hoy, Esta semana, Este mes).\n3. Revisa la gráfica interactiva para entender tus picos de venta.\n4. Para descargarlo, usa los botones superiores "Exportar Excel" o "Exportar PDF" para enviar el balance a tu contador.',
+  },
+  {
+    question: '¿Puedo enviar un reporte por correo directamente desde Kiora?',
+    answer:
+      'Sí. En el módulo de Reportes, haz clic en el botón "Enviar Email". Ingresa el correo de destino (por ejemplo, el de tu socio o contador) y Kiora adjuntará un resumen detallado de las métricas en un correo electrónico con formato profesional.',
+  },
+
+  // ── USUARIOS Y ROLES (SOLO ADMINISTRADORES) ──
+  {
+    question: '¿Cómo creo una cuenta para un nuevo empleado?',
+    answer:
+      'Entra al módulo de "Ajustes/Usuarios" (icono de tuerca o múltiples personas). Haz clic en "Nuevo Usuario". Asigna un nombre, un correo institucional, una contraseña temporal y define su ROL. \n\n- ROL EMPLEADO: Solo puede vender y ver el inventario.\n- ROL ADMIN: Puede ver reportes financieros, borrar registros y gestionar usuarios.',
+  },
+  {
+    question: '¿Cómo le quito el acceso a un ex-empleado?',
+    answer:
+      'No necesitas eliminar su cuenta y perder su historial de ventas. En el listado de usuarios, busca a la persona y haz clic en el icono del candado rojo ("Bloquear"). Inmediatamente se cerrará su sesión y no podrá volver a entrar a la aplicación.',
+  }
 ];

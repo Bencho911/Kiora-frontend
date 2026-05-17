@@ -36,12 +36,17 @@ export const ReportTable: React.FC<ReportTableProps> = ({
 
   if (data.length === 0) {
     return (
-      <div className="py-32 flex flex-col items-center text-center px-8">
-        <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 text-slate-200">
-          <BarChart className="w-10 h-10" />
+      <div className="py-24 sm:py-32 flex flex-col items-center justify-center text-center px-8 bg-gradient-to-b from-white to-slate-50 border border-slate-100 rounded-[2.5rem] shadow-sm animate-in fade-in duration-500">
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-kiora-red/10 blur-xl rounded-full scale-150 animate-pulse"></div>
+          <div className="relative w-24 h-24 bg-white shadow-xl shadow-slate-200/50 rounded-[2rem] flex items-center justify-center text-kiora-red border border-red-50">
+            <BarChart className="w-12 h-12" />
+          </div>
         </div>
-        <h4 className="text-slate-400 font-black uppercase tracking-widest text-xs">Sin Datos Generados</h4>
-        <p className="text-slate-300 text-sm font-medium mt-2 max-w-xs">Selecciona los filtros y haz clic en "Generar Reporte" para visualizar los resultados.</p>
+        <h4 className="text-slate-800 font-black text-xl mb-2">Análisis de Datos Pendiente</h4>
+        <p className="text-slate-500 text-sm font-medium max-w-sm leading-relaxed">
+          Configura los filtros en el panel superior y presiona <span className="font-bold text-slate-700">Generar Reporte</span> para descubrir insights valiosos sobre tu negocio.
+        </p>
       </div>
     );
   }

@@ -1,13 +1,17 @@
 {
-  "name": "Kiora | Panel Administrativo",
+  "name": "Kiora Admin | Panel Administrativo",
   "short_name": "Kiora",
-  "description": "Sistema administrativo para kioskos Kiora",
-  "theme_color": "#ec131e",
-  "background_color": "#fafafc",
+  "description": "Sistema administrativo para kioskos Kiora — gestión de ventas, productos, inventario y reportes.",
+  "theme_color": "#3E2723",
+  "background_color": "#f8fafc",
   "display": "standalone",
-  "orientation": "portrait",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "start_url": "/panel",
+  "scope": "/",
   "id": "/panel",
+  "lang": "es",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/img/logo-kiora-vectorizado.png",
@@ -20,7 +24,38 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/img/logo-kiora-vectorizado-blanco.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
-  "categories": ["business", "productivity"]
+  "shortcuts": [
+    {
+      "name": "Panel Principal",
+      "short_name": "Dashboard",
+      "description": "Ir al panel de inicio",
+      "url": "/panel?tab=dashboard",
+      "icons": [{ "src": "/img/logo-kiora-vectorizado.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Punto de Venta",
+      "short_name": "POS",
+      "description": "Abrir el punto de venta",
+      "url": "/panel?tab=ventas&pos=true",
+      "icons": [{ "src": "/img/logo-kiora-vectorizado.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Inventario",
+      "short_name": "Inventario",
+      "description": "Ver el inventario de productos",
+      "url": "/panel?tab=inventario",
+      "icons": [{ "src": "/img/logo-kiora-vectorizado.png", "sizes": "96x96" }]
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
+  "related_applications": []
 }

@@ -5,7 +5,8 @@
     "**/*"
   ],
   "exclude": [
-    "dist"
+    "dist",
+    "node_modules"
   ],
   "compilerOptions": {
     "baseUrl": ".",
@@ -17,6 +18,11 @@
     "jsx": "react-jsx",
     "jsxImportSource": "react",
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "types": ["node"],
+    "skipLibCheck": true
   }
 }
+

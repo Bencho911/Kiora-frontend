@@ -33,7 +33,14 @@ export function SalesSection({
   initialOpenOrderId?: number;
   onInitialOrderOpened?: () => void;
 }) {
-  const { productMap } = useInventoryStore();
+  const { productMap, fetchProducts } = useInventoryStore();
+
+  // Asegurar que el mapa de productos esté cargado para mostrar nombres
+  useEffect(() => {
+    if (Object.keys(productMap).length === 0) {
+      fetchProducts();
+    }
+  }, []);
 
   const isPaidStatus = (status?: string) => {
     const normalized = String(status ?? '').toLowerCase();
@@ -85,86 +92,153 @@ export function SalesSection({
   }
 
   return (
-    <div className="space-y-8">
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-5 sm:space-y-6 animate-in fade-in duration-500 pb-10">
+      {/* Header */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-4xl font-extrabold tracking-tight text-[#1a1a1a]">Ventas <span className="text-[#ec131e]">&</span> Historial</h1>
-          <p className="text-sm text-slate-500 font-medium tracking-tight">Registro de ventas, facturación contable y exportaciones del historial de tu negocio.</p>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1a1a1a]">Ventas <span className="text-[#ec131e]">&</span> Historial</h1>
+          <p className="text-sm text-slate-500 font-medium tracking-tight">Registro de ventas, facturación y exportaciones.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <button
             onClick={() => void handleExport('excel')}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#ecfdf3] px-5 py-2.5 text-sm font-bold text-[#10b981] border border-[#d1fae5] hover:bg-[#d1fae5] transition-all active:scale-95"
+            title="Exportar a Excel"
+            className="flex items-center justify-center rounded-xl bg-[#ecfdf3] p-3 text-[#10b981] border border-[#d1fae5] hover:bg-[#d1fae5] transition-all active:scale-95 shadow-sm"
           >
-            Excel
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           </button>
           <button
             onClick={() => void handleExport('pdf')}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#fff5f5] px-5 py-2.5 text-sm font-bold text-[#ec131e] border border-[#ffe3e3] hover:bg-[#ffe3e3] transition-all active:scale-95"
+            title="Exportar a PDF"
+            className="flex items-center justify-center rounded-xl bg-[#fff5f5] p-3 text-[#ec131e] border border-[#ffe3e3] hover:bg-[#ffe3e3] transition-all active:scale-95 shadow-sm"
           >
-            PDF
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
           </button>
           <button
             onClick={subTab === 'incidencias' ? () => setIsIncidentOpen(true) : onOpenPOS}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#ec131e] px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#ec131e]/20 hover:bg-[#d01019] active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#ec131e] to-[#c91019] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#ec131e]/30 hover:from-[#d01019] hover:to-[#a00c14] hover:shadow-[#ec131e]/40 active:scale-95 transition-all"
           >
-            {subTab === 'incidencias' ? '+ Nueva Incidencia' : '+ Nueva Venta'}
+            {subTab === 'incidencias' ? '+ Incidencia' : '+ Nueva Venta'}
           </button>
         </div>
       </header>
 
-      <div className="flex gap-1 rounded-2xl bg-white border border-slate-100 p-1.5 w-fit shadow-sm mb-4">
-        {[
-          { id: 'ventas', label: 'Ventas' },
-          { id: 'facturas', label: 'Facturas' },
-          { id: 'movimientos', label: 'Movimientos' },
-
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => setSubTab(t.id as SalesSubTab)}
-            className={`rounded-xl px-6 py-2.5 text-sm font-black transition-all ${subTab === t.id ? 'bg-[#ec131e]/5 text-[#ec131e] border border-[#ec131e]/10' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* Mini Dashboard */}
+      <div className="grid grid-cols-3 gap-3 sm:gap-6 w-full animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-2 mb-1 sm:mb-2">
+            <div className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"/></svg>
+            </div>
+            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Ingresos Hoy</span>
+          </div>
+          <p className="text-lg sm:text-2xl font-black text-[#111827] truncate">
+            <span className="text-[10px] sm:text-sm text-slate-400 mr-1">$</span>
+            {filteredOrders.filter(o => {
+              const d = o.fecha_vent ? new Date(o.fecha_vent) : new Date();
+              const today = new Date();
+              return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+            }).reduce((acc, o) => acc + safePrice(o.montofinal_vent), 0).toLocaleString('es-CO')}
+          </p>
+        </div>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-2 mb-1 sm:mb-2">
+            <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+            </div>
+            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Órdenes Hoy</span>
+          </div>
+          <p className="text-lg sm:text-2xl font-black text-[#111827]">
+            {filteredOrders.filter(o => {
+              const d = o.fecha_vent ? new Date(o.fecha_vent) : new Date();
+              const today = new Date();
+              return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+            }).length}
+          </p>
+        </div>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-2 mb-1 sm:mb-2">
+            <div className="w-6 h-6 rounded-lg bg-red-50 flex items-center justify-center text-[#ec131e]">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Ticket Promedio</span>
+          </div>
+          <p className="text-lg sm:text-2xl font-black text-[#111827] truncate">
+            <span className="text-[10px] sm:text-sm text-slate-400 mr-1">$</span>
+            {(() => {
+              const todayOrders = filteredOrders.filter(o => {
+                const d = o.fecha_vent ? new Date(o.fecha_vent) : new Date();
+                const today = new Date();
+                return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+              });
+              if(todayOrders.length === 0) return 0;
+              const total = todayOrders.reduce((acc, o) => acc + safePrice(o.montofinal_vent), 0);
+              return Math.round(total / todayOrders.length).toLocaleString('es-CO');
+            })()}
+          </p>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        {subTab === 'facturas' ? (
-          <div className="flex items-center gap-3 w-full max-w-md">
-            <div className="relative w-full">
-              <input 
-                type="text" 
-                inputMode="numeric"
-                placeholder="Buscar Factura #ID..." 
-                className="w-full rounded-2xl border border-slate-100 bg-white py-3 pl-10 pr-4 text-sm font-medium text-slate-800 focus:border-[#ec131e] focus:outline-none focus:ring-4 focus:ring-[#ec131e]/5 transition-all shadow-sm"
-                value={searchInvoiceId}
-                onChange={(e) => setSearchInvoiceId(e.target.value.replace(/\D/g, ''))}
-              />
-              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            </div>
-            <button 
-              onClick={() => void orderService.exportInvoicesExcel()}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#ecfdf3] px-5 py-3 text-sm font-bold text-[#10b981] border border-[#d1fae5] hover:bg-[#d1fae5] transition-all whitespace-nowrap"
+      {/* Controls: Sub-tabs & Search */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Sub-tabs */}
+        <div className="flex overflow-x-auto gap-2 rounded-2xl bg-white border border-slate-100 p-1.5 w-full sm:w-fit shadow-sm hide-scrollbar">
+          {[
+            { id: 'ventas', label: 'Ventas' },
+            { id: 'facturas', label: 'Facturas' },
+            { id: 'movimientos', label: 'Movimientos' },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setSubTab(t.id as SalesSubTab)}
+              className={`flex-1 whitespace-nowrap rounded-xl px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-all ${subTab === t.id ? 'bg-[#ec131e]/5 text-[#ec131e] border border-[#ec131e]/10 shadow-sm' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50 border border-transparent'}`}
             >
-              Exportar
+              {t.label}
             </button>
-          </div>
-        ) : (
-          <div className="relative group w-full max-w-md">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#ec131e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Buscar registros..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-2xl border border-slate-100 bg-white py-3 pl-10 pr-4 text-sm font-medium text-slate-800 focus:border-[#ec131e] focus:outline-none focus:ring-4 focus:ring-[#ec131e]/5 transition-all shadow-sm"
-            />
-          </div>
-        )}
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="flex items-center w-full sm:w-auto">
+          {subTab === 'facturas' ? (
+            <div className="flex items-center gap-3 w-full sm:w-80">
+              <div className="relative w-full">
+                <input 
+                  type="text" 
+                  inputMode="numeric"
+                  placeholder="Buscar Factura #ID..." 
+                  className="w-full rounded-2xl border border-slate-100 bg-white py-3 pl-10 pr-4 text-sm font-medium text-slate-800 focus:border-[#ec131e] focus:outline-none focus:ring-4 focus:ring-[#ec131e]/5 transition-all shadow-sm"
+                  value={searchInvoiceId}
+                  onChange={(e) => setSearchInvoiceId(e.target.value.replace(/\D/g, ''))}
+                />
+                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </div>
+              <button 
+                onClick={() => void orderService.exportInvoicesExcel()}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#ecfdf3] px-4 py-3 text-sm font-bold text-[#10b981] border border-[#d1fae5] hover:bg-[#d1fae5] transition-all whitespace-nowrap"
+              >
+                Exportar
+              </button>
+            </div>
+          ) : (
+            <div className="relative group w-full sm:w-80">
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#ec131e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Buscar registros..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-2xl border border-slate-100 bg-white py-3 pl-10 pr-4 text-sm font-medium text-slate-800 focus:border-[#ec131e] focus:outline-none focus:ring-4 focus:ring-[#ec131e]/5 transition-all shadow-sm"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -172,195 +246,285 @@ export function SalesSection({
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#ec131e]" />
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[#fcfdfe] border-b border-slate-100">
-                <tr>
-                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">
-                    {subTab === 'facturas' ? 'Factura' : '#'}
-                  </th>
-                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">
-                    {subTab === 'facturas' ? 'ID Pedido' : 'Fecha'}
-                  </th>
-                  <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">
-                    {subTab === 'facturas' ? 'Fecha Emisión' : 'Título / Ref'}
-                  </th>
-                  {subTab === 'incidencias' && isAdmin && <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">Prioridad</th>}
-                  <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-widest text-slate-400">
-                    {subTab === 'facturas' ? 'Total Facturado' : 'Importe / Detalle'}
-                  </th>
-                  {subTab !== 'facturas' && <th className="px-5 py-4 text-center text-[11px] font-black uppercase tracking-widest text-slate-400">Estado</th>}
-                  <th className="px-5 py-4 text-center text-[11px] font-black uppercase tracking-widest text-slate-400">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {subTab === 'ventas' && (
-                  filteredOrders.length === 0 ? (
-                    <tr><td colSpan={7} className="py-10 text-center text-slate-400 font-medium">No hay ventas registradas</td></tr>
-                  ) : (
-                    (Array.isArray(filteredOrders) ? filteredOrders : []).map(o => (
-                      <tr key={o.id_vent} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-5 py-4 font-black text-slate-400 text-xs">#{o.id_vent}</td>
-                        <td className="px-5 py-4 text-[#111827] text-xs font-bold">
-                          {o.fecha_vent ? new Date(o.fecha_vent).toLocaleDateString('es-CO') : '—'}
-                        </td>
-                        <td className="px-5 py-4 text-slate-500 text-xs font-bold capitalize max-w-[200px] truncate" title={o.productos_resumen || ''}>
-                          {o.productos_resumen || (o.metodopago_usu === 'tarjeta' ? 'Pago con Tarjeta' : 'Venta Directa')}
-                        </td>
-                        <td className="px-5 py-4 text-right font-black text-[#ec131e] text-base">
-                          <span className="text-[10px] mr-0.5">$</span>{safePrice(o.montofinal_vent).toLocaleString('es-CO')}
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          {isAdmin ? (
-                            <select
-                              value={o.estado || 'pendiente'}
-                              disabled={o.estado === 'cancelada' || isPaidStatus(o.estado)}
-                              onChange={(e) => handleStatusChange(o.id_vent!, e.target.value)}
-                              className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border outline-none cursor-pointer transition-all disabled:opacity-70 disabled:cursor-not-allowed ${ESTADO_COLORS[o.estado ?? 'pendiente']}`}
-                            >
-                              <option value="pendiente">Pendiente</option>
-                              <option value="completada">Completada</option>
-                              <option value="cancelada">Anular (devuelve stock)</option>
-                              {o.estado === 'completada' && (
-                                <option value="reembolsada">Reembolsada</option>
-                              )}
-                            </select>
-                          ) : (
-                            <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border ${ESTADO_COLORS[o.estado ?? 'pendiente']}`}>
-                              {o.estado}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button onClick={() => o.id_vent && void handleViewDetails(o.id_vent)} className="text-[#2563eb] text-xs font-black hover:underline">Ver</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )
-                )}
+        <>
+          {/* ─── MOBILE: Card list (ventas only) ─── */}
+          {subTab === 'ventas' && (
+            <div className="sm:hidden space-y-4 pb-24">
+              {filteredOrders.length === 0 ? (
+                <div className="py-20 text-center flex flex-col items-center bg-white rounded-3xl border border-slate-100 shadow-sm mx-1">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-5 text-slate-300">
+                    <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  </div>
+                  <h3 className="text-lg font-black text-slate-800 mb-1">Sin Ventas Aún</h3>
+                  <p className="text-sm text-slate-400 font-medium">Registra tu primera venta para verla aquí.</p>
+                </div>
+              ) : (
+                (Array.isArray(filteredOrders) ? filteredOrders : []).map(o => (
+                  <div key={o.id_vent} className="bg-white rounded-[1.5rem] border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] p-5 flex items-stretch gap-4 hover:shadow-md hover:border-slate-200 transition-all">
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">#{o.id_vent}</span>
+                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase border ${ESTADO_COLORS[o.estado ?? 'pendiente']}`}>{o.estado}</span>
+                      </div>
+                      <p className="text-[15px] leading-tight font-semibold text-slate-800 line-clamp-2">{o.productos_resumen || 'Venta Directa'}</p>
+                      <p className="text-[11px] text-slate-400 font-medium mt-1.5 flex items-center">
+                        {o.fecha_vent ? new Date(o.fecha_vent).toLocaleString('es-CO', {dateStyle:'short', timeStyle:'short'}) : '—'}
+                        <span className="mx-1.5 text-slate-300">•</span>
+                        <span className="capitalize">{o.metodopago_usu}</span>
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0 flex flex-col justify-center border-l border-slate-100 pl-4 w-28">
+                      <p className="text-[17px] font-bold text-emerald-600 tracking-tight">${safePrice(o.montofinal_vent).toLocaleString('es-CO')}</p>
+                      <button
+                        onClick={() => o.id_vent && void handleViewDetails(o.id_vent)}
+                        className="text-[10px] font-bold text-[#ec131e] hover:text-white mt-2 block uppercase tracking-widest bg-red-50 hover:bg-[#ec131e] px-3 py-2 rounded-xl w-full text-center transition-all"
+                      >Ver</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
 
-                {subTab === 'facturas' && (
-                  invoices.length === 0 ? (
-                    <tr><td colSpan={5} className="py-10 text-center text-slate-400 font-medium">No hay facturas registradas</td></tr>
-                  ) : (
-                    invoices.filter(i => searchInvoiceId ? String(i.id_fact).includes(searchInvoiceId) : true).map(invoice => (
-                      <tr key={invoice.id_fact} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-5 py-4 font-black text-slate-900 text-sm">FAC-{invoice.id_fact}</td>
-                        <td className="px-5 py-4 text-slate-500 text-sm">#{invoice.id_pedido}</td>
-                        <td className="px-5 py-4 text-[#111827] text-xs font-bold">{new Date(invoice.fecha_fact).toLocaleString('es-CO')}</td>
-                        <td className="px-5 py-4 text-right font-black text-[#ec131e] text-base">
-                          <span className="text-[10px] mr-0.5">$</span>{safePrice(invoice.total_fact).toLocaleString('es-CO')}
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          <button 
-                            onClick={() => downloadInvoicePDF(invoice)}
-                            className="text-[10px] font-black uppercase text-gray-400 hover:text-[#ec131e] bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-1 mx-auto"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            Descargar
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )
-                )}
+          {/* ─── MOBILE: Card list (movimientos) ─── */}
+          {subTab === 'movimientos' && (
+            <div className="sm:hidden space-y-3">
+              {movements.length === 0 ? (
+                <div className="py-10 text-center text-slate-400 text-sm font-medium bg-white rounded-2xl border border-slate-100">No hay movimientos registrados</div>
+              ) : (
+                movements.map(m => (
+                  <div key={m.id_mov} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-black text-slate-400">#{m.id_mov} · {new Date(m.fecha_mov!).toLocaleDateString()}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${m.tipo_mov === 'entrada' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>{m.tipo_mov}</span>
+                    </div>
+                    <p className="text-sm font-black text-slate-800 truncate">{productMap[String(m.cod_prod)] || 'Producto Desconocido'}</p>
+                    <div className="flex items-center justify-between mt-2">
+                       <span className={`text-sm font-black ${m.tipo_mov === 'entrada' ? 'text-emerald-600' : 'text-orange-500'}`}>
+                          {m.tipo_mov === 'entrada' ? '+' : '-'}{m.cantidad} uds
+                        </span>
+                       <button onClick={() => setDetailMovement(m)} className="text-[10px] font-black text-indigo-600 uppercase">Ver Detalle →</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
 
-                {subTab === 'movimientos' && (
-                  movements.length === 0 ? (
-                    <tr><td colSpan={7} className="py-10 text-center text-slate-400">No hay movimientos registrados</td></tr>
-                  ) : (
-                    movements.map(m => (
-                      <tr key={m.id_mov} className="hover:bg-slate-50/50">
-                        <td className="px-5 py-4 font-black text-slate-400 text-xs">#{m.id_mov}</td>
-                        <td className="px-5 py-4 text-xs font-bold">{new Date(m.fecha_mov!).toLocaleDateString()}</td>
-                        <td className="px-5 py-4">
-                          <p className="text-xs font-black text-[#111827]">
-                            <span className="text-[#ec131e] mr-1">[{m.cod_prod}]</span>
-                            {productMap[String(m.cod_prod)] || 'Producto Desconocido'}
-                          </p>
-                          <p className="text-[10px] text-slate-400 italic truncate max-w-[150px]">{(m as any).desc_mov || 'Venta automatizada'}</p>
-                        </td>
-                        <td className="px-5 py-4 text-right font-black text-slate-600">{m.cantidad} uds</td>
-                        <td className="px-5 py-4 text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${m.tipo_mov === 'entrada' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
-                            {m.tipo_mov}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          <button
-                            onClick={() => setDetailMovement(m)}
-                            className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100 transition-all active:scale-95"
-                          >
-                            Ver Detalle
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )
-                )}
+          {/* ─── MOBILE: Card list (facturas) ─── */}
+          {subTab === 'facturas' && (
+            <div className="sm:hidden space-y-3">
+              {invoices.length === 0 ? (
+                <div className="py-10 text-center text-slate-400 text-sm font-medium bg-white rounded-2xl border border-slate-100">No hay facturas registradas</div>
+              ) : (
+                invoices.filter(i => searchInvoiceId ? String(i.id_fact).includes(searchInvoiceId) : true).map(invoice => (
+                  <div key={invoice.id_fact} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black text-slate-800">FAC-{invoice.id_fact}</p>
+                      <p className="text-[10px] text-slate-400 font-medium">Pedido #{invoice.id_pedido} · {new Date(invoice.fecha_fact).toLocaleDateString('es-CO')}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-base font-black text-emerald-600">${safePrice(invoice.total_fact).toLocaleString('es-CO')}</p>
+                      <button onClick={() => downloadInvoicePDF(invoice)} className="text-[10px] font-black text-slate-500 hover:text-[#ec131e] mt-1 block">↓ PDF</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
 
-                {subTab === 'incidencias' && (
-                  reports.length === 0 ? (
-                    <tr><td colSpan={isAdmin ? 7 : 6} className="py-10 text-center text-slate-400">No hay incidencias reportadas</td></tr>
-                  ) : (
-                    reports.map(r => (
-                      <tr key={r.id_rep} className="hover:bg-slate-50/50">
-                        <td className="px-5 py-4 font-black text-slate-400 text-xs">#{r.id_rep}</td>
-                        <td className="px-5 py-4 text-xs font-bold">{r.fecha_rep ? new Date(r.fecha_rep).toLocaleDateString() : '—'}</td>
-                        <td className="px-5 py-4 text-xs font-bold truncate max-w-[150px]">
-                          <div className="flex flex-col">
-                            <span>{r.titulo || r.observaciones_tecnicas || 'Sin título'}</span>
-                            {r.cod_prod && (
-                              <span className="text-[10px] text-slate-400 font-medium">
-                                Prod: <span className="text-[#ec131e]">[{r.cod_prod}]</span> {productMap[String(r.cod_prod)] || ''}
-                              </span>
+          {/* ─── DESKTOP: Full table ─── */}
+          <div className="hidden sm:block overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-[#fcfdfe] border-b border-slate-100">
+                  <tr>
+                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      {subTab === 'facturas' ? 'Factura' : '#'}
+                    </th>
+                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      {subTab === 'facturas' ? 'ID Pedido' : 'Fecha'}
+                    </th>
+                    <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      {subTab === 'facturas' ? 'Fecha Emisión' : 'Título / Ref'}
+                    </th>
+                    {subTab === 'incidencias' && isAdmin && <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">Prioridad</th>}
+                    <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      {subTab === 'facturas' ? 'Total Facturado' : 'Importe / Detalle'}
+                    </th>
+                    {subTab !== 'facturas' && <th className="px-5 py-4 text-center text-[11px] font-black uppercase tracking-widest text-slate-400">Estado</th>}
+                    <th className="px-5 py-4 text-center text-[11px] font-black uppercase tracking-widest text-slate-400">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {subTab === 'ventas' && (
+                    filteredOrders.length === 0 ? (
+                      <tr><td colSpan={7} className="py-10 text-center text-slate-400 font-medium">No hay ventas registradas</td></tr>
+                    ) : (
+                      (Array.isArray(filteredOrders) ? filteredOrders : []).map(o => (
+                        <tr key={o.id_vent} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-5 py-4 font-black text-slate-400 text-xs">#{o.id_vent}</td>
+                          <td className="px-5 py-4 text-[#111827] text-xs font-bold">
+                            {o.fecha_vent ? new Date(o.fecha_vent).toLocaleString('es-CO') : '—'}
+                          </td>
+                          <td className="px-5 py-4 text-slate-500 text-xs font-bold capitalize max-w-[200px] truncate" title={o.productos_resumen || ''}>
+                            {o.productos_resumen || (o.metodopago_usu === 'tarjeta' ? 'Pago con Tarjeta' : 'Venta Directa')}
+                          </td>
+                          <td className="px-5 py-4 text-right font-black text-emerald-600 text-base">
+                            <span className="text-[10px] mr-0.5 text-emerald-500">$</span>{safePrice(o.montofinal_vent).toLocaleString('es-CO')}
+                          </td>
+                          <td className="px-5 py-4 text-center">
+                            {isAdmin ? (
+                              <select
+                                value={o.estado || 'pendiente'}
+                                disabled={o.estado === 'cancelada' || isPaidStatus(o.estado)}
+                                onChange={(e) => handleStatusChange(o.id_vent!, e.target.value)}
+                                className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border outline-none cursor-pointer transition-all disabled:opacity-70 disabled:cursor-not-allowed ${ESTADO_COLORS[o.estado ?? 'pendiente']}`}
+                              >
+                                <option value="pendiente">Pendiente</option>
+                                <option value="completada">Completada</option>
+                                <option value="cancelada">Anular (devuelve stock)</option>
+                                {o.estado === 'completada' && (
+                                  <option value="reembolsada">Reembolsada</option>
+                                )}
+                              </select>
+                            ) : (
+                              <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border ${ESTADO_COLORS[o.estado ?? 'pendiente']}`}>
+                                {o.estado}
+                              </div>
                             )}
-                          </div>
-                        </td>
-                        {isAdmin && (
+                          </td>
+                          <td className="px-5 py-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button onClick={() => o.id_vent && void handleViewDetails(o.id_vent)} className="text-[#2563eb] text-xs font-black hover:underline">Ver</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )
+                  )}
+
+                  {subTab === 'facturas' && (
+                    invoices.length === 0 ? (
+                      <tr><td colSpan={5} className="py-10 text-center text-slate-400 font-medium">No hay facturas registradas</td></tr>
+                    ) : (
+                      invoices.filter(i => searchInvoiceId ? String(i.id_fact).includes(searchInvoiceId) : true).map(invoice => (
+                        <tr key={invoice.id_fact} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-5 py-4 font-black text-slate-900 text-sm">FAC-{invoice.id_fact}</td>
+                          <td className="px-5 py-4 text-slate-500 text-sm">#{invoice.id_pedido}</td>
+                          <td className="px-5 py-4 text-[#111827] text-xs font-bold">{new Date(invoice.fecha_fact).toLocaleString('es-CO')}</td>
+                          <td className="px-5 py-4 text-right font-black text-emerald-600 text-base">
+                            <span className="text-[10px] mr-0.5 text-emerald-500">$</span>{safePrice(invoice.total_fact).toLocaleString('es-CO')}
+                          </td>
+                          <td className="px-5 py-4 text-center">
+                            <button 
+                              onClick={() => downloadInvoicePDF(invoice)}
+                              className="text-[10px] font-black uppercase text-gray-400 hover:text-[#ec131e] bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-1 mx-auto"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                              Descargar
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )
+                  )}
+
+                  {subTab === 'movimientos' && (
+                    movements.length === 0 ? (
+                      <tr><td colSpan={7} className="py-10 text-center text-slate-400">No hay movimientos registrados</td></tr>
+                    ) : (
+                      movements.map(m => (
+                        <tr key={m.id_mov} className="hover:bg-slate-50/50">
+                          <td className="px-5 py-4 font-black text-slate-400 text-xs">#{m.id_mov}</td>
+                          <td className="px-5 py-4 text-xs font-bold">{new Date(m.fecha_mov!).toLocaleDateString()}</td>
                           <td className="px-5 py-4">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${r.prioridad === 'alta' ? 'bg-red-50 text-red-600' : r.prioridad === 'media' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}>
-                              {r.prioridad}
+                            <p className="text-xs font-black text-[#111827]">
+                              <span className="text-[#ec131e] mr-1">[{m.cod_prod}]</span>
+                              {productMap[String(m.cod_prod)] || 'Producto Desconocido'}
+                            </p>
+                            <p className="text-[10px] text-slate-400 italic truncate max-w-[150px]">{(m as any).desc_mov || 'Venta automatizada'}</p>
+                          </td>
+                          <td className={`px-5 py-4 text-right font-black text-base ${m.tipo_mov === 'entrada' ? 'text-emerald-600' : 'text-orange-500'}`}>
+                            {m.tipo_mov === 'entrada' ? '+' : '-'}{m.cantidad} uds</td>
+                          <td className="px-5 py-4 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${m.tipo_mov === 'entrada' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+                              {m.tipo_mov}
                             </span>
                           </td>
-                        )}
-                        <td className="px-5 py-4 text-right text-xs font-medium max-w-[200px] truncate">
-                          {isAdmin ? (r.descripcion || '—') : '*** Restringido ***'}
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border ${ESTADO_COLORS[r.estado ?? 'pendiente']}`}>
-                            {r.estado.replace('_', ' ')}
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button 
-                              onClick={() => setManagingIncident(r)}
-                              className="text-[#2563eb] text-xs font-black hover:underline disabled:opacity-30" 
-                              disabled={!isAdmin}
+                          <td className="px-5 py-4 text-center">
+                            <button
+                              onClick={() => setDetailMovement(m)}
+                              className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100 transition-all active:scale-95"
                             >
-                              Gestionar
+                              Ver Detalle
                             </button>
-                            <button 
-                              onClick={() => handleExportSingleIncident(r)}
-                              className="p-1.5 rounded-lg bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
-                              title="Exportar PDF"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )
-                )}
-              </tbody>
-            </table>
+                          </td>
+                        </tr>
+                      ))
+                    )
+                  )}
+
+                  {subTab === 'incidencias' && (
+                    reports.length === 0 ? (
+                      <tr><td colSpan={isAdmin ? 7 : 6} className="py-10 text-center text-slate-400">No hay incidencias reportadas</td></tr>
+                    ) : (
+                      reports.map(r => (
+                        <tr key={r.id_rep} className="hover:bg-slate-50/50">
+                          <td className="px-5 py-4 font-black text-slate-400 text-xs">#{r.id_rep}</td>
+                          <td className="px-5 py-4 text-xs font-bold">{r.fecha_rep ? new Date(r.fecha_rep).toLocaleDateString() : '—'}</td>
+                          <td className="px-5 py-4 text-xs font-bold truncate max-w-[150px]">
+                            <div className="flex flex-col">
+                              <span>{r.titulo || r.observaciones_tecnicas || 'Sin título'}</span>
+                              {r.cod_prod && (
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  Prod: <span className="text-[#ec131e]">[{r.cod_prod}]</span> {productMap[String(r.cod_prod)] || ''}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          {isAdmin && (
+                            <td className="px-5 py-4">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${r.prioridad === 'alta' ? 'bg-red-50 text-red-600' : r.prioridad === 'media' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}>
+                                {r.prioridad}
+                              </span>
+                            </td>
+                          )}
+                          <td className="px-5 py-4 text-right text-xs font-medium max-w-[200px] truncate">
+                            {isAdmin ? (r.descripcion || '—') : '*** Restringido ***'}
+                          </td>
+                          <td className="px-5 py-4 text-center">
+                            <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border ${ESTADO_COLORS[r.estado ?? 'pendiente']}`}>
+                              {r.estado.replace('_', ' ')}
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button 
+                                onClick={() => setManagingIncident(r)}
+                                className="text-[#2563eb] text-xs font-black hover:underline disabled:opacity-30" 
+                                disabled={!isAdmin}
+                              >
+                                Gestionar
+                              </button>
+                              <button 
+                                onClick={() => handleExportSingleIncident(r)}
+                                className="p-1.5 rounded-lg bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                                title="Exportar PDF"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {detailOrder && (

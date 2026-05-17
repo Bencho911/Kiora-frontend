@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import Fuse from 'fuse.js';
 import { userService, alertService } from '@/config/setup';
 import type { User } from '@/models/User';
 import type { RegisterUserDto } from '@/services/UserService';
@@ -54,11 +55,12 @@ export function useUserManagement(isAdmin: boolean) {
 
   const filteredUsers = useMemo(() => {
     if (!searchTerm.trim()) return usersList;
-    const lowerSearch = searchTerm.toLowerCase();
-    return usersList.filter(u => 
-      (u.nom_usu || '').toLowerCase().includes(lowerSearch) || 
-      (u.correo_usu || '').toLowerCase().includes(lowerSearch)
-    );
+    const fuse = new Fuse(usersList, {
+      keys: ['nom_usu', 'correo_usu', 'tel_usu'],
+      threshold: 0.4,
+      minMatchCharLength: 2,
+    });
+    return fuse.search(searchTerm.trim()).map(r => r.item);
   }, [usersList, searchTerm]);
 
   const handleOpenDrawer = useCallback((user: User | null = null) => {
@@ -82,6 +84,13 @@ export function useUserManagement(isAdmin: boolean) {
     try {
       if (isEditing && editingUser && editingUser.id_usu !== undefined) {
         await userService.updateUser(editingUser.id_usu, newUser);
+
+        // Si el rol cambió, llamar al endpoint específico de rol
+        // (updateUser elimina rol_usu del payload internamente)
+        if (newUser.rol_usu && newUser.rol_usu !== editingUser.rol_usu) {
+          await userService.updateRole(editingUser.id_usu, newUser.rol_usu);
+        }
+
         alertService.showToast('success', 'Usuario actualizado correctamente');
       } else {
         await userService.registerUser(newUser);

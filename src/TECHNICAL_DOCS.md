@@ -1,6 +1,7 @@
-# Documentación Técnica Global - Kiora Frontend
+# Documentación Técnica Global — Kiora Admin Frontend
 
-Este documento detalla la arquitectura, módulos y patrones técnicos de la aplicación frontend de Kiora, incluyendo las últimas actualizaciones de estabilidad y gestión de datos.
+Arquitectura, módulos, patrones técnicos y decisiones de diseño de la aplicación.  
+Última actualización: Mayo 2026.
 
 ---
 
@@ -9,66 +10,161 @@ Este documento detalla la arquitectura, módulos y patrones técnicos de la apli
 La aplicación sigue los principios de **Arquitectura Limpia**, separando la infraestructura de la lógica de negocio para facilitar el mantenimiento y la escalabilidad.
 
 ### Estructura de Capas
-- **`src/core/`**: Infraestructura base. Cliente HTTP con interceptores de seguridad para manejo de tokens y errores 401.
-- **`src/services/`**: Lógica de negocio (Casos de Uso). Aquí se gestiona la comunicación con los microservicios y la lógica de estados.
-- **`src/models/`**: Contratos de datos (Interfaces TypeScript) compartidos en toda la aplicación.
-- **`src/components/`**: Capa de presentación modular construida con React v19.
+
+```
+┌─────────────────────────────────────────────┐
+│         PRESENTACIÓN (React Components)      │
+│   components/panel/  •  features/*/components│
+├─────────────────────────────────────────────┤
+│         ESTADO GLOBAL (Zustand Stores)       │
+│   useAppStore  •  useSalesStore  •  etc.     │
+├─────────────────────────────────────────────┤
+│         LÓGICA DE NEGOCIO (Services)         │
+│   OrderService  •  ProductService  •  etc.   │
+├─────────────────────────────────────────────┤
+│         INFRAESTRUCTURA (Core)               │
+│   HttpClient  •  AlertService                │
+└─────────────────────────────────────────────┘
+```
+
+- **`src/core/`** — Cliente HTTP con interceptores de seguridad: inyección de token JWT, manejo automático de errores 401 (redirección al login).
+- **`src/services/`** — Casos de Uso. Gestión de la comunicación con microservicios y lógica de estados.
+- **`src/models/`** — Contratos de datos (Interfaces TypeScript) compartidos en toda la app.
+- **`src/components/`** + **`src/features/`** — Capa de presentación modular en React v19.
 
 ---
 
 ## 2. Módulos Destacados
 
-### 2.1 Punto de Venta (POS) e Inventario
-- **Validación en Cliente**: El `OrderDrawer.tsx` y `PanelApp.tsx` implementan validación reactiva de stock. No se permite agregar más unidades de las disponibles físicamente en el inventario actual.
-- **Sincronización**: Al agregar productos al carrito, se almacena el `stock_actual` para garantizar que la validación persista incluso si el usuario aplica filtros de búsqueda.
-- **Movimientos y Proveedores**: Control de existencias, logística y gestión de proveedores centralizado en el módulo de Inventario.
+### 2.1 Panel Principal (`PanelApp.tsx`)
 
-### 2.2 Gestión de Ventas y Pedidos
-- **Integridad de Estados**: Los pedidos marcados como "cancelados" entran en un estado de solo lectura. El sistema bloquea reversiones de estado para mantener la trazabilidad.
-- **Facturación Histórica**: Sub-módulo dedicado a la visualización de registros contables definitivos, separado del flujo "live" de pedidos pendientes.
+Orquestador central que:
+- Valida la sesión del usuario mediante `useAuth`.
+- Sincroniza el tab activo con la URL via `usePanelUrlSync`.
+- Inicia el monitoreo de sesión (`SessionManager`).
+- Persiste el carrito POS en `localStorage` por usuario.
+- Renderiza el módulo activo mediante `React.lazy()` + `Suspense` (code splitting automático).
+- Monta el `PWAInstallPrompt` para ofrecer la instalación nativa.
 
-### 2.3 Reportes y Exportación
-- **Motor de Excel**: Utiliza la librería `xlsx` para generar reportes dinámicos.
-- **Exportación Contextual**: El sistema identifica automáticamente qué tipo de reporte generar (Ventas vs. Facturas) basándose en la pestaña activa del usuario.
-- **PDFs**: Generación de tickets de venta y facturas legales mediante `jsPDF` y `autoTable`.
+### 2.2 Navegación Responsiva
 
-### 2.4 Seguridad Administrativa
-- **Reseteo de Credenciales**: Los administradores pueden forzar el reseteo de contraseñas de otros usuarios mediante un flujo seguro de confirmación que invoca el endpoint administrativo del microservicio de autenticación.
-- **AuthService**: Lógica de persistencia de tokens JWT y manejo de sesiones.
+**`AdminSubNav.tsx`** implementa dos layouts en uno:
+- **Desktop (`lg:`)** — Sidebar vertical fijo a la izquierda, íconos con tooltips hover.
+- **Móvil/Tablet (< `lg`)** — Bottom tab bar fijo al fondo, íconos con labels pequeños, respeta el safe-area de iOS.
 
-### 2.5 Módulo de Incidencias
-- Permite a operadores y administradores crear reportes de fallos en el sistema. Consumido a través de la ruta `/incidents` del Gateway.
+**`AdminNavbar.tsx`** — Barra superior que adapta sus botones:
+- **Desktop** — "Punto de venta" con texto completo + "Salir" con texto.
+- **Móvil** — Íconos compactos para POS, notificaciones, avatar y salir.
+
+### 2.3 Punto de Venta (POS) e Inventario
+
+- **Validación en Cliente**: El `OrderDrawer` implementa validación reactiva de stock. No se permite agregar más unidades de las disponibles físicamente.
+- **Carrito Persistente**: Se guarda en `localStorage` con clave `kiora_cart_{userId}`.
+- **Stripe QR**: `StripeQRModal` muestra el QR de pago y hace polling para detectar el pago completado.
+
+### 2.4 Gestión de Ventas y Pedidos
+
+- **Integridad de Estados**: Los pedidos "cancelados" entran en estado de solo lectura.
+- **Facturación Histórica**: Sub-módulo separado del flujo "live" de pedidos pendientes.
+- **Real-Time**: `useRealTimeUpdates` suscribe a Socket.IO para recibir eventos de nuevas ventas y stock.
+
+### 2.5 Reportes y Exportación
+
+- **Motor Excel**: `xlsx` para reportes dinámicos con múltiples hojas.
+- **PDFs**: `jsPDF` + `autoTable` para tickets de venta y facturas legales.
+- **Exportación Contextual**: Identifica automáticamente el tipo de reporte (ventas, facturas, incidencias) según el tab activo.
+
+### 2.6 PWA (Progressive Web App)
+
+Ver detalles completos en **[../RESPONSIVE_PWA.md](../RESPONSIVE_PWA.md)**.
+
+Resumen técnico:
+- **`public/sw.js`** v3 — Network-First para HTML, Cache-First para assets estáticos, soporte de Push Notifications.
+- **`public/manifest.webmanifest`** — Nombre, íconos, color, `display_override`, shortcuts de app.
+- **`PWAInstallPrompt.tsx`** — Detecta el evento `beforeinstallprompt`, lo difiere y muestra un banner 3s después del primer load. Respeta si el usuario ya descartó la instalación (via `sessionStorage`).
+
+### 2.7 Seguridad Administrativa
+
+- **Reseteo de Credenciales**: Administradores pueden forzar reseteo de contraseñas con flujo de confirmación.
+- **Bloqueo de Usuarios**: `onToggleBlock` bloquea/desbloquea acceso de operarios.
+- **AuthService**: Persistencia de tokens JWT, manejo de sesión expirada con `SessionManager`.
 
 ---
 
 ## 3. Patrones de Diseño
 
+### Inversión de Dependencias (DI Manual)
+Los servicios se inicializan en `src/config/setup.ts`. Los componentes consumen instancias únicas y configuradas, facilitando mocks en testing.
+
+```ts
+// src/config/setup.ts
+export const httpClient = new HttpClient(PUBLIC_API_URL, { apiKey: PUBLIC_API_KEY });
+export const productService = new ProductService(httpClient);
+export const orderService = new OrderService(httpClient);
+// ...
+```
+
 ### Saga y Compensación (Integración)
-Aunque el frontend es reactivo, respeta la lógica de **Saga** del backend. Si el backend falla al descontar stock durante una transición a "completada", el frontend captura el error de conflicto (409) y notifica al usuario para evitar inconsistencias visuales.
+El frontend respeta la lógica de **Saga** del backend. Si el backend falla al descontar stock durante una transición a "completada", se captura el error (409) y se notifica al usuario para evitar inconsistencias visuales.
 
-### Inversión de Dependencias (DI)
-Los servicios se inicializan en `src/config/setup.ts`. Esto permite que los componentes consuman una instancia única y configurada de cada servicio, facilitando la inyección de mocks durante las pruebas unitarias.
+### Lazy Loading con Code Splitting
+Todos los módulos pesados del panel se cargan on-demand:
+```tsx
+const DashboardSection = lazy(() => import('./DashboardSection'));
+const ReportsSection   = lazy(() => import('./ReportsSection'));
+// ...
+```
 
----
-
-## 4. Tecnologías y Estándares
-
-### 4.1 PWA (Progressive Web App)
-La aplicación soporta instalación nativa mediante:
-- **Web Manifest**: Definido en `public/manifest.webmanifest`.
-- **Service Worker**: Gestionado vía Astro para soporte offline básico.
-
-### 4.2 UI y Estilos
-- **Tailwind CSS v4**: Motor de estilos por utilidad de alto rendimiento.
-- **SweetAlert2**: Estandarización de feedbacks y alertas de sistema.
-- **Diseño**: Sistema de diseño "Kiora" con sombras suaves, bordes redondeados `2xl/3xl` y tipografía `Inter`.
+### Zustand como Single Source of Truth
+Estado global sin boilerplate. Cada dominio tiene su store independiente:
+- **`useAppStore`** → tab activo.
+- **`useSalesStore`** → carrito, drawer POS, Stripe.
+- **`useInventoryStore`** → stock bajo, sincronización.
+- **`useNotificationStore`** → notificaciones en tiempo real.
 
 ---
 
-## 5. Mantenimiento y Buenas Prácticas
+## 4. Real-Time y Sincronización
 
-1. **Lógica en Servicios**: Las llamadas a la API (`fetch`) están prohibidas dentro de los componentes. Deben pasar siempre por un `Service`.
-2. **Consistencia Visual**: Utilizar siempre los tokens de color definidos en `global.css`.
-3. **Manejo de Errores**: Se debe usar la utilidad `getErrorMessage` para parsear respuestas del servidor y mostrar mensajes legibles al usuario.
-4. **Protección de Estados Finales**: Cualquier cambio destructivo debe requerir una confirmación explícita del usuario vía `AlertService`.
-5. **Rendimiento**: Uso de `useCallback` en cargadores de datos para evitar re-renders innecesarios.
+El hook `useRealTimeUpdates` se conecta al backend via **Socket.IO** y escucha eventos:
+
+| Evento | Acción |
+|--------|--------|
+| `nueva-venta` | Incrementa `salesSyncVersion` → recarga ventas |
+| `stock-actualizado` | Incrementa `stockSyncVersion` → recarga inventario |
+| `orden-pagada` | Marca orden como completada y dispara notificación |
+
+---
+
+## 5. Tecnologías y Estándares
+
+### 5.1 UI y Estilos
+
+- **Tailwind CSS v4** — Motor de utilidades. Configurado con `@theme` para tokens de la marca.
+- **shadcn/ui** — Componentes accesibles: `Button`, `Card`, `Badge`, `Tabs`, `Dialog`.
+- **SweetAlert2** — Confirmaciones y alertas de sistema unificadas.
+- **Recharts** — Gráfica de área para evolución de ventas en el Dashboard.
+- **Tokens de Diseño**:
+  - Brand Red: `#ec131e` (`--color-kiora-red`)
+  - Brand Brown: `#3E2723` (navbar y sidebar)
+  - Surface: `#f8fafc`
+  - Tipografía: Geist Variable (principal) + Inter (UI)
+
+### 5.2 Accesibilidad (a11y)
+
+- Todos los botones interactivos tienen `aria-label` o texto visible.
+- El panel de notificaciones tiene roles ARIA correctos.
+- El bottom bar en móvil usa `role="navigation"`.
+- Focus visible en todos los elementos interactivos.
+
+---
+
+## 6. Mantenimiento y Buenas Prácticas
+
+1. **Lógica en Servicios**: Las llamadas a la API están prohibidas dentro de los componentes. Siempre a través de un `Service`.
+2. **Consistencia Visual**: Utilizar los tokens de color de `global.css` y `theme.ts`.
+3. **Manejo de Errores**: Usar `getErrorMessage(err, fallback)` para parsear respuestas del servidor.
+4. **Protección de Estados Finales**: Cambios destructivos requieren confirmación vía `AlertService`.
+5. **Rendimiento**: `useCallback` en cargadores, `React.memo` en listas largas, `lazy()` en módulos pesados.
+6. **Responsividad**: Probar en 360px (mobile), 768px (tablet) y 1280px (desktop) antes de hacer merge.
+7. **PWA**: Si agregas nuevas rutas, actualiza `manifest.webmanifest` shortcuts y `sw.js` STATIC_ASSETS.

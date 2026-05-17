@@ -44,7 +44,7 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
       },
       {
         id: 'inventario',
-        label: 'Proveedores',
+        label: 'Invent.',
         icon: (
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M10.5 3L12 2l1.5 1H21v6H3V3h7.5z" />
@@ -82,10 +82,9 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
             </svg>
           ),
         },
-
         {
           id: 'mantenimiento',
-          label: 'Mantenimiento',
+          label: 'Mantenim.',
           icon: (
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
@@ -109,48 +108,96 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
     return list;
   }, [isAdmin]);
 
-  const activeItem = items.find((item) => item.id === activeId);
-
+  const [isSidebarVisible, setIsSidebarVisible] = React.useState(true);
+  
   return (
-    <div className="fixed left-4 top-1/2 z-[60] flex max-h-[85vh] -translate-y-1/2 flex-col items-center gap-2">
-      <nav
-        className="flex max-h-[min(78vh,720px)] flex-col items-center gap-1.5 overflow-y-auto overflow-x-hidden rounded-[2rem] bg-[#2C2422]/95 py-3 shadow-[15px_0_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl ring-1 ring-white/10 [scrollbar-width:thin]"
-        style={{ width: '60px' }}
-      >
-        {items.map((item) => {
-          const active = activeId === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onItemClick(item.id)}
-              title={item.label}
-              className={`group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all duration-300 ${
-                active
-                  ? 'bg-white/10 text-white shadow-inner ring-1 ring-white/20 scale-105'
-                  : 'text-white/40 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <div className="relative">
-                {item.icon}
-                {active && (
-                  <div className="absolute -right-3 top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-[#ec131e] shadow-[2px_0_8px_rgba(236,19,30,0.8)]" />
-                )}
-              </div>
+    <>
+      {/* ─── DESKTOP: Toggleable Vertical sidebar ─── */}
+      <div className={`hidden lg:flex fixed left-0 top-1/2 z-[60] -translate-y-1/2 transition-all duration-500 ease-in-out ${isSidebarVisible ? 'translate-x-2' : '-translate-x-12'}`}>
+        {/* Toggle Handle */}
+        <button
+          onClick={() => setIsSidebarVisible(!isSidebarVisible)}
+          className={`absolute ${isSidebarVisible ? '-right-2 opacity-40 hover:opacity-100 hover:-right-4' : '-right-6 opacity-100'} top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-[#2C2422] border border-white/10 border-l-0 rounded-r-xl flex items-center justify-center text-white/60 hover:text-white transition-all shadow-xl group`}
+        >
+          <svg 
+            className={`w-4 h-4 transition-transform duration-500 ${isSidebarVisible ? 'rotate-0' : 'rotate-180'}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
 
-              <div className="pointer-events-none absolute left-full ml-4 whitespace-nowrap rounded-lg bg-[#2C2422] px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white opacity-0 shadow-xl ring-1 ring-white/10 transition-opacity group-hover:opacity-100">
-                {item.label}
-              </div>
-            </button>
-          );
-        })}
-      </nav>
+        <nav
+          className={`flex max-h-[min(85vh,720px)] flex-col items-center gap-1.5 overflow-y-auto overflow-x-hidden rounded-[2rem] bg-[#2C2422]/95 py-3 shadow-[20px_0_60px_rgba(0,0,0,0.4)] backdrop-blur-2xl ring-1 ring-white/10 [scrollbar-width:thin] transition-all duration-500 ${isSidebarVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+          style={{ width: '60px' }}
+        >
+          {items.map((item) => {
+            const active = activeId === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onItemClick(item.id)}
+                title={item.label}
+                className={`group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all duration-300 ${
+                  active
+                    ? 'bg-white/10 text-white shadow-inner ring-1 ring-white/20 scale-105'
+                    : 'text-white/40 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <div className="relative">
+                  {item.icon}
+                  {active && (
+                    <div className="absolute -right-3 top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-[#ec131e] shadow-[2px_0_8px_rgba(236,19,30,0.8)]" />
+                  )}
+                </div>
 
-      <div className="mt-2 text-center">
-        <div className="ml-2.5 max-w-[4rem] origin-left rotate-90 whitespace-nowrap text-[7px] font-black uppercase tracking-[0.2em] text-[#3E2723]/40">
-          {activeItem?.label}
-        </div>
+                <div className="pointer-events-none absolute left-full ml-4 whitespace-nowrap rounded-lg bg-[#2C2422] px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white opacity-0 shadow-xl ring-1 ring-white/10 transition-opacity group-hover:opacity-100">
+                  {item.label}
+                </div>
+              </button>
+            );
+          })}
+        </nav>
       </div>
-    </div>
+
+      {/* ─── MOBILE / TABLET: Bottom Static Bar (Horizontal Scroll) ─── */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-[#2C2422]/98 border-t border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,0.4)] transition-all duration-300"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-center justify-between px-1 py-0.5 max-w-full overflow-hidden">
+          {items.map((item) => {
+            const active = activeId === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onItemClick(item.id)}
+                className={`relative flex flex-1 flex-col items-center justify-center transition-all duration-500 h-16 ${
+                  active ? 'text-[#ec131e] pb-1' : 'text-white/25 hover:text-white/50'
+                }`}
+              >
+                {active && (
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-1 rounded-b-full bg-[#ec131e] shadow-[0_2px_10px_rgba(236,19,30,0.6)] animate-in fade-in slide-in-from-top-1 duration-300" />
+                )}
+                
+                <div className={`flex items-center justify-center transition-all duration-500 ${active ? 'scale-110 -translate-y-1' : 'scale-90'}`}>
+                  {item.icon}
+                </div>
+                
+                <span className={`text-[7px] font-black tracking-tight text-center uppercase truncate w-full transition-all duration-500 absolute bottom-2 ${
+                  active ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-50 pointer-events-none'
+                }`}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    </>
   );
 };

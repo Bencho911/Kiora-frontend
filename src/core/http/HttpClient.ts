@@ -56,6 +56,7 @@ export interface IHttpClient {
   put<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
   patch<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
   delete<T>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
+  download(url: string, headers?: Record<string, string>): Promise<Blob>;
 }
 
 import type { LogService } from "../LogService";
@@ -66,15 +67,30 @@ import type { LogService } from "../LogService";
 export class FetchHttpClient implements IHttpClient {
   baseURL: string;
   private logger?: LogService;
+  private apiKey?: string;
 
-  constructor(baseURL: string = '', logger?: LogService) {
+  constructor(baseURL: string = '', logger?: LogService, apiKey?: string) {
     this.baseURL = baseURL;
     this.logger = logger;
+    this.apiKey = apiKey;
   }
 
   private async request<T>(endpoint: string, options: RequestInit): Promise<HttpResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
+    // Inject API Key if present
+    if (this.apiKey) {
+      options.headers = {
+        ...options.headers,
+        'x-api-key': this.apiKey
+      };
+    }
+
+    // Default credentials if not specified (more CORS friendly)
+    if (!options.credentials) {
+      options.credentials = 'same-origin';
+    }
+
     try {
       const response = await fetch(url, options);
       const isJson = response.headers.get('content-type')?.includes('application/json');
@@ -185,5 +201,15 @@ export class FetchHttpClient implements IHttpClient {
       },
       ...rest,
     });
+  }
+  async download(url: string, headers?: Record<string, string>): Promise<Blob> {
+    const fullUrl = `${this.baseURL}${url}`;
+    const reqHeaders: Record<string, string> = {
+      ...headers,
+      ...(this.apiKey ? { 'x-api-key': this.apiKey } : {}),
+    };
+    const response = await fetch(fullUrl, { headers: reqHeaders, credentials: 'same-origin' });
+    if (!response.ok) throw new Error(`Error al descargar: ${response.status}`);
+    return response.blob();
   }
 }

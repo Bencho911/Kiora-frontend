@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { productService, orderService, alertService } from '@/config/setup';
 import type { Product } from '@/models/Product';
 import type { CreateOrderDto, OrderItem } from '@/models/Order';
@@ -43,15 +42,14 @@ interface SalesState {
 }
 
 export const useSalesStore = create<SalesState>()(
-  persist(
-    (set, get) => ({
-      isOrderDrawerOpen: false,
-      prodSearch: '',
-      selectedCategoryId: null,
-      orderForm: EMPTY_ORDER,
-      isSavingOrder: false,
-      stripeQR: { isOpen: false, url: '', orderId: 0, amount: 0 },
-      salesSyncVersion: 0,
+  (set, get) => ({
+    isOrderDrawerOpen: false,
+    prodSearch: '',
+    selectedCategoryId: null,
+    orderForm: EMPTY_ORDER,
+    isSavingOrder: false,
+    stripeQR: { isOpen: false, url: '', orderId: 0, amount: 0 },
+    salesSyncVersion: 0,
 
       setIsOrderDrawerOpen: (open) => set({ isOrderDrawerOpen: open }),
       setProdSearch: (prodSearch) => set({ prodSearch }),
@@ -261,11 +259,6 @@ export const useSalesStore = create<SalesState>()(
         }
       },
     }),
-    {
-      name: 'kiora-sales-storage',
-      partialize: (state) => ({ orderForm: state.orderForm }), // Solo persistimos el carrito
-    }
-  )
 );
 
 // --- Helpers para validación de stock robusta ---

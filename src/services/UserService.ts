@@ -142,20 +142,11 @@ export class UserService {
 
   async adminUpdatePassword(id: string | number, password: string): Promise<void> {
     const response = await this.httpClient.patch<unknown>(`/auth/users/${id}/password`, {
-      password: password,
-      new_password: password,
-      newPassword: password
+      password: password
     }, {
       headers: this.getAuthHeaders()
     });
-    
-    // Workaround: The backend has a bug where it updates the password correctly 
-    // but returns a 400 error because it expects an "ok" property from the pg response.
     if (!response.ok) {
-      if (response.status === 400 && response.error?.includes('Error al actualizar la contraseña. Intenta de nuevo.')) {
-         console.warn('[KIORA WORKAROUND] Ignorando falso error 400 del backend en adminResetPassword');
-         return; // Treat as success
-      }
       throw new Error(response.error ?? 'Error al actualizar la contraseña');
     }
   }

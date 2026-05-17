@@ -20,7 +20,7 @@ const {
 <html lang={lang}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <Icono />
@@ -31,16 +31,26 @@ const {
     />
     
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#ec131e" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
-    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#3E2723" />
+    <meta name="description" content="Kiora Admin — Sistema de gestión para kioskos: ventas, productos, inventario y reportes en tiempo real." />
+    <!-- Apple PWA -->
+    <link rel="apple-touch-icon" href="/img/logo-kiora-vectorizado.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Kiora" />
+    <!-- Android / Chrome -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- MS Tiles -->
+    <meta name="msapplication-TileColor" content="#3E2723" />
+    <meta name="msapplication-TileImage" content="/img/logo-kiora-vectorizado.png" />
     
     <script is:inline>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
           navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(function(reg) {
+              console.log('PWA: Service Worker registrado correctamente', reg.scope);
+            })
             .catch(function(error) { console.error('PWA Registration Failed:', error); });
         });
       }

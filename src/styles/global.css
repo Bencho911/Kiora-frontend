@@ -45,6 +45,42 @@ input[type=number] {
   }
 }
 
+/* Responsive: compensar barra inferior en móvil (safe area iOS) */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Ocultar scrollbar en carrusel de tabs */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Root font-size anchor ──────────────────────────────────────────
+   Lock to 16px so Tailwind rem values are identical on every machine.
+   Browsers & OSes differ in their default font-size (some use 14px,
+   18px, or even 20px), which makes rem-based layouts look "zoomed".
+   This forces 1rem = 16px everywhere. */
+html {
+  font-size: 16px !important;
+}
+
+/* Overscroll nativo para mobile */
+@media (max-width: 1024px) {
+  html {
+    overflow-x: hidden;
+  }
+  body {
+    overflow-x: hidden;
+  }
+}
+
+
 /* Fix para SweetAlert2 que puede quedar detrás de los modales z-[110] */
 .swal2-container {
   z-index: 999999 !important;

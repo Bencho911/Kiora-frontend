@@ -37,33 +37,35 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="w-full flex flex-col items-center">
-      <p className="text-[0.95rem] text-[#64748b] m-0 mb-8 font-medium">
-        Bienvenido de nuevo. Por favor, ingresa tus datos.
-      </p>
+    <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-6 duration-700">
+      <div className="text-center mb-6">
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Bienvenido de nuevo</h2>
+        <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Ingresa tus credenciales para acceder al panel</p>
+      </div>
 
       <form
         onSubmit={handleSubmit}
-        className="bg-white w-full max-w-105 p-8 rounded-xl border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.04)]"
+        className="bg-white/80 backdrop-blur-xl w-full max-w-md p-6 sm:p-10 rounded-[2.5rem] border border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] relative overflow-hidden"
       >
-        <div className="mb-5">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-kiora-red/20 to-transparent" />
+        <div className="mb-4">
           <label
             htmlFor="email"
-            className="block font-semibold text-[0.85rem] text-[#374151] mb-2"
+            className="block font-black text-[10px] uppercase tracking-widest text-slate-400 mb-2 ml-1"
           >
-            Correo electrónico
+            Correo Electrónico
           </label>
-          <div className="relative flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden transition-all duration-200 focus-within:border-[#9ca3af] focus-within:ring-[3px] focus-within:ring-gray-400/10">
-            <div className="pl-3.5 pr-2 text-gray-400 flex items-center">
+          <div className="relative group">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-kiora-red transition-colors">
               <svg fill="none" className="w-5 h-5" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
               </svg>
             </div>
             <input
               type="email"
               id="email"
-              className="flex-1 border-none bg-transparent py-2.5 text-[0.95rem] text-[#334155] outline-none w-full placeholder-gray-400"
-              placeholder="KiosKiora@gmail.com"
+              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all focus:bg-white focus:border-kiora-red/30 focus:ring-4 focus:ring-kiora-red/5 placeholder:text-slate-300 placeholder:font-medium"
+              placeholder="nombre@ejemplo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -71,29 +73,29 @@ export default function LoginForm() {
           </div>
         </div>
 
-        <div className="mb-7">
-          <div className="flex justify-between items-center mb-2">
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2 ml-1">
             <label
               htmlFor="password"
-              className="block font-semibold text-[0.85rem] text-[#374151]"
+              className="block font-black text-[10px] uppercase tracking-widest text-slate-400"
             >
               Contraseña
             </label>
-            <a href="/recuperar-contrasena" className="text-[#ec131e] font-semibold text-[0.8rem] no-underline hover:underline">
-              ¿Olvidaste tu contraseña?
+            <a href="/recuperar-contrasena" className="text-kiora-red font-black text-[9px] uppercase tracking-wider hover:underline">
+              ¿Olvidaste tu clave?
             </a>
           </div>
-          <div className="relative flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden transition-all duration-200 focus-within:border-[#9ca3af] focus-within:ring-[3px] focus-within:ring-gray-400/10">
-            <div className="pl-3.5 pr-2 text-gray-400 flex items-center">
+          <div className="relative group">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-kiora-red transition-colors">
               <svg fill="none" className="w-5 h-5" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2-2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
               </svg>
             </div>
             <input
               type="password"
               id="password"
-              className="flex-1 border-none bg-transparent py-2.5 text-[0.95rem] text-[#334155] outline-none w-full placeholder-gray-400"
-              placeholder="Escribe tu contraseña"
+              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all focus:bg-white focus:border-kiora-red/30 focus:ring-4 focus:ring-kiora-red/5 placeholder:text-slate-300 placeholder:font-medium"
+              placeholder="••••••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -104,20 +106,26 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-[#ec131e] hover:bg-[#d0111a] text-white border-none rounded-lg py-2.5 text-[1rem] font-semibold cursor-pointer transition-colors duration-200 shadow-[0_2px_4px_rgba(237,19,30,0.15)] disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full bg-gradient-to-r from-kiora-red to-[#d01019] hover:to-kiora-red text-white border-none rounded-[1.25rem] py-4 text-[11px] font-black uppercase tracking-[0.2em] cursor-pointer transition-all duration-300 shadow-xl shadow-kiora-red/20 hover:shadow-kiora-red/30 hover:-translate-y-0.5 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
         >
-          {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+          {isLoading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              Verificando...
+            </>
+          ) : (
+            'Entrar al Sistema'
+          )}
         </button>
       </form>
 
-      <div className="mt-8 text-center bg-transparent border-none shadow-none flex flex-col items-center">
-        <p className="text-[0.9rem] font-medium text-gray-500">
-          ¿Necesitas contactarte con nosotros?<span className="text-[#ec131e] font-bold"> KiosKiora@gmail.com</span>
+      <div className="mt-8 text-center bg-transparent border-none shadow-none flex flex-col items-center gap-2">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+          ¿Necesitas soporte?
         </p>
-      </div>
-
-      <div className="mt-6 w-full px-[10%] sm:px-[15%] text-left">
-        <span className="text-[#797676] text-[0.85rem] font-medium tracking-wide">Kiora | Sistema para Kioskos</span>
+        <a href="mailto:KiosKiora@gmail.com" className="text-sm font-black text-slate-700 hover:text-kiora-red transition-colors">
+          soporte@kiorapp.com
+        </a>
       </div>
 
       {/* Loading Overlay */}

@@ -280,13 +280,33 @@ export class OrderService {
     const cantidad = items.reduce((s, it) => s + (it.cantidad || 0), 0) || 1;
     const total = Number(order.montofinal_vent ?? 0);
     const precioPromedio = cantidad > 0 ? total / cantidad : total;
-    return this.createInvoice({
+
+    // 1. Crear factura local en orders-service
+    const result = await this.createInvoice({
       fk_id_vent: order.id_vent,
       id_usu: Number(idUsu),
       cantidad_vent: cantidad,
       precio_prod: precioPromedio,
       montototal_vent: total,
     });
+
+    // 2. Emitir factura electronica simulada via reports-service
+    try {
+      await this.httpClient.get<any>(`/reports/electronic-invoice/${order.id_vent}`, this.getAuthHeaders());
+    } catch (e) {
+      console.warn('Electronic invoice generation note:', e);
+    }
+
+    return result;
+  }
+
+  async cancelFactusInvoice(orderId: number, factusNumber: string): Promise<any> {
+    const response = await this.httpClient.post<any>(
+      `/reports/electronic-invoice/${orderId}/cancel`,
+      { factus_number: factusNumber },
+      { headers: this.getAuthHeaders() }
+    );
+    return response.ok ? response.data : { status: 'FAILED' };
   }
 
   async exportInvoicesExcel(): Promise<void> {

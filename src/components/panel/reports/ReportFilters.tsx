@@ -23,8 +23,9 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
   isLoading
 }) => {
   return (
-    <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-100/50 relative z-20">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <section className="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50 relative z-20">
+      <div className="flex flex-col lg:flex-row gap-6 lg:items-end">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Range */}
         <div className="space-y-3 relative z-30">
           <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
@@ -119,21 +120,23 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
             </Select>
           </div>
         </div>
-      </div>
-
-      <div className="mt-10 flex justify-end gap-4 border-t border-slate-50 pt-8">
-        <Button 
-          onClick={onGenerate}
-          disabled={isLoading}
-          className="bg-kiora-red text-white px-8 py-7 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-kiora-red/20 hover:bg-kiora-red-hover hover:-translate-y-1 transition-all flex items-center gap-3 disabled:opacity-50 disabled:translate-y-0 h-auto"
-        >
-          {isLoading ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <BarChart3 className="w-5 h-5" />
-          )}
-          Generar Reporte
-        </Button>
+        </div>
+        
+        {/* Submit Button aligned to the right, next to the grid on desktop */}
+        <div className="flex-shrink-0 mt-4 lg:mt-0 w-full lg:w-auto">
+          <Button 
+            onClick={onGenerate}
+            disabled={isLoading}
+            className="w-full lg:w-auto bg-gradient-to-r from-kiora-red to-[#d01019] text-white px-8 py-4 sm:py-6 h-auto rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-kiora-red/30 hover:from-[#d01019] hover:to-[#a00c14] hover:shadow-kiora-red/40 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <BarChart3 className="w-5 h-5" />
+            )}
+            Generar Reporte
+          </Button>
+        </div>
       </div>
     </section>
   );

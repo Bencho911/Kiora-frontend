@@ -41,40 +41,40 @@ export function ReportsSection() {
   } = useReportsManager();
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
-      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between px-2">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+      <header className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between px-1 sm:px-2">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900">
             Reportes de <span className="text-kiora-red">Inteligencia</span>
           </h1>
-          <p className="mt-3 text-slate-500 font-medium max-w-2xl leading-relaxed italic">
+          <p className="mt-2 sm:mt-3 text-sm sm:text-base text-slate-500 font-medium max-w-2xl leading-relaxed italic">
             "Lo que no se mide, no se puede mejorar." Analiza el rendimiento de tu negocio con datos reales.
           </p>
         </div>
       </header>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-        <div className="flex overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
-          <TabsList className="bg-slate-100 p-1.5 rounded-2xl h-auto shrink-0">
-            <TabsTrigger value="generar" className="px-6 py-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all gap-2 text-[10px] font-black uppercase tracking-widest">
-              <BarChart3 className="w-3.5 h-3.5" /> Generar
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="px-1 sm:px-0">
+          <TabsList className="bg-slate-100/80 p-1 rounded-xl sm:rounded-2xl h-auto w-full flex items-center justify-between gap-0.5 sm:gap-1">
+            <TabsTrigger value="generar" className="flex-1 px-1 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-slate-900 text-slate-400 transition-all gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest overflow-hidden">
+              <BarChart3 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">Generar</span>
             </TabsTrigger>
-            <TabsTrigger value="guardados" className="px-6 py-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all gap-2 text-[10px] font-black uppercase tracking-widest">
-              <History className="w-3.5 h-3.5" /> Guardados ({savedReports.length})
+            <TabsTrigger value="guardados" className="flex-1 px-1 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-slate-900 text-slate-400 transition-all gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest overflow-hidden">
+              <History className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">Hist.</span><span className="hidden sm:inline">orial</span>
             </TabsTrigger>
-            <TabsTrigger value="alertas" className="px-6 py-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all gap-2 text-[10px] font-black uppercase tracking-widest">
-              <Bell className="w-3.5 h-3.5" /> Alertas ({alerts.length})
+            <TabsTrigger value="alertas" className="flex-1 px-1 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-slate-900 text-slate-400 transition-all gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest overflow-hidden">
+              <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">Alertas</span>
             </TabsTrigger>
-            <TabsTrigger value="incidencias" className="px-6 py-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all gap-2 text-[10px] font-black uppercase tracking-widest">
-              <LifeBuoy className="w-3.5 h-3.5" /> Incidencias ({incidents.length})
+            <TabsTrigger value="incidencias" className="flex-1 px-1 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-slate-900 text-slate-400 transition-all gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest overflow-hidden">
+              <LifeBuoy className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">Soporte</span>
             </TabsTrigger>
-            <TabsTrigger value="inventario" className="px-6 py-3 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all gap-2 text-[10px] font-black uppercase tracking-widest">
-              <FileSpreadsheet className="w-3.5 h-3.5" /> Inventario
+            <TabsTrigger value="inventario" className="flex-1 px-1 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-slate-900 text-slate-400 transition-all gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest overflow-hidden">
+              <FileSpreadsheet className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">Inv.</span><span className="hidden sm:inline">entario</span>
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="generar" className="space-y-12 mt-0 focus-visible:outline-none">
+        <TabsContent value="generar" className="space-y-6 mt-0 focus-visible:outline-none">
           <ReportFilters
             filters={filters}
             setFilters={setFilters}
@@ -140,24 +140,27 @@ export function ReportsSection() {
         </TabsContent>
 
         <TabsContent value="incidencias" className="space-y-6 mt-0 focus-visible:outline-none">
-          <div className="flex justify-end gap-3 mb-6">
-            <Button
-              variant="outline"
-              onClick={() => handleExportIncidents('excel')}
-              className="rounded-xl bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all gap-2 text-[10px] font-black uppercase tracking-widest"
-            >
-              <FileSpreadsheet className="w-4 h-4" /> Excel
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleExportIncidents('pdf')}
-              className="rounded-xl bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white transition-all gap-2 text-[10px] font-black uppercase tracking-widest"
-            >
-              <FileText className="w-4 h-4" /> PDF
-            </Button>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest px-2">Reportes Técnicos</h3>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleExportIncidents('excel')}
+                className="rounded-xl bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all gap-2 text-[10px] font-black uppercase tracking-widest h-10 px-4"
+              >
+                <FileSpreadsheet className="w-4 h-4" /> Excel
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleExportIncidents('pdf')}
+                className="rounded-xl bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white transition-all gap-2 text-[10px] font-black uppercase tracking-widest h-10 px-4"
+              >
+                <FileText className="w-4 h-4" /> PDF
+              </Button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {incidents.map((inc) => (
               <Card key={inc.id_rep} className="border-none shadow-xl shadow-slate-100/50 rounded-[2.5rem] overflow-hidden bg-white hover:ring-2 hover:ring-kiora-red/10 transition-all">
                 <CardHeader className="pb-4">
@@ -240,35 +243,40 @@ export function ReportsSection() {
             )}
           </div>
         </TabsContent>
-        <TabsContent value="inventario" className="space-y-8 mt-0 focus-visible:outline-none">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="rounded-[2rem] border-none shadow-lg bg-white">
-              <CardHeader>
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-400">Total Productos</CardTitle>
-                <div className="text-4xl font-black text-slate-900">{reportData.length || '---'}</div>
+        <TabsContent value="inventario" className="space-y-6 sm:space-y-8 mt-0 focus-visible:outline-none">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-6">
+            <Card className="rounded-[1.5rem] sm:rounded-[2rem] border-none shadow-lg bg-white p-1">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] sm:tracking-widest text-slate-400 mb-1">Total Prod.</CardTitle>
+                <div className="text-2xl sm:text-4xl font-black text-slate-900 leading-none">{reportData.length || '---'}</div>
               </CardHeader>
             </Card>
-            <Card className="rounded-[2rem] border-none shadow-lg bg-white">
-              <CardHeader>
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-red-400">Bajo Stock</CardTitle>
-                <div className="text-4xl font-black text-red-600">{alerts.filter(a => a.alertType === 'stock').length}</div>
+            <Card className="rounded-[1.5rem] sm:rounded-[2rem] border-none shadow-lg bg-white p-1">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] sm:tracking-widest text-red-400 mb-1">Bajo Stock</CardTitle>
+                <div className="text-2xl sm:text-4xl font-black text-red-600 leading-none">{alerts.filter(a => a.alertType === 'stock').length}</div>
               </CardHeader>
             </Card>
-            <Card className="rounded-[2rem] border-none shadow-lg bg-white">
-              <CardHeader>
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-amber-400">Próximos a Vencer</CardTitle>
-                <div className="text-4xl font-black text-amber-600">{alerts.filter(a => a.alertType === 'expired').length}</div>
+            <Card className="rounded-[1.5rem] sm:rounded-[2rem] border-none shadow-lg bg-white p-1 col-span-2 sm:col-span-1">
+              <CardHeader className="p-4 sm:p-6 flex flex-row items-center justify-between sm:block">
+                <div>
+                   <CardTitle className="text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] sm:tracking-widest text-amber-400 mb-1">Por Vencer</CardTitle>
+                   <div className="text-2xl sm:text-4xl font-black text-amber-600 leading-none">{alerts.filter(a => a.alertType === 'expired').length}</div>
+                </div>
+                <div className="sm:hidden w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
+                   <Bell className="w-5 h-5" />
+                </div>
               </CardHeader>
             </Card>
           </div>
 
-          <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
-            <CardHeader className="border-b border-slate-50 flex flex-row items-center justify-between">
+          <Card className="rounded-[2rem] sm:rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
+            <CardHeader className="border-b border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 sm:p-8">
               <div>
-                <CardTitle className="text-xl font-black">Estado General del Inventario</CardTitle>
-                <CardDescription>Resumen de existencias y valorización estimada</CardDescription>
+                <CardTitle className="text-lg sm:text-xl font-black text-slate-900">Estado General del Inventario</CardTitle>
+                <CardDescription className="font-medium text-slate-500">Resumen de existencias y valorización estimada</CardDescription>
               </div>
-              <Button onClick={() => useInventoryStore.getState().notifyStockChange()} size="sm" variant="outline" className="rounded-xl font-bold">
+              <Button onClick={() => useInventoryStore.getState().notifyStockChange()} size="sm" variant="outline" className="rounded-xl font-black text-[10px] uppercase tracking-widest h-10 w-full sm:w-auto">
                 Actualizar Datos
               </Button>
             </CardHeader>
@@ -283,7 +291,7 @@ export function ReportsSection() {
         </TabsContent>
       </Tabs>
 
-      {previewData.isOpen && (
+      {previewData.isOpen && previewData.product !== null && (
         <EmailPreviewModal
           isOpen={previewData.isOpen}
           type={previewData.type}

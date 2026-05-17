@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Fuse from 'fuse.js';
 import { productService, alertService, inventoryService } from '@/config/setup';
 import type { Product, Category } from '@/models/Product';
+import type { CreateProductDto } from '@/services/ProductService';
 import type { Movement } from '@/models/Inventory';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { pushAppNotification } from '@/lib/pushAppNotification';
@@ -58,7 +59,7 @@ export function useProductManager() {
     }
   }, []);
 
-  const handleSaveProduct = async (dto: any, isEdit: boolean) => {
+  const handleSaveProduct = async (dto: CreateProductDto | FormData, isEdit: boolean) => {
     try {
       if (isEdit && selectedProduct?.cod_prod) {
         await productService.updateProduct(selectedProduct.cod_prod, dto);
@@ -76,7 +77,7 @@ export function useProductManager() {
     }
   };
 
-  const handleSaveMovement = async (mov: any) => {
+  const handleSaveMovement = async (mov: Partial<Movement>) => {
     try {
       await inventoryService.createMovement(mov);
       alertService.showToast('success', 'Movimiento registrado');

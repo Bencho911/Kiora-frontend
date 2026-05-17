@@ -43,16 +43,46 @@ export class ReportService {
   }
 
   // Fetch all orders within a range to process locally
-  // (In a real production app, this should be done in the backend)
-  async getDetailedSales(filters: ReportFilters): Promise<DetailedSalesReport[]> {
-    const res = await this.httpClient.get<{ data: Order[] }>(
-      `/orders?limit=1000&startDate=${filters.startDate}&endDate=${filters.endDate}`,
+  // We now use the /export/full endpoint which provides denormalized items and proper date filtering
+  private async fetchOrdersWithItems(filters: ReportFilters): Promise<Order[]> {
+    const res = await this.httpClient.get<{ dataset: any[] }>(
+      `/orders/export/full?desde=${filters.startDate}&hasta=${filters.endDate}`,
       this.getAuthHeaders()
     );
-    
+
     if (!res.ok || !res.data) throw new Error('Error al obtener datos de ventas');
-    
-    const orders = res.data.data || [];
+
+    const dataset = res.data.dataset || [];
+    const ordersMap: Record<number, Order> = {};
+
+    dataset.forEach(row => {
+      if (!ordersMap[row.id_vent]) {
+        ordersMap[row.id_vent] = {
+          id_vent: row.id_vent,
+          fecha_vent: row.fecha_vent,
+          montofinal_vent: row.montofinal_vent,
+          metodopago_usu: row.metodopago_usu,
+          estado: row.estado,
+          items: []
+        };
+      }
+
+      if (row.detalle_id) {
+        ordersMap[row.id_vent].items!.push({
+          id: row.detalle_id,
+          cod_prod: row.cod_prod,
+          nom_prod: row.nom_prod,
+          cantidad: row.cantidad,
+          precio_unit: row.precio_unit
+        });
+      }
+    });
+
+    return Object.values(ordersMap);
+  }
+
+  async getDetailedSales(filters: ReportFilters): Promise<DetailedSalesReport[]> {
+    const orders = await this.fetchOrdersWithItems(filters);
 
     if (filters.grouping === 'unidad') {
       const unitData: DetailedSalesReport[] = [];
@@ -79,7 +109,6 @@ export class ReportService {
       if (filters.grouping === 'dia') {
         period = date.toISOString().split('T')[0];
       } else if (filters.grouping === 'semana') {
-        // Simple ISO week logic
         const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
         const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -105,33 +134,14 @@ export class ReportService {
   }
 
   async getProductRanking(filters: ReportFilters): Promise<ProductRankingReport[]> {
-    const res = await this.httpClient.get<{ data: Order[] }>(
-      `/orders?limit=1000&startDate=${filters.startDate}&endDate=${filters.endDate}`,
-      this.getAuthHeaders()
-    );
-
-    if (!res.ok || !res.data) throw new Error('Error al obtener datos para el ranking');
-
-    const orders = res.data.data || [];
+    const orders = await this.fetchOrdersWithItems(filters);
     const stats: Record<number, { name: string; qty: number; revenue: number }> = {};
-
-    // Fetch product names for missing ones
-    let productMap: Record<number, string> = {};
-    try {
-      const pRes = await this.productService.getProducts(1, 1000);
-      const pList = Array.isArray(pRes) ? pRes : (pRes.data || []);
-      pList.forEach((p: { cod_prod: number; nom_prod?: string }) => {
-        productMap[p.cod_prod] = p.nom_prod ?? '';
-      });
-    } catch (e) {
-      console.warn('Could not load product map for ranking enrichment:', e);
-    }
 
     orders.forEach(order => {
       (order.items || []).forEach(item => {
         if (!stats[item.cod_prod]) {
           stats[item.cod_prod] = { 
-            name: item.nom_prod || productMap[item.cod_prod] || `Producto #${item.cod_prod}`, 
+            name: item.nom_prod || `Producto #${item.cod_prod}`, 
             qty: 0, 
             revenue: 0 
           };

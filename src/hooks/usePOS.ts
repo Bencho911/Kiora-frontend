@@ -13,7 +13,9 @@ const EMPTY_ORDER: CreateOrderDto = {
   items: [],
 };
 
-export function usePOS(user: any) {
+import type { User } from '@/models/User';
+
+export function usePOS(user: User | null) {
   const { 
     products: allProducts, 
     categories,

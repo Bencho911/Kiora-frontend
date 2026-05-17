@@ -9,7 +9,7 @@ export class SessionManager {
   private maxInactivity = 15 * 60; // 15 minutes by default
   private warningThreshold = 60; // Warning 1 minute before max
   private warningShown = false;
-  private intervalId: ReturnType<typeof setInterval> | undefined;
+  private intervalId: number | undefined;
 
   private readonly onActivity = () => this.resetInactivity();
   private readonly touchStartOptions: AddEventListenerOptions = { passive: true };

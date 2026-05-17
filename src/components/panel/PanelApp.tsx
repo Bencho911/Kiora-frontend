@@ -18,6 +18,7 @@ import { SettingsSection } from './SettingsSection';
 import { ComingSoonSection } from './ComingSoonSection';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import { OfflineBanner } from './OfflineBanner';
+import { PWAInstallPrompt } from './PWAInstallPrompt';
 
 import { UserDrawer } from '@/features/users/components/UserDrawer';
 import { ProfileDrawer } from '@/features/users/components/ProfileDrawer';
@@ -92,6 +93,28 @@ export default function PanelApp() {
   usePanelUrlSync(activeTab, setActiveTab, setOpenOrderFromUrl, openPOS);
   useRealTimeUpdates();
 
+  // Persistir carrito por usuario
+  const cartKey = user?.id_usu ? `kiora_cart_${user.id_usu}` : null;
+  useEffect(() => {
+    if (!cartKey) return;
+    const saved = localStorage.getItem(cartKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.items)) useSalesStore.getState().setOrderForm(parsed);
+      } catch { /* ignore */ }
+    }
+  }, [cartKey]);
+  useEffect(() => {
+    if (!cartKey) return;
+    const orderForm = useSalesStore.getState().orderForm;
+    if (!orderForm.items.length) {
+      localStorage.removeItem(cartKey);
+      return;
+    }
+    localStorage.setItem(cartKey, JSON.stringify(orderForm));
+  });
+
   useEffect(() => {
     if (!isReady || !user || isAdmin) return;
     if (ADMIN_ONLY_TABS.has(activeTab)) setActiveTab('dashboard');
@@ -123,6 +146,7 @@ export default function PanelApp() {
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans text-[#1e293b] selection:bg-[#ec131e]/10 selection:text-[#ec131e]">
       <OfflineBanner />
+      <PWAInstallPrompt />
       <AdminNavbar
         user={user}
         onOpenProfile={() => setIsProfileOpen(true)}
@@ -133,7 +157,7 @@ export default function PanelApp() {
         }}
       />
 
-      <main className="mx-auto max-w-[1600px] px-4 py-8 pb-32 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-[1600px] px-4 py-6 pb-28 sm:px-6 sm:py-8 lg:px-8 lg:pb-10 lg:pl-20">
         <ErrorBoundary>
           <Suspense fallback={<PanelSectionFallback />}>
             {activeTab === 'dashboard' ? (

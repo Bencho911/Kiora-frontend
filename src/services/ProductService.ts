@@ -66,8 +66,7 @@ export class ProductService {
     }
 
     const data = response.data;
-    console.log('[ProductService] raw data from /products:', data);
-    
+
     if (Array.isArray(data)) {
       const normalized = data.map(p => this.normalizeProduct(p));
       return {

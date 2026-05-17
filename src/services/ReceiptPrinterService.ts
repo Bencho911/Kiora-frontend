@@ -388,7 +388,7 @@ export class ReceiptPrinterService {
         charUuid = BLE_ALT_CHAR_WRITE;
       }
 
-      this.bleChar = await service.getCharacteristic(charUuid);
+      this.bleChar = await service!.getCharacteristic(charUuid);
       return true;
     } catch (e) {
       console.warn('[ReceiptPrinter] BLE connect failed:', e);

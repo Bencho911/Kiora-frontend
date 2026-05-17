@@ -2,9 +2,10 @@ import React from 'react';
 
 interface SavedReport {
   id: number;
-  filters: any;
+  filters: Record<string, unknown>;
   date: string;
   name: string;
+  [key: string]: unknown;
 }
 
 interface SavedReportsListProps {
