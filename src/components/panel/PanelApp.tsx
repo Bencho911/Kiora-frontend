@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
-import { authService, alertService, orderService } from '@/config/setup';
+import { authService, alertService, orderService, API_URL } from '@/config/setup';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { pushAppNotification } from '@/lib/pushAppNotification';
 import { SessionManager } from '@/services/SessionManager';
@@ -120,7 +120,7 @@ export default function PanelApp() {
     if (ADMIN_ONLY_TABS.has(activeTab)) setActiveTab('dashboard');
   }, [isReady, user, isAdmin, activeTab, setActiveTab]);
 
-  const sessionManager = useMemo(() => new SessionManager(authService, alertService), []);
+  const sessionManager = useMemo(() => new SessionManager(authService, alertService, API_URL), []);
 
   useEffect(() => {
     if (!isReady || user) return;

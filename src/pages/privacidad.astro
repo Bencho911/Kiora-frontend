@@ -3,135 +3,123 @@ import MainLayout from "@/layouts/mainlayout.astro";
 ---
 
 <MainLayout title="Política de Privacidad - Kiora">
-  <div class="min-h-screen bg-gray-50/30 font-[Inter]">
-    
-    {/* Header */}
-    <header class="sticky top-0 z-10 bg-white shadow-sm flex items-center p-4">
-      <a href="javascript:history.back()" class="p-2 text-[#ec131e] hover:bg-red-50 rounded-full transition-colors focus:outline-none">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-      </a>
-      <h1 class="flex-1 text-center font-bold text-gray-900 pr-9 text-sm md:text-base">Política de Privacidad</h1>
+  <div style="background: #F5F0EB; min-height: 100vh;">
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+      <div class="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full"
+        style="background: radial-gradient(circle, rgba(236,19,30,0.04) 0%, transparent 70%);" />
+      <div class="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full"
+        style="background: radial-gradient(circle, rgba(61,26,16,0.05) 0%, transparent 70%);" />
+    </div>
+
+    <header class="sticky top-0 z-20" style="background: rgba(245,240,235,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.04);">
+      <div class="max-w-3xl mx-auto flex items-center px-4 py-3">
+        <a href="javascript:history.back()" class="p-2 hover:bg-white/60 rounded-full transition-colors" style="color: #ec131e;">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </a>
+        <h1 class="flex-1 text-center font-black text-sm tracking-tight" style="color: #1a1a1a;">Política de Privacidad</h1>
+        <div class="w-9" />
+      </div>
     </header>
 
-    <main class="max-w-3xl mx-auto px-4 py-8 relative">
+    <main class="max-w-3xl mx-auto px-4 py-10">
+      <div style="background: #ffffff; border-radius: 40px; padding: 2.5rem 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.04);">
 
-      {/* Main Content Card */}
-      <div class="bg-[#fcfaf9] rounded-none sm:rounded-2xl p-6 md:p-10 shadow-sm border border-gray-100">
-        
-        {/* Title area */}
-        <div class="mb-8 border-b border-gray-100 pb-8">
-          <span class="inline-block px-2.5 py-1 bg-red-50 text-[#ec131e] text-[10px] font-bold tracking-widest uppercase rounded-full mb-4">
-            Legal
-          </span>
-          <h2 class="text-3xl font-extrabold text-gray-900 mb-4 tracking-tight">Privacidad en Kiora</h2>
-          <p class="text-sm text-gray-600 leading-relaxed font-medium">
-            En Kiora, valoramos tu privacidad y nos comprometemos a proteger tus datos personales de acuerdo con las normativas vigentes. Esta política explica cómo manejamos tu información.
-          </p>
+        <div class="mb-8">
+          <span class="inline-block px-3 py-1 text-[0.625rem] font-black uppercase tracking-[0.1em] rounded-full mb-4" style="background: #fef2f2; color: #ec131e;">Legal</span>
+          <h2 class="text-2xl sm:text-3xl font-black tracking-tight mb-2" style="color: #1a1a1a; line-height: 1;">Privacidad en Kiora</h2>
+          <p class="text-sm font-medium" style="color: #6b6b6b;">Valoramos tu privacidad y nos comprometemos a proteger tus datos personales.</p>
         </div>
 
         <div class="space-y-8">
-          
-          {/* Recopilación de Datos */}
+
           <section>
-            <h3 class="flex items-center gap-2 text-base font-bold text-[#ec131e] mb-3">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
+            <h3 class="flex items-center gap-2 font-black text-base mb-3" style="color: #1a1a1a;">
+              <svg class="w-5 h-5 shrink-0" style="color: #ec131e;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
               Recopilación de Datos
             </h3>
-            <div class="text-sm text-gray-600 font-medium space-y-4">
+            <div class="text-sm font-medium space-y-3" style="color: #6b6b6b; padding-left: 1.75rem;">
               <p>Recopilamos información necesaria para brindar nuestros servicios, incluyendo nombre, correo electrónico y datos de navegación para mejorar tu experiencia. Esto puede incluir:</p>
-              <ul class="space-y-2.5 pl-4 text-gray-500">
-                 <li>Información de contacto proporcionada por el usuario.</li>
-                 <li>Identificadores de dispositivo y dirección IP.</li>
-                 <li>Preferencias de uso dentro de la plataforma.</li>
+              <ul class="space-y-1.5 pl-4" style="color: #9ca3af;">
+                <li>Información de contacto proporcionada por el usuario.</li>
+                <li>Identificadores de dispositivo y dirección IP.</li>
+                <li>Preferencias de uso dentro de la plataforma.</li>
               </ul>
             </div>
           </section>
 
-          {/* Uso de la Información */}
           <section>
-            <h3 class="flex items-center gap-2 text-base font-bold text-[#ec131e] mb-3">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <h3 class="flex items-center gap-2 font-black text-base mb-3" style="color: #1a1a1a;">
+              <svg class="w-5 h-5 shrink-0" style="color: #ec131e;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
               Uso de la Información
             </h3>
-            <p class="text-sm text-gray-600 font-medium mb-4">
-              Utilizamos los datos recopilados únicamente para los siguientes fines:
-            </p>
-            <div class="grid gap-3">
-              <div class="bg-red-50/40 p-4 border border-red-50 rounded-xl">
-                 <h4 class="font-bold text-gray-900 text-sm mb-1">Personalización</h4>
-                 <p class="text-xs text-gray-500 font-medium">Adaptar nuestro contenido a tus preferencias individuales.</p>
+            <p class="text-sm font-medium mb-4" style="color: #6b6b6b; padding-left: 1.75rem;">Utilizamos los datos recopilados únicamente para los siguientes fines:</p>
+            <div class="grid gap-3" style="padding-left: 1.75rem;">
+              <div style="background: #fef2f2; padding: 1rem; border: 1px solid #fef2f2; border-radius: 16px;">
+                <h4 class="font-bold text-sm mb-1" style="color: #1a1a1a;">Personalización</h4>
+                <p class="text-xs font-medium" style="color: #9ca3af;">Adaptar nuestro contenido a tus preferencias individuales.</p>
               </div>
-              <div class="bg-red-50/40 p-4 border border-red-50 rounded-xl">
-                 <h4 class="font-bold text-gray-900 text-sm mb-1">Seguridad</h4>
-                 <p class="text-xs text-gray-500 font-medium">Verificar cuentas y prevenir actividades fraudulentas.</p>
+              <div style="background: #fef2f2; padding: 1rem; border: 1px solid #fef2f2; border-radius: 16px;">
+                <h4 class="font-bold text-sm mb-1" style="color: #1a1a1a;">Seguridad</h4>
+                <p class="text-xs font-medium" style="color: #9ca3af;">Verificar cuentas y prevenir actividades fraudulentas.</p>
               </div>
             </div>
           </section>
 
-          {/* Protección de Datos */}
           <section>
-            <h3 class="flex items-center gap-2 text-base font-bold text-[#ec131e] mb-3">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            <h3 class="flex items-center gap-2 font-black text-base mb-3" style="color: #1a1a1a;">
+              <svg class="w-5 h-5 shrink-0" style="color: #ec131e;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
               Protección de Datos
             </h3>
-            <p class="text-sm text-gray-600 font-medium leading-relaxed">
+            <p class="text-sm font-medium leading-relaxed" style="color: #6b6b6b; padding-left: 1.75rem;">
               Kiora implementa medidas de seguridad técnicas y organizativas para garantizar un nivel de seguridad adecuado al riesgo, incluyendo el cifrado de datos sensibles y auditorías periódicas de nuestros sistemas.
             </p>
           </section>
 
-          {/* Derechos del Usuario */}
           <section>
-             <h3 class="flex items-center gap-2 text-base font-bold text-[#ec131e] mb-3">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            <h3 class="flex items-center gap-2 font-black text-base mb-3" style="color: #1a1a1a;">
+              <svg class="w-5 h-5 shrink-0" style="color: #ec131e;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
               Derechos del Usuario
             </h3>
-            <p class="text-sm text-gray-600 font-medium mb-5">
-              Como usuario, tienes derechos fundamentales sobre tus datos personales:
-            </p>
-            <div class="space-y-4">
+            <p class="text-sm font-medium mb-4" style="color: #6b6b6b; padding-left: 1.75rem;">Como usuario, tienes derechos fundamentales sobre tus datos personales:</p>
+            <div class="space-y-3" style="padding-left: 1.75rem;">
               <div class="flex gap-3">
-                <svg class="w-4 h-4 text-[#ec131e] mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg class="w-4 h-4 mt-0.5 shrink-0" style="color: #ec131e;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <div>
-                  <h4 class="text-xs font-bold text-gray-900 mb-0.5">Acceso y Rectificación</h4>
-                  <p class="text-[11px] text-gray-500 font-medium">Derecho a conocer qué datos tenemos y corregir errores.</p>
+                  <h4 class="text-xs font-bold mb-0.5" style="color: #1a1a1a;">Acceso y Rectificación</h4>
+                  <p class="text-xs font-medium" style="color: #9ca3af;">Derecho a conocer qué datos tenemos y corregir errores.</p>
                 </div>
               </div>
               <div class="flex gap-3">
-                <svg class="w-4 h-4 text-[#ec131e] mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg class="w-4 h-4 mt-0.5 shrink-0" style="color: #ec131e;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <div>
-                  <h4 class="text-xs font-bold text-gray-900 mb-0.5">Supresión (Olvido)</h4>
-                  <p class="text-[11px] text-gray-500 font-medium">Puedes solicitar la eliminación de tus datos en cualquier momento.</p>
+                  <h4 class="text-xs font-bold mb-0.5" style="color: #1a1a1a;">Supresión (Olvido)</h4>
+                  <p class="text-xs font-medium" style="color: #9ca3af;">Puedes solicitar la eliminación de tus datos en cualquier momento.</p>
                 </div>
               </div>
               <div class="flex gap-3">
-                <svg class="w-4 h-4 text-[#ec131e] mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg class="w-4 h-4 mt-0.5 shrink-0" style="color: #ec131e;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <div>
-                  <h4 class="text-xs font-bold text-gray-900 mb-0.5">Portabilidad</h4>
-                  <p class="text-[11px] text-gray-500 font-medium">Solicitar una copia de tus datos en un formato estructurado.</p>
+                  <h4 class="text-xs font-bold mb-0.5" style="color: #1a1a1a;">Portabilidad</h4>
+                  <p class="text-xs font-medium" style="color: #9ca3af;">Solicitar una copia de tus datos en un formato estructurado.</p>
                 </div>
               </div>
             </div>
           </section>
 
-           
-           <hr class="border-gray-100" />
+          <hr style="border: none; border-top: 1px solid #e2e8f0;" />
 
-           {/* Contacto de privacidad */}
-           <section class="pt-2 pb-6">
-              <h4 class="text-sm font-bold text-gray-900 mb-2">Contacto de Privacidad</h4>
-              <p class="text-xs text-gray-500 font-medium mb-4 pr-10">Si tienes alguna pregunta sobre esta política o el tratamiento de tus datos, puedes realizar tu consulta directamente con el personal administrativo en el kiosko.</p>
-           </section>
-
+          <section>
+            <h4 class="text-sm font-bold mb-2" style="color: #1a1a1a;">Contacto de Privacidad</h4>
+            <p class="text-xs font-medium" style="color: #9ca3af;">Si tienes alguna pregunta sobre esta política o el tratamiento de tus datos, puedes realizar tu consulta directamente con el personal administrativo en el kiosko.</p>
+          </section>
         </div>
       </div>
 
-      <div class="text-center mt-10 text-[10px] font-bold text-gray-400 uppercase tracking-widest space-y-1">
-        <p class="font-medium tracking-normal text-gray-400/80">© Kiora S.A. Todos los derechos reservados.</p>
+      <div class="text-center mt-10 text-[0.625rem] font-bold uppercase tracking-[0.2em]" style="color: #9ca3af;">
+        <p>&copy; {new Date().getFullYear()} Kiora. Todos los derechos reservados.</p>
       </div>
-
     </main>
-
   </div>
 </MainLayout>

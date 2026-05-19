@@ -16,7 +16,8 @@ export class SessionManager {
 
   constructor(
     private authService: AuthService,
-    private alertService: IAlertService
+    private alertService: IAlertService,
+    private apiBase: string = 'http://20.110.129.152:3000/api',
   ) {}
 
   startMonitoring() {
@@ -89,6 +90,15 @@ export class SessionManager {
     if (this.inactivityTime >= this.maxInactivity) {
       this.stopMonitoring();
       this.authService.clearSession();
+      // Revocar refresh token en el backend (llamada fire & forget)
+      try {
+        await fetch(`${this.apiBase}/auth/logout`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+      } catch {
+        // Si el servidor no responde, igual cerramos sesión local
+      }
       await this.alertService.showExpiringSession(
         'Sesión Finalizada por Inactividad',
         'Has estado mucho tiempo inactivo. Vuelve a ingresar.'
@@ -118,6 +128,9 @@ export class SessionManager {
       else if (timeToLive <= 0) {
         this.stopMonitoring();
         this.authService.clearSession();
+        try {
+          await fetch(`${this.apiBase}/auth/logout`, { method: 'POST', credentials: 'include' });
+        } catch { /* fire & forget */ }
         await this.alertService.showExpiringSession(
           'Sesión Expirada',
           'Tu sesión ha expirado por seguridad.'

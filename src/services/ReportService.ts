@@ -173,26 +173,99 @@ export class ReportService {
   }
 
   async exportToExcel(data: any[], fileName: string) {
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    const keys = data.length > 0 ? Object.keys(data[0]) : [];
+    const now = new Date().toLocaleString('es-CO');
+
+    // Fila de título + datos
+    const rows = [
+      {},
+      { [keys[0] || '']: `Kiora Micro-Market — ${fileName.replace(/_/g, ' ')}` },
+      { [keys[0] || '']: `Generado: ${now}` },
+      {},
+      ...data,
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(rows, { skipHeader: true });
+    worksheet['!cols'] = keys.map(() => ({ wch: 22 }));
+    worksheet['!freeze'] = { x: 0, y: 4 };
+
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte");
+    XLSX.utils.book_append_sheet(workbook, worksheet, fileName.slice(0, 31));
     XLSX.writeFile(workbook, `${fileName}.xlsx`);
   }
 
   async exportToPdf(title: string, head: string[][], body: any[][], fileName: string, foot?: string[][]) {
     const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text(title, 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Generado el: ${new Date().toLocaleString()}`, 14, 28);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 14;
 
+    // ── Header con marca ──
+    // Barra superior roja
+    doc.setFillColor(236, 19, 30);
+    doc.rect(0, 0, pageWidth, 8, 'F');
+
+    // Título del reporte
+    doc.setFontSize(20);
+    doc.setTextColor(26, 26, 26);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, margin, 28);
+
+    // Línea decorativa
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.5);
+    doc.line(margin, 34, pageWidth - margin, 34);
+
+    // Metadatos: fecha y Kiora
+    doc.setFontSize(8);
+    doc.setTextColor(107, 114, 128);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Kiora Micro-Market — Generado el: ${new Date().toLocaleString('es-CO')}`, margin, 42);
+
+    // ── Tabla ──
     autoTable(doc, {
-      startY: 35,
+      startY: 50,
       head: head,
       body: body,
       foot: foot,
-      headStyles: { fillColor: [236, 19, 30] }, // Kiora Red
-      footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+      margin: { left: margin, right: margin },
+      headStyles: {
+        fillColor: [236, 19, 30],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9,
+        halign: 'center',
+      },
+      bodyStyles: {
+        fontSize: 8.5,
+        textColor: [42, 42, 42],
+      },
+      alternateRowStyles: {
+        fillColor: [249, 250, 251],
+      },
+      footStyles: {
+        fillColor: [240, 240, 240],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        fontSize: 9,
+      },
+      columnStyles: {
+        0: { cellPadding: { left: 6, right: 6, top: 3, bottom: 3 } },
+      },
+      didDrawPage: (data) => {
+        // Footer con número de página
+        const pageCount = doc.getNumberOfPages();
+        const pageNum = doc.getCurrentPageInfo().pageNumber;
+        doc.setFontSize(7);
+        doc.setTextColor(156, 163, 175);
+        doc.setFont('helvetica', 'normal');
+        doc.text(
+          `Página ${pageNum} de ${pageCount}`,
+          pageWidth - margin,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: 'right' }
+        );
+        doc.text('Kiora — Sistema de Venta Automatizada 24/7', margin, doc.internal.pageSize.getHeight() - 10);
+      },
     });
 
     doc.save(`${fileName}.pdf`);

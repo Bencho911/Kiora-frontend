@@ -1,174 +1,138 @@
 import { useState, useEffect } from 'react';
-import { authService, alertService } from '../../config/setup';
-import Loading from '../cargando';
+import { authService } from '../../config/setup';
 import { validatePassword } from '@/utils/validation';
+import Loading from '../cargando';
 
 export default function ResetPasswordForm() {
   const [email, setEmail] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    // Extraer email y code de la URL: ?email=...&code=...
-    const searchParams = new URLSearchParams(window.location.search);
-    const urlEmail = searchParams.get('email');
-    const urlCode = searchParams.get('code');
-    
-    if (urlEmail && urlCode) {
-      setEmail(urlEmail);
-      setCode(urlCode);
-    } else {
-      alertService.showError(
-        'Datos insuficientes',
-        'Faltan el correo o el código de verificación en la URL.'
-      );
-    }
+    const params = new URLSearchParams(window.location.search);
+    const urlEmail = params.get('email');
+    const urlCode = params.get('code');
+    if (urlEmail && urlCode) { setEmail(urlEmail); setCode(urlCode); }
   }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email || !code) {
-      alertService.showError('Error', 'Faltan datos para procesar el restablecimiento.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      alertService.showError('Error', 'Las contraseñas no coinciden, por favor verifica.');
-      return;
-    }
-
-    const validation = validatePassword(newPassword);
-    if (!validation.isValid) {
-      alertService.showError('Contraseña débil', validation.message);
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      await authService.resetPassword(email, code, newPassword);
-
-      await alertService.showSuccess(
-        '¡Éxito!',
-        'Tu contraseña ha sido restablecida exitosamente.'
-      );
-
-      // Redirigir al inicio de sesión luego del éxito
-      window.location.href = '/login/';
-    } catch (error: unknown) {
-      const err = error as Error;
-      alertService.showError('Error', err.message || 'Error desconocido');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   if (!email || !code) {
     return (
-      <div className="bg-white w-full max-w-105 p-8 rounded-xl border border-red-100 shadow-sm text-center">
-        <svg className="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <h2 className="text-xl font-bold text-gray-800 mb-2">Error de validación</h2>
-        <p className="text-gray-600 mb-6">No tienes los datos necesarios para acceder a esta página (correo o código).</p>
-        <a href="/recuperar-contrasena" className="inline-block bg-[#ec131e] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#d0111a] transition-colors no-underline">
+      <div style={{ width: '100%', maxWidth: '448px', padding: '2rem 2.5rem', backgroundColor: '#ffffff', borderRadius: '40px', boxShadow: '0 20px 50px rgba(0,0,0,0.04)', textAlign: 'center' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#1a1a1a', marginBottom: '0.5rem' }}>Error de validación</h2>
+        <p style={{ color: '#6b6b6b', marginBottom: '1.5rem' }}>Faltan datos necesarios para acceder a esta página.</p>
+        <a href="/recuperar-contrasena"
+          style={{ display: 'inline-block', backgroundColor: '#ec131e', color: '#ffffff', padding: '0.75rem 1.5rem', borderRadius: '16px', fontWeight: 700, textDecoration: 'none', transition: 'background-color 0.2s' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d01019'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ec131e'}>
           Volver a empezar
         </a>
       </div>
     );
   }
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setState('error'); setErrorMsg('Las contraseñas no coinciden.'); return;
+    }
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
+      setState('error'); setErrorMsg(validation.message); return;
+    }
+    setState('loading');
+    try {
+      await authService.resetPassword(email, code, newPassword);
+      window.location.href = '/login/';
+    } catch (error: unknown) {
+      const err = error as Error;
+      setState('error'); setErrorMsg(err.message || 'Error al restablecer');
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', paddingLeft: '3rem', paddingRight: '3rem', paddingTop: '0.875rem', paddingBottom: '0.875rem',
+    fontSize: '0.875rem', fontWeight: 700, outline: 'none', backgroundColor: '#f8fafc',
+    border: '1px solid #e2e8f0', borderRadius: '16px', color: '#1a1a1a', boxSizing: 'border-box', transition: 'all 0.2s'
+  };
+
   return (
-    <>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white w-full max-w-105 p-8 rounded-xl border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.04)]"
-      >
-        <div className="mb-6 text-center">
-          <h2 className="text-2xl font-bold text-[#1e293b] mb-2">Crear Nueva Contraseña</h2>
-          <p className="text-[0.95rem] text-[#64748b]">Ingresa tu nueva contraseña para la cuenta.</p>
-        </div>
+    <div className="w-full flex flex-col items-center">
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: 'clamp(1.5rem,4vw,2.5rem)', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1, color: '#1a1a1a', margin: 0 }}>
+          Nueva Contraseña
+        </h2>
+        <p style={{ fontSize: '0.875rem', fontWeight: 500, marginTop: '0.5rem', color: '#6b6b6b' }}>
+          Ingresa tu nueva contraseña para la cuenta.
+        </p>
+      </div>
 
-        <div className="mb-5">
-          <label
-            htmlFor="newPassword"
-            className="block font-semibold text-[0.85rem] text-[#374151] mb-2"
-          >
-            Nueva Contraseña
-          </label>
-          <div className="relative flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden transition-all duration-200 focus-within:border-[#9ca3af] focus-within:ring-[3px] focus-within:ring-gray-400/10">
-            <div className="pl-3.5 pr-2 text-gray-400 flex items-center">
-              <svg fill="none" className="w-5 h-5" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+      {state === 'error' && (
+        <div style={{ width: '100%', maxWidth: '448px', marginBottom: '1rem', padding: '0.75rem 1.25rem', borderRadius: '16px', fontSize: '0.875rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b' }}>
+          <span>⚠️</span> {errorMsg}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: '448px', padding: '2rem 2.5rem', backgroundColor: '#ffffff', borderRadius: '40px', boxShadow: '0 20px 50px rgba(0,0,0,0.04)' }}>
+
+        <div style={{ marginBottom: '1.25rem' }}>
+          <label htmlFor="newPassword" style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', marginLeft: '0.25rem', color: '#6b6b6b' }}>Nueva Contraseña</label>
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#9ca3af' }}>
+              <svg fill="none" style={{ width: '1.25rem', height: '1.25rem' }} stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <input
-              type="password"
-              id="newPassword"
-              className="flex-1 border-none bg-transparent py-2.5 text-[0.95rem] text-[#334155] outline-none w-full placeholder-gray-400"
-              placeholder="••••••••"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              minLength={6}
-              disabled={isLoading}
-            />
+            <input type={showPassword ? 'text' : 'password'} id="newPassword" value={newPassword}
+              onChange={(e) => { setNewPassword(e.target.value); if (state === 'error') setState('idle'); }}
+              placeholder="••••••••" required minLength={6} disabled={state === 'loading'}
+              style={inputStyle}
+              onFocus={(e) => { e.target.style.backgroundColor = '#ffffff'; e.target.style.borderColor = 'rgba(236,19,30,0.3)'; e.target.style.boxShadow = '0 0 0 4px rgba(236,19,30,0.05)'; }}
+              onBlur={(e) => { e.target.style.backgroundColor = '#f8fafc'; e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }} />
           </div>
         </div>
 
-        <div className="mb-6">
-          <label
-            htmlFor="confirmPassword"
-            className="block font-semibold text-[0.85rem] text-[#374151] mb-2"
-          >
-            Confirmar Contraseña
-          </label>
-          <div className="relative flex items-center border border-gray-300 rounded-lg bg-white overflow-hidden transition-all duration-200 focus-within:border-[#9ca3af] focus-within:ring-[3px] focus-within:ring-gray-400/10">
-            <div className="pl-3.5 pr-2 text-gray-400 flex items-center">
-              <svg fill="none" className="w-5 h-5" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label htmlFor="confirmPassword" style={{ display: 'block', fontSize: '0.625rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem', marginLeft: '0.25rem', color: '#6b6b6b' }}>Confirmar Contraseña</label>
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#9ca3af' }}>
+              <svg fill="none" style={{ width: '1.25rem', height: '1.25rem' }} stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <input
-              type="password"
-              id="confirmPassword"
-              className="flex-1 border-none bg-transparent py-2.5 text-[0.95rem] text-[#334155] outline-none w-full placeholder-gray-400"
-              placeholder="••••••••"
-              value={confirmPassword}
+            <input type={showPassword ? 'text' : 'password'} id="confirmPassword" value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              disabled={isLoading}
-            />
+              placeholder="••••••••" required minLength={6} disabled={state === 'loading'}
+              style={inputStyle}
+              onFocus={(e) => { e.target.style.backgroundColor = '#ffffff'; e.target.style.borderColor = 'rgba(236,19,30,0.3)'; e.target.style.boxShadow = '0 0 0 4px rgba(236,19,30,0.05)'; }}
+              onBlur={(e) => { e.target.style.backgroundColor = '#f8fafc'; e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }} />
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-[#ec131e] hover:bg-[#d0111a] text-white border-none rounded-lg py-2.5 text-[1rem] font-semibold cursor-pointer transition-colors duration-200 shadow-[0_2px_4px_rgba(237,19,30,0.15)] disabled:opacity-70 disabled:cursor-not-allowed mb-4"
-        >
-          {isLoading ? 'Restableciendo...' : 'Restablecer Contraseña'}
+        <button type="submit" disabled={state === 'loading'}
+          style={{ width: '100%', border: 'none', padding: '1rem', fontSize: '0.6875rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', cursor: state === 'loading' ? 'not-allowed' : 'pointer', borderRadius: '16px', color: '#ffffff', backgroundColor: '#ec131e', boxShadow: '0 4px 16px rgba(236,19,30,0.2)', opacity: state === 'loading' ? 0.7 : 1, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', transition: 'all 0.2s' }}
+          onMouseEnter={(e) => { if (!(e.target as HTMLButtonElement).disabled) { e.target.style.backgroundColor = '#d01019'; e.target.style.boxShadow = '0 6px 20px rgba(236,19,30,0.3)'; }}}
+          onMouseLeave={(e) => { e.target.style.backgroundColor = '#ec131e'; e.target.style.boxShadow = '0 4px 16px rgba(236,19,30,0.2)'; }}>
+          {state === 'loading' ? <><div style={{ width: '1rem', height: '1rem', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#ffffff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} /> Restableciendo...</> : 'Restablecer Contraseña'}
         </button>
 
-        <div className="text-center">
-          <a href="/login/" className="inline-flex items-center gap-1 text-[#64748b] hover:text-[#334155] font-medium text-[0.9rem] no-underline transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div style={{ textAlign: 'center' }}>
+          <a href="/login/"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.6875rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af', textDecoration: 'none', transition: 'color 0.2s' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#6b6b6b'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+            <svg xmlns="http://www.w3.org/2000/svg" style={{ width: '1rem', height: '1rem' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Volver al inicio
           </a>
         </div>
       </form>
-
-      {/* Loading Overlay */}
-      {isLoading && (
-        <div>
-          <Loading message="Restableciendo..." />
-        </div>
-      )}
-    </>
+      {state === 'loading' && <div><Loading message="Restableciendo..." /></div>}
+    </div>
   );
 }

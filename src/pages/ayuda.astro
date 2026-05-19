@@ -5,20 +5,16 @@ import MainLayout from "@/layouts/mainlayout.astro";
 ---
 
 <MainLayout title="Centro de Ayuda - Kiora">
-    <!-- Abstract Background Detail -->
-    <div
-      class="absolute -top-50 -right-25 w-150 h-150 rounded-full bg-[radial-gradient(circle,rgba(237,27,36,0.06)_0%,rgba(250,250,252,0)_70%)] -z-10 pointer-events-none"
-    >
+  <div style="background: #F5F0EB; min-height: 100vh;">
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+      <div class="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full"
+        style="background: radial-gradient(circle, rgba(236,19,30,0.04) 0%, transparent 70%);" />
+      <div class="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full"
+        style="background: radial-gradient(circle, rgba(61,26,16,0.05) 0%, transparent 70%);" />
     </div>
-
-    <!-- App Logo -->
-    <img
-      src="/img/logo-kiora-vectorizado.svg"
-      alt="Kiora Logo"
-      class="w-48 h-auto mt-4 mb-6 relative z-10 object-contain"
-    />
-
-    <HelpCenter client:load />
-    <GlobalControls client:load />
-
+    <div class="relative z-10 pt-8 px-4 sm:px-6">
+      <HelpCenter client:load />
+    </div>
+  </div>
+  <GlobalControls client:load />
 </MainLayout>
