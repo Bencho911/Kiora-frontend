@@ -48,7 +48,7 @@ export function LegalSection({ defaultTab }: { defaultTab?: LegalTab }) {
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#ec131e]"></div>
 
         {activeTab === 'terminos' ? (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="animate-in fade-in duration-500">
             <div className="mb-8">
               <div className="text-[10px] font-bold text-[#ec131e] tracking-widest uppercase mb-2">Legal • Kiora</div>
               <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Acuerdo de Usuario</h2>
@@ -95,7 +95,7 @@ export function LegalSection({ defaultTab }: { defaultTab?: LegalTab }) {
             </div>
           </div>
         ) : (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="animate-in fade-in duration-500">
             <div className="mb-8">
               <span className="inline-block px-2.5 py-1 bg-red-50 text-[#ec131e] text-[10px] font-bold tracking-widest uppercase rounded-full mb-4">
                 Legal

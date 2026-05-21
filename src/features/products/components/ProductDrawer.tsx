@@ -38,10 +38,10 @@ function toInputDate(d?: string | null): string {
   return x.toISOString().slice(0, 10);
 }
 
-export function ProductDrawer({ 
-  isOpen, 
-  onClose, 
-  product, 
+export function ProductDrawer({
+  isOpen,
+  onClose,
+  product,
   categories,
   movements,
   loadingMovements,
@@ -55,7 +55,6 @@ export function ProductDrawer({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // View state
   const [activeTab, setActiveTab] = useState<'info' | 'stock'>('info');
   const [savingMov, setSavingMov] = useState(false);
 
@@ -79,9 +78,7 @@ export function ProductDrawer({
   }, [product, isOpen]);
 
   useEffect(() => {
-    if (isOpen) {
-      setActiveTab('info');
-    }
+    if (isOpen) setActiveTab('info');
   }, [isOpen]);
 
   useEffect(() => {
@@ -92,27 +89,19 @@ export function ProductDrawer({
 
   const handleSaveMovement = async (movForm: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; fk_cod_prov?: number }) => {
     if (!product?.cod_prod) return;
-    
     if (!movForm.fk_cod_prov && !movForm.desc_mov.trim()) {
       alertService.showToast('warning', 'La justificación es obligatoria');
       return;
     }
-
     if (movForm.tipo_mov === 'salida' && movForm.cantidad > (product.stock_actual || 0)) {
       alertService.showToast('error', 'No hay stock suficiente para esta salida');
       return;
     }
-
     setSavingMov(true);
     try {
-      await onSaveMovement({
-        ...movForm,
-        cod_prod: product.cod_prod,
-      });
+      await onSaveMovement({ ...movForm, cod_prod: product.cod_prod });
       alertService.showToast('success', 'Movimiento registrado');
-      pushAppNotification(
-        'success',
-        'Inventario',
+      pushAppNotification('success', 'Inventario',
         `${movForm.tipo_mov === 'ajuste' ? 'Ajuste' : movForm.tipo_mov} de ${movForm.cantidad} uds — ${product.nom_prod ?? 'Producto'}`,
         { category: 'inventory', toast: false }
       );
@@ -128,9 +117,7 @@ export function ProductDrawer({
     if (file) {
       setImageFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
+      reader.onloadend = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -139,15 +126,9 @@ export function ProductDrawer({
     e.preventDefault();
     if (!form.nom_prod.trim()) return alertService.showToast('warning', 'El nombre es obligatorio');
     if (form.precio_prod <= 0) return alertService.showToast('warning', 'El precio debe ser mayor a 0');
-
     setSaving(true);
     try {
-      const dto: CreateProductDto = {
-        ...form,
-        imagen: imageFile || undefined,
-      };
-
-      await onSave(dto, !!product?.cod_prod);
+      await onSave({ ...form, imagen: imageFile || undefined }, !!product?.cod_prod);
       onClose();
     } catch (e) {
       alertService.showToast('error', getErrorMessage(e, 'Error al guardar producto'));
@@ -160,29 +141,29 @@ export function ProductDrawer({
 
   return (
     <div className="fixed inset-0 z-[100] flex animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative ml-auto h-full w-full max-w-md bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+      <div className="absolute inset-0 bg-inverse-surface/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative ml-auto h-full w-full max-w-md bg-surface-bright shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 border-l border-outline-variant/40">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant/30 bg-surface">
           <div>
-            <h2 className="text-xl font-extrabold text-slate-900">{product ? 'Editar Producto' : 'Crear Producto'}</h2>
-            <p className="text-xs text-slate-500 font-medium">Información técnica y control de existencias.</p>
+            <h2 className="label-md text-on-surface">{product ? 'Editar Producto' : 'Crear Producto'}</h2>
+            <p className="label-sm text-on-surface-variant mt-0.5">Información técnica y control de existencias.</p>
           </div>
-          <button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          <button onClick={onClose} className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors">
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
           </button>
         </div>
 
         {product && (
-          <div className="flex border-b border-slate-100 bg-slate-50/50">
+          <div className="flex border-b border-outline-variant/30 bg-surface-container-low">
             <button
               onClick={() => setActiveTab('info')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'info' ? 'bg-white text-kiora-red border-b-2 border-kiora-red' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 py-3 label-sm transition-all border-b-2 ${activeTab === 'info' ? 'text-primary border-primary bg-surface' : 'text-on-surface-variant border-transparent hover:text-on-surface'}`}
             >
               Detalles
             </button>
             <button
               onClick={() => setActiveTab('stock')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'stock' ? 'bg-white text-kiora-red border-b-2 border-kiora-red' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 py-3 label-sm transition-all border-b-2 ${activeTab === 'stock' ? 'text-primary border-primary bg-surface' : 'text-on-surface-variant border-transparent hover:text-on-surface'}`}
             >
               Inventario
             </button>
@@ -190,85 +171,80 @@ export function ProductDrawer({
         )}
 
         {activeTab === 'info' ? (
-          <form id="productForm" onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-6">
+          <form id="productForm" onSubmit={handleSave} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
             {/* Image Upload */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Imagen del Producto</label>
-              <div className="relative group aspect-video rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden transition-all hover:border-kiora-red/30">
+            <div className="space-y-1.5">
+              <label className="label-sm text-on-surface-variant">Imagen del Producto</label>
+              <div className="relative group aspect-video rounded-xl border-2 border-dashed border-outline-variant/50 bg-surface-container-low flex items-center justify-center overflow-hidden transition-all hover:border-primary/30">
                 {imagePreview ? (
                   <>
                     <img src={imagePreview} className="h-full w-full object-contain p-4" alt="Preview" />
-                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); }} className="p-3 bg-white rounded-2xl text-red-500 hover:scale-110 transition-transform shadow-xl">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    <div className="absolute inset-0 bg-inverse-surface/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); }} className="p-2 bg-surface rounded-lg text-error hover:scale-110 transition-transform shadow-sm">
+                        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>
                       </button>
                     </div>
                   </>
                 ) : (
                   <div className="text-center p-4">
-                    <div className="mx-auto h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-300 mb-3 group-hover:text-kiora-red transition-colors">
-                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <div className="mx-auto w-10 h-10 rounded-lg bg-surface shadow-sm flex items-center justify-center text-on-surface-variant/40 mb-2 group-hover:text-primary transition-colors">
+                      <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>image</span>
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subir Fotografía</p>
+                    <p className="label-sm text-on-surface-variant">Subir Fotografía</p>
                   </div>
                 )}
                 <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5">
+            <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nombre Corporativo *</label>
+                <label className="label-sm text-on-surface-variant">Nombre *</label>
                 <input
                   type="text"
                   required
                   value={form.nom_prod}
                   onChange={e => setForm(f => ({ ...f, nom_prod: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold focus:border-kiora-red focus:outline-none focus:ring-4 focus:ring-kiora-red/5 transition-all"
+                  className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
                   placeholder="Ej. Bebida Energética 500ml"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Descripción Técnica</label>
+                <label className="label-sm text-on-surface-variant">Descripción</label>
                 <textarea
                   value={form.desc_prod}
                   onChange={e => setForm(f => ({ ...f, desc_prod: e.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium focus:border-kiora-red focus:outline-none focus:ring-4 focus:ring-kiora-red/5 transition-all min-h-[100px]"
-                  placeholder="Detalles del producto. Puedes indicar número de lote o referencia de trazabilidad aquí."
+                  className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all min-h-[80px]"
+                  placeholder="Detalles del producto."
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha de vencimiento</label>
+                <label className="label-sm text-on-surface-variant">Fecha de vencimiento</label>
                 <input
                   type="date"
                   value={form.fechaven_prod ?? ''}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      fechaven_prod: e.target.value || undefined,
-                    }))
-                  }
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold focus:border-kiora-red focus:outline-none focus:ring-4 focus:ring-kiora-red/5"
+                  onChange={(e) => setForm(f => ({ ...f, fechaven_prod: e.target.value || undefined }))}
+                  className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
                 />
-                <p className="text-[10px] font-medium text-slate-400">Opcional. Se usa para alertas y reportes de caducidad.</p>
+                <p className="label-sm text-on-surface-variant/60">Opcional. Se usa para alertas de caducidad.</p>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Precio de Venta ($) *</label>
+                <label className="label-sm text-on-surface-variant">Precio de Venta ($) *</label>
                 <input
                   type="number"
                   required
                   value={form.precio_prod === 0 ? '' : form.precio_prod}
                   onFocus={e => e.target.select()}
                   onChange={e => setForm(f => ({ ...f, precio_prod: Number(e.target.value) }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-lg font-black text-slate-900 focus:border-kiora-red focus:outline-none focus:ring-4 focus:ring-kiora-red/5 transition-all"
+                  className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-lg font-bold text-on-surface focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Categorías Relacionadas</label>
+                <label className="label-sm text-on-surface-variant">Categorías</label>
                 <div className="flex flex-wrap gap-2">
                   {categories.map(c => (
                     <button
@@ -283,10 +259,11 @@ export function ProductDrawer({
                             : [...(f.fk_cod_cats || []), id]
                         }));
                       }}
-                      className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${form.fk_cod_cats?.includes(c.cod_cat!)
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-lg'
-                        : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
-                        }`}
+                      className={`px-3 py-1.5 rounded-lg label-sm transition-all border ${
+                        form.fk_cod_cats?.includes(c.cod_cat!)
+                          ? 'bg-primary text-on-primary border-primary'
+                          : 'bg-surface text-on-surface-variant border-outline-variant/50 hover:border-outline'
+                      }`}
                     >
                       {c.nom_cat}
                     </button>
@@ -296,31 +273,31 @@ export function ProductDrawer({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stock Inicial</label>
+                  <label className="label-sm text-on-surface-variant">Stock Inicial</label>
                   <input
                     type="number"
                     value={form.stock_actual === 0 ? '' : form.stock_actual}
-                    disabled={!!product} 
+                    disabled={!!product}
                     onFocus={e => e.target.select()}
                     onChange={e => setForm(f => ({ ...f, stock_actual: Number(e.target.value) }))}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold focus:border-kiora-red focus:outline-none disabled:opacity-40 disabled:bg-slate-100"
+                    className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-40 disabled:bg-surface-container-low"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Límite Mínimo</label>
+                  <label className="label-sm text-on-surface-variant">Límite Mínimo</label>
                   <input
                     type="number"
                     value={form.stock_minimo === 0 ? '' : form.stock_minimo}
                     onFocus={e => e.target.select()}
                     onChange={e => setForm(f => ({ ...f, stock_minimo: Number(e.target.value) }))}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-bold focus:border-kiora-red focus:outline-none"
+                    className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
                   />
                 </div>
               </div>
             </div>
           </form>
         ) : (
-          <ProductStockTab 
+          <ProductStockTab
             product={product!}
             movements={movements}
             isLoading={loadingMovements}
@@ -330,20 +307,20 @@ export function ProductDrawer({
           />
         )}
 
-        <div className="border-t border-slate-100 p-6 flex gap-3 bg-white">
+        <div className="px-6 py-4 bg-surface border-t border-outline-variant/30 flex gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-2xl border border-slate-200 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:bg-slate-50 transition-all"
+            className="flex-1 rounded-xl border border-outline-variant/50 py-2.5 label-sm text-on-surface-variant hover:bg-surface-container-low transition-all"
           >
-            {activeTab === 'stock' ? 'Volver al Menú' : 'Cancelar'}
+            {activeTab === 'stock' ? 'Volver' : 'Cancelar'}
           </button>
           {activeTab === 'info' && (
             <button
               type="submit"
               form="productForm"
               disabled={saving}
-              className="flex-1 rounded-2xl bg-kiora-red py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-kiora-red/20 hover:bg-kiora-red-hover hover:-translate-y-0.5 transition-all disabled:opacity-60"
+              className="flex-1 rounded-xl bg-primary text-on-primary py-2.5 label-sm shadow-sm hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-60"
             >
               {saving ? 'Procesando...' : (product ? 'Guardar Cambios' : 'Crear Producto')}
             </button>

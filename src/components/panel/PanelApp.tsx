@@ -47,6 +47,9 @@ const CategoriasSection = lazy(() =>
 const InventarioSection = lazy(() =>
   import('@/features/inventory/components/InventarioSection').then((m) => ({ default: m.InventarioSection }))
 );
+const ActivitySection = lazy(() =>
+  import('./ActivitySection').then((m) => ({ default: m.ActivitySection }))
+);
 const UserList = lazy(() =>
   import('@/features/users/components/UserList').then((m) => ({ default: m.UserList }))
 );
@@ -61,7 +64,7 @@ function PanelSectionFallback() {
   );
 }
 
-const ADMIN_ONLY_TABS = new Set(['usuarios', 'reportes', 'mantenimiento']);
+const ADMIN_ONLY_TABS = new Set(['usuarios', 'reportes', 'mantenimiento', 'actividad']);
 
 function PanelLoadingShell({ message = 'Cargando sesión…' }: { message?: string }) {
   return (
@@ -193,6 +196,8 @@ export default function PanelApp() {
                 />
               ) : activeTab === 'mantenimiento' && isAdmin ? (
                 <MaintenanceSection />
+              ) : activeTab === 'actividad' && isAdmin ? (
+                <ActivitySection />
               ) : activeTab === 'reportes' && isAdmin ? (
                 <ReportsSection />
               ) : activeTab === 'ajustes' ? (

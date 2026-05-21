@@ -24,6 +24,26 @@ const FILTER_LABELS: Record<'all' | AppNotificationCategory, string> = {
 };
 
 export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpenProfile, onOpenPOS }) => {
+  const [isDark, setIsDark] = React.useState(() => {
+    if (typeof document === 'undefined') return false;
+    return document.documentElement.classList.contains('dark');
+  });
+
+  const toggleDark = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('kiora_theme', next ? 'dark' : 'light');
+  };
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('kiora_theme');
+    if (saved === 'dark') {
+      document.documentElement.classList.add('dark');
+      setIsDark(true);
+    }
+  }, []);
+
   const { lowStockItems, fetchLowStock } = useInventoryStore();
   const notifications = useNotificationStore((s) => s.notifications);
   const markAsRead = useNotificationStore((s) => s.markAsRead);
@@ -91,6 +111,18 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
 
         {/* Right: actions */}
         <div className="flex items-center gap-2">
+
+          {/* Dark mode toggle */}
+          <button
+            type="button"
+            onClick={toggleDark}
+            className="relative p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all active:scale-[0.97]"
+            aria-label={isDark ? 'Modo claro' : 'Modo oscuro'}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+              {isDark ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
 
           {/* Notifications */}
           <div className="relative" ref={notifPanelRef}>

@@ -5,7 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { BarChart3, Calendar, Tag, Layers } from 'lucide-react';
 
 interface ReportFiltersProps {
   filters: Filters;
@@ -23,119 +22,122 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
   isLoading
 }) => {
   return (
-    <section className="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50 relative z-20">
-      <div className="flex flex-col lg:flex-row gap-6 lg:items-end">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Range */}
-        <div className="space-y-3 relative z-30">
-          <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
-            <Calendar className="w-3 h-3" /> Rango de Fechas
-          </Label>
-          <div className="flex flex-col sm:flex-row items-center gap-3 report-date-range">
-            <Input 
-              type="date" 
-              value={filters.startDate}
-              onChange={e => setFilters({...filters, startDate: e.target.value})}
-              className="bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700"
-            />
-            <span className="text-slate-300 font-bold px-1">→</span>
-            <Input 
-              type="date" 
-              value={filters.endDate}
-              onChange={e => setFilters({...filters, endDate: e.target.value})}
-              className="bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700"
-            />
+    <section className="bg-surface rounded-xl border border-outline-variant/30 p-5">
+      <div className="flex flex-col lg:flex-row gap-5 lg:items-end">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Range */}
+          <div className="space-y-2">
+            <Label className="label-sm text-on-surface-variant flex items-center gap-1.5">
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>calendar_today</span>
+              Rango de Fechas
+            </Label>
+            <div className="flex flex-col sm:flex-row items-center gap-2 report-date-range">
+              <Input
+                type="date"
+                value={filters.startDate}
+                onChange={e => setFilters({ ...filters, startDate: e.target.value })}
+                className="bg-surface-container-low border-outline-variant/50 rounded-lg label-md text-on-surface"
+              />
+              <span className="text-on-surface-variant/40 label-sm px-1">→</span>
+              <Input
+                type="date"
+                value={filters.endDate}
+                onChange={e => setFilters({ ...filters, endDate: e.target.value })}
+                className="bg-surface-container-low border-outline-variant/50 rounded-lg label-md text-on-surface"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Grouping / Type */}
-        <div className="space-y-3">
-          <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
-            <Layers className="w-3 h-3" /> Tipo y Agrupación
-          </Label>
-          <div className="flex gap-3">
-            <Select 
-              value={filters.reportType}
-              onValueChange={val => setFilters({...filters, reportType: val as any})}
-            >
-              <SelectTrigger className="flex-1 bg-slate-50 border-none rounded-xl font-bold text-slate-700">
-                <SelectValue placeholder="Tipo de reporte" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ventas_detalladas">Ventas Detalladas</SelectItem>
-                <SelectItem value="mas_vendidos">Más Vendidos</SelectItem>
-                <SelectItem value="menos_vendidos">Menos Vendidos</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {filters.reportType === 'ventas_detalladas' && (
-              <Select 
-                value={filters.grouping}
-                onValueChange={val => setFilters({...filters, grouping: val as any})}
+          {/* Type + Grouping */}
+          <div className="space-y-2">
+            <Label className="label-sm text-on-surface-variant flex items-center gap-1.5">
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>layers</span>
+              Tipo y Agrupación
+            </Label>
+            <div className="flex gap-2">
+              <Select
+                value={filters.reportType}
+                onValueChange={val => setFilters({ ...filters, reportType: val as any })}
               >
-                <SelectTrigger className="w-32 bg-slate-50 border-none rounded-xl font-bold text-slate-700">
-                  <SelectValue placeholder="Agrupar" />
+                <SelectTrigger className="flex-1 bg-surface-container-low border-outline-variant/50 rounded-lg font-medium text-on-surface">
+                  <SelectValue placeholder="Tipo de reporte" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dia">Día</SelectItem>
-                  <SelectItem value="semana">Semana</SelectItem>
-                  <SelectItem value="mes">Mes</SelectItem>
-                  <SelectItem value="unidad">Unidad</SelectItem>
+                  <SelectItem value="ventas_detalladas">Ventas Detalladas</SelectItem>
+                  <SelectItem value="mas_vendidos">Más Vendidos</SelectItem>
+                  <SelectItem value="menos_vendidos">Menos Vendidos</SelectItem>
                 </SelectContent>
               </Select>
-            )}
+
+              {filters.reportType === 'ventas_detalladas' && (
+                <Select
+                  value={filters.grouping}
+                  onValueChange={val => setFilters({ ...filters, grouping: val as any })}
+                >
+                  <SelectTrigger className="w-28 bg-surface-container-low border-outline-variant/50 rounded-lg font-medium text-on-surface">
+                    <SelectValue placeholder="Agrupar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dia">Día</SelectItem>
+                    <SelectItem value="semana">Semana</SelectItem>
+                    <SelectItem value="mes">Mes</SelectItem>
+                    <SelectItem value="unidad">Unidad</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </div>
+
+          {/* Parameters */}
+          <div className="space-y-2">
+            <Label className="label-sm text-on-surface-variant flex items-center gap-1.5">
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>sell</span>
+              Parámetros
+            </Label>
+            <div className="flex gap-2">
+              {(filters.reportType === 'mas_vendidos' || filters.reportType === 'menos_vendidos') && (
+                <div className="flex-1 flex items-center bg-surface-container-low rounded-lg px-3 border border-outline-variant/50">
+                  <span className="label-sm text-on-surface-variant mr-1">TOP</span>
+                  <Input
+                    type="number"
+                    value={filters.topN}
+                    onChange={e => setFilters({ ...filters, topN: Number(e.target.value) })}
+                    className="bg-transparent border-none p-0 font-semibold text-on-surface focus-visible:ring-0 shadow-none h-9"
+                  />
+                </div>
+              )}
+              <Select
+                value={filters.category?.toString() || "all"}
+                onValueChange={val => setFilters({ ...filters, category: val === "all" ? undefined : Number(val) })}
+              >
+                <SelectTrigger className="flex-1 bg-surface-container-low border-outline-variant/50 rounded-lg font-medium text-on-surface">
+                  <SelectValue placeholder="Categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las Categorías</SelectItem>
+                  {categories.map(c => (
+                    <SelectItem key={c.cod_cat} value={c.cod_cat.toString()}>{c.nom_cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
-        {/* Additional Params */}
-        <div className="space-y-3">
-          <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
-            <Tag className="w-3 h-3" /> Parámetros
-          </Label>
-          <div className="flex gap-3">
-            {(filters.reportType === 'mas_vendidos' || filters.reportType === 'menos_vendidos') && (
-              <div className="flex-1 flex items-center bg-slate-50 rounded-xl px-4 py-1 border border-transparent focus-within:border-slate-200 transition-all">
-                <span className="text-[10px] font-black text-slate-400 uppercase mr-2">TOP</span>
-                <Input 
-                  type="number" 
-                  value={filters.topN}
-                  onChange={e => setFilters({...filters, topN: Number(e.target.value)})}
-                  className="bg-transparent border-none p-0 font-black text-kiora-red focus-visible:ring-0 shadow-none"
-                />
-              </div>
-            )}
-            <Select 
-              value={filters.category?.toString() || "all"}
-              onValueChange={val => setFilters({...filters, category: val === "all" ? undefined : Number(val)})}
-            >
-              <SelectTrigger className="flex-1 bg-slate-50 border-none rounded-xl font-bold text-slate-700">
-                <SelectValue placeholder="Categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las Categorías</SelectItem>
-                {categories.map(c => (
-                  <SelectItem key={c.cod_cat} value={c.cod_cat.toString()}>{c.nom_cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        </div>
-        
-        {/* Submit Button aligned to the right, next to the grid on desktop */}
-        <div className="flex-shrink-0 mt-4 lg:mt-0 w-full lg:w-auto">
-          <Button 
+        {/* Generate Button */}
+        <div className="shrink-0 w-full lg:w-auto">
+          <button
             onClick={onGenerate}
             disabled={isLoading}
-            className="w-full lg:w-auto bg-gradient-to-r from-kiora-red to-[#d01019] text-white px-8 py-4 sm:py-6 h-auto rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-kiora-red/30 hover:from-[#d01019] hover:to-[#a00c14] hover:shadow-kiora-red/40 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full lg:w-auto bg-primary text-on-primary label-sm px-6 py-3 rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isLoading ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin" />
             ) : (
-              <BarChart3 className="w-5 h-5" />
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>bar_chart</span>
             )}
             Generar Reporte
-          </Button>
+          </button>
         </div>
       </div>
     </section>

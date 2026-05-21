@@ -91,6 +91,15 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
               <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-5.75 5.75a1.5 1.5 0 01-2.12 0L2.08 14.45a1.5 1.5 0 010-2.12l5.75-5.75m4.24 4.24l5.75-5.75a1.5 1.5 0 012.12 0l1.47 1.47a1.5 1.5 0 010 2.12l-5.75 5.75M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           ),
+        },
+        {
+          id: 'actividad',
+          label: 'Actividad',
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ),
         }
       );
     }

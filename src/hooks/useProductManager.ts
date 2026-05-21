@@ -33,7 +33,7 @@ export function useProductManager() {
     setIsLoading(true);
     try {
       const [p, c] = await Promise.all([
-        productService.getProducts(),
+        productService.getProducts(1, 1000),
         productService.getCategories()
       ]);
       setProducts(Array.isArray(p) ? p : (p?.data || []));

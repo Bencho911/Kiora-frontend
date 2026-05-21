@@ -33,7 +33,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     set({ isLoading: true });
     try {
       console.log('[InventoryStore] Starting fetchProducts...');
-      const res = await productService.getProducts(); // Usamos valores por defecto (1, 20) como en useProductManager
+      const res = await productService.getProducts(1, 1000);
       const products = res.data || [];
       console.log('[InventoryStore] Products received:', products.length);
       

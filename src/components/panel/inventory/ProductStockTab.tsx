@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import Fuse from 'fuse.js';
 import type { Product } from '@/models/Product';
 import type { Movement } from '@/models/Inventory';
 import { alertService, inventoryService } from '@/config/setup';
@@ -52,31 +53,29 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
   }, []);
 
   const filteredMovements = useMemo(() => {
-    const q = movSearch.trim().toLowerCase();
-    return movements.filter((m) => {
-      if (movFilter !== 'all' && m.tipo_mov !== movFilter) return false;
-      if (!q) return true;
-      const d = (m.desc_mov || '').toLowerCase();
-      return d.includes(q) || String(m.id_mov).includes(q);
+    let result = movements;
+    if (movFilter !== 'all') result = result.filter(m => m.tipo_mov === movFilter);
+    if (!movSearch.trim()) return result;
+    const fuse = new Fuse(result, {
+      keys: ['desc_mov', 'id_mov'],
+      threshold: 0.4,
     });
+    return fuse.search(movSearch.trim()).map(r => r.item);
   }, [movements, movFilter, movSearch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     let finalAmount = movForm.cantidad;
     let finalType = movForm.tipo_mov;
 
-    // Si es ajuste, calculamos la diferencia con el stock actual
     if (movForm.tipo_mov === 'ajuste') {
       const currentStock = product.stock_actual || 0;
       const diff = movForm.cantidad - currentStock;
-      
       if (diff === 0) {
         alertService.showToast('info', 'El stock ya es el indicado.');
         return;
       }
-      
       finalAmount = Math.abs(diff);
       finalType = diff > 0 ? 'entrada' : 'salida';
     }
@@ -87,12 +86,11 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
         return;
       }
       try {
-        // Register Suministra relation first
         await inventoryService.upsertSuministra({
           fk_cod_prov: movForm.fk_cod_prov,
           cod_prod: product.cod_prod!,
           stock_minimo: movForm.stock_minimo,
-          stock: product.stock_actual || 0 // Conservar el stock actual
+          stock: product.stock_actual || 0
         });
       } catch (err) {
         alertService.showToast('error', 'Error configurando relación con proveedor');
@@ -100,10 +98,10 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
       }
     }
 
-    await onSaveMovement({ 
-      tipo_mov: finalType, 
-      cantidad: finalAmount, 
-      desc_mov: isAbastecimiento ? `Abastecimiento de mercancía` : movForm.desc_mov + (movForm.tipo_mov === 'ajuste' ? ' (Ajuste de inventario)' : ''),
+    await onSaveMovement({
+      tipo_mov: finalType,
+      cantidad: finalAmount,
+      desc_mov: isAbastecimiento ? 'Abastecimiento de mercancía' : movForm.desc_mov + (movForm.tipo_mov === 'ajuste' ? ' (Ajuste de inventario)' : ''),
       fk_cod_prov: isAbastecimiento ? movForm.fk_cod_prov : undefined,
       fecha_vencimiento: finalType === 'entrada' && movForm.fecha_vencimiento ? movForm.fecha_vencimiento : undefined
     });
@@ -113,20 +111,20 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
-      {/* Movimientos form */}
-      <form onSubmit={handleSubmit} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-        <h3 className="text-sm font-extrabold text-slate-800">Registrar Movimiento</h3>
+    <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 bg-surface-container-low">
+      {/* Movement Form */}
+      <form onSubmit={handleSubmit} className="bg-surface p-5 rounded-xl border border-outline-variant/30 space-y-4">
+        <h3 className="label-md text-on-surface">Registrar Movimiento</h3>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tipo</label>
+            <label className="label-sm text-on-surface-variant">Tipo</label>
             <select
               value={movForm.tipo_mov}
               onChange={e => {
                 setMovForm(f => ({ ...f, tipo_mov: e.target.value as 'entrada' | 'salida' | 'ajuste' }));
                 if (e.target.value !== 'entrada') setIsAbastecimiento(false);
               }}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
+              className="w-full rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
             >
               <option value="entrada">Entrada (+)</option>
               <option value="salida">Salida (-)</option>
@@ -134,26 +132,26 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cantidad</label>
+            <label className="label-sm text-on-surface-variant">Cantidad</label>
             <input
               type="number"
               required
               value={movForm.cantidad}
               onFocus={e => e.target.select()}
               onChange={e => setMovForm(f => ({ ...f, cantidad: Number(e.target.value) }))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
+              className="w-full rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
             />
           </div>
         </div>
         {movForm.tipo_mov === 'entrada' && (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nro. Lote</label>
-              <input type="text" value={movForm.numero_lote || ''} onChange={e => setMovForm(f => ({ ...f, numero_lote: e.target.value }))} placeholder="Lote-001" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none" />
+              <label className="label-sm text-on-surface-variant">Nro. Lote</label>
+              <input type="text" value={movForm.numero_lote || ''} onChange={e => setMovForm(f => ({ ...f, numero_lote: e.target.value }))} placeholder="Lote-001" className="w-full rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha Vencimiento</label>
-              <input type="date" value={movForm.fecha_vencimiento || ''} onChange={e => setMovForm(f => ({ ...f, fecha_vencimiento: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none" />
+              <label className="label-sm text-on-surface-variant">Fecha Vencimiento</label>
+              <input type="date" value={movForm.fecha_vencimiento || ''} onChange={e => setMovForm(f => ({ ...f, fecha_vencimiento: e.target.value }))} className="w-full rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </div>
           </div>
         )}
@@ -164,77 +162,70 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
               id="isAbastecimiento"
               checked={isAbastecimiento}
               onChange={(e) => setIsAbastecimiento(e.target.checked)}
-              className="rounded border-slate-300 text-kiora-red focus:ring-kiora-red"
+              className="rounded border-outline-variant text-primary focus:ring-primary"
             />
-            <label htmlFor="isAbastecimiento" className="text-[11px] font-bold text-slate-600 cursor-pointer">
+            <label htmlFor="isAbastecimiento" className="label-sm text-on-surface-variant cursor-pointer">
               ¿Es un abastecimiento de proveedor?
             </label>
           </div>
         )}
 
         {isAbastecimiento && movForm.tipo_mov === 'entrada' ? (
-          <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+          <div className="grid grid-cols-2 gap-3 p-3 bg-surface-container-low rounded-lg border border-outline-variant/20">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Proveedor *</label>
+              <label className="label-sm text-on-surface-variant">Proveedor *</label>
               <select
                 required
                 value={movForm.fk_cod_prov || ''}
                 onChange={e => setMovForm(f => ({ ...f, fk_cod_prov: Number(e.target.value) }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
+                className="w-full rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 <option value="">Seleccionar...</option>
                 {suppliers.map(s => <option key={s.cod_prov} value={s.cod_prov}>{s.nom_prov}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stock Mínimo (Alerta)</label>
+              <label className="label-sm text-on-surface-variant">Stock Mínimo</label>
               <input
                 type="number" required min="0"
                 value={movForm.stock_minimo}
                 onChange={e => setMovForm(f => ({ ...f, stock_minimo: Number(e.target.value) }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
+                className="w-full rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
           </div>
         ) : (
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Justificación / Origen *</label>
+            <label className="label-sm text-on-surface-variant">Justificación *</label>
             <input
               type="text"
               required
               placeholder="Ej. Lote L-2025-001, factura proveedor, merma…"
               value={movForm.desc_mov}
               onChange={e => setMovForm(f => ({ ...f, desc_mov: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-kiora-red focus:outline-none"
+              className="w-full rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
         )}
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60 transition-all active:scale-95"
+          className="w-full rounded-lg bg-primary text-on-primary py-2.5 label-sm shadow-sm hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-60"
         >
           {saving ? 'Registrando...' : 'Registrar Movimiento'}
         </button>
       </form>
 
+      {/* Trazabilidad */}
       <div className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-sm font-extrabold text-slate-800">Trazabilidad por movimientos</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="label-md text-on-surface">Trazabilidad</h3>
           <button
             type="button"
             disabled={!filteredMovements.length}
             onClick={() => {
               const rows = filteredMovements.map((m) =>
-                [
-                  m.id_mov,
-                  m.fecha_mov,
-                  m.tipo_mov,
-                  m.cantidad,
-                  (m.desc_mov || '').replace(/"/g, '""'),
-                  product.cod_prod,
-                  product.nom_prod,
-                ].join(',')
+                [m.id_mov, m.fecha_mov, m.tipo_mov, m.cantidad, (m.desc_mov || '').replace(/"/g, '""'), product.cod_prod, product.nom_prod].join(',')
               );
               const csv = ['id,fecha,tipo,cantidad,descripcion,cod_prod,nombre', ...rows].join('\n');
               const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -246,17 +237,17 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
               URL.revokeObjectURL(url);
               alertService.showToast('success', 'Archivo CSV generado');
             }}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-colors hover:border-kiora-red hover:text-kiora-red disabled:opacity-40"
+            className="rounded-lg border border-outline-variant/50 bg-surface px-3 py-1.5 label-sm text-on-surface-variant hover:border-primary hover:text-primary transition-all disabled:opacity-40"
           >
             Exportar CSV
           </button>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col sm:flex-row gap-2">
           <select
             value={movFilter}
             onChange={(e) => setMovFilter(e.target.value as typeof movFilter)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+            className="rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 label-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             <option value="all">Todos los tipos</option>
             <option value="entrada">Entradas</option>
@@ -265,59 +256,51 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
           </select>
           <input
             type="search"
-            placeholder="Filtrar por texto en descripción…"
+            placeholder="Filtrar por descripción…"
             value={movSearch}
             onChange={(e) => setMovSearch(e.target.value)}
-            className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+            className="flex-1 rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 label-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
 
         {isLoading ? (
           <div className="flex justify-center py-5">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-kiora-red" />
+            <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
           </div>
         ) : movements.length === 0 ? (
-          <div className="text-center p-5 bg-white border border-slate-100 rounded-3xl">
-            <p className="text-xs text-slate-400 font-bold">No hay movimientos registrados.</p>
+          <div className="text-center p-5 bg-surface border border-outline-variant/30 rounded-xl">
+            <p className="label-sm text-on-surface-variant">No hay movimientos registrados.</p>
           </div>
         ) : filteredMovements.length === 0 ? (
-          <div className="rounded-3xl border border-amber-100 bg-amber-50/80 p-5 text-center">
-            <p className="text-xs font-bold text-amber-900">No hay movimientos que coincidan con el tipo o el texto de búsqueda.</p>
-            <p className="mt-1 text-[10px] font-medium text-amber-800/80">Prueba con otros filtros o limpia la búsqueda.</p>
+          <div className="rounded-xl border border-secondary-container/30 bg-secondary-container/10 p-5 text-center">
+            <p className="label-sm text-secondary-container">No hay movimientos que coincidan con los filtros.</p>
+            <p className="text-[10px] text-on-surface-variant mt-1">Prueba con otros filtros.</p>
           </div>
         ) : (
           <div className="space-y-2">
             {filteredMovements.map((m) => (
-              <div 
-                key={m.id_mov} 
+              <div
+                key={m.id_mov}
                 onClick={() => onViewMovement?.(m)}
-                className={`bg-white p-3 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-slate-200 transition-colors ${onViewMovement ? 'cursor-pointer' : ''}`}
+                className={`bg-surface p-3 rounded-xl border border-outline-variant/30 flex items-center justify-between group hover:border-outline transition-colors ${onViewMovement ? 'cursor-pointer' : ''}`}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                        m.tipo_mov === 'entrada'
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : m.tipo_mov === 'ajuste'
-                            ? 'bg-blue-50 text-blue-600'
-                            : 'bg-red-50 text-red-600'
-                      }`}
-                    >
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                      m.tipo_mov === 'entrada' ? 'bg-tertiary/10 text-tertiary' :
+                      m.tipo_mov === 'ajuste' ? 'bg-surface-container-high text-on-surface-variant' :
+                      'bg-error-container/30 text-error'
+                    }`}>
                       {m.tipo_mov}
                     </span>
-                    <span className="text-[10px] font-black text-slate-800">
-                      {product.nom_prod}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400">
-                      • {m.fecha_mov ? new Date(m.fecha_mov).toLocaleDateString() : '—'}
-                    </span>
+                    <span className="label-sm text-on-surface font-semibold">{product.nom_prod}</span>
+                    <span className="label-sm text-on-surface-variant">• {m.fecha_mov ? new Date(m.fecha_mov).toLocaleDateString() : '—'}</span>
                   </div>
-                  <p className="text-xs font-medium text-slate-600 truncate max-w-[200px]">
-                    {m.desc_mov || 'Sin justificación'}
-                  </p>
+                  <p className="text-xs font-medium text-on-surface-variant truncate max-w-[200px]">{m.desc_mov || 'Sin justificación'}</p>
                 </div>
-                <span className={`text-base font-black ${m.tipo_mov === 'entrada' ? 'text-emerald-500' : m.tipo_mov === 'salida' ? 'text-red-500' : 'text-blue-500'}`}>
+                <span className={`text-base font-bold ${
+                  m.tipo_mov === 'entrada' ? 'text-tertiary' : m.tipo_mov === 'salida' ? 'text-error' : 'text-on-surface-variant'
+                }`}>
                   {m.tipo_mov === 'entrada' ? '+' : m.tipo_mov === 'salida' ? '-' : ''}{m.cantidad}
                 </span>
               </div>
