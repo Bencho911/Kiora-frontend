@@ -5,18 +5,15 @@ import type { Movement } from '@/models/Inventory';
 import type { Incident } from '@/models/Incident';
 import { OrderDetailModal } from './OrderDetailModal';
 import { MovementDetailModal } from '@/features/inventory/components/MovementDetailModal';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 type SalesSubTab = 'ventas' | 'facturas' | 'movimientos' | 'incidencias';
 
 const ESTADO_COLORS: Record<string, string> = {
-  completada: 'bg-tertiary/10 text-tertiary border-tertiary/20',
-  pagada: 'bg-tertiary/10 text-tertiary border-tertiary/20',
-  pagado: 'bg-tertiary/10 text-tertiary border-tertiary/20',
-  pendiente: 'bg-secondary-container/20 text-secondary-container border-secondary-container/30',
-  cancelada: 'bg-error-container/30 text-error border-error/20',
-  reembolsada: 'bg-primary-fixed/30 text-on-primary-fixed-variant border-primary-fixed/50',
-  en_proceso: 'bg-surface-container-high text-on-surface-variant border-outline-variant/50',
-  resuelto: 'bg-tertiary/10 text-tertiary border-tertiary/20',
+  completada: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  pendiente: 'bg-amber-100 text-amber-700 border-amber-200',
+  cancelada: 'bg-red-100 text-red-700 border-red-200',
+  reembolsada: 'bg-purple-100 text-purple-700 border-purple-200',
 };
 
 import { useInventoryStore } from '@/store/useInventoryStore';
@@ -43,12 +40,18 @@ export function SalesSection({
 
   const isPaidStatus = (status?: string) => {
     const normalized = String(status ?? '').toLowerCase();
-    return normalized === 'completada' || normalized === 'pagado' || normalized === 'pagada';
+    return normalized === 'completada';
   };
 
   const safePrice = (v: unknown) => {
     const n = Number(v);
     return isNaN(n) ? 0 : n;
+  };
+
+  /** Replace "Prod #16" codes with real product names from productMap */
+  const resolveRef = (resumen: string | null | undefined): string => {
+    if (!resumen) return 'Venta Directa';
+    return resumen.replace(/Prod\s*#?(\d+)/gi, (_, id) => productMap[id] || productMap[String(id)] || `Prod #${id}`);
   };
 
   const {
@@ -81,6 +84,10 @@ export function SalesSection({
   const handleExportSingleIncident = (inc: any) => {
     handleExportIncidents('pdf');
   };
+
+  // Lock body scroll whenever any modal or drawer is open
+  const anyModalOpen = !!detailOrder || !!detailMovement || isIncidentOpen || !!managingIncident || reasonModal.isOpen;
+  useScrollLock(anyModalOpen);
 
   if (loading && filteredOrders.length === 0 && invoices.length === 0 && movements.length === 0 && reports.length === 0) {
     return (
@@ -179,11 +186,10 @@ export function SalesSection({
             <button
               key={t.id}
               onClick={() => setSubTab(t.id)}
-              className={`flex-1 whitespace-nowrap rounded-md px-4 py-2 label-sm transition-all ${
-                subTab === t.id
-                  ? 'bg-surface text-on-surface shadow-sm'
-                  : 'text-on-surface-variant hover:text-on-surface'
-              }`}
+              className={`flex-1 whitespace-nowrap rounded-md px-4 py-2 label-sm transition-all ${subTab === t.id
+                ? 'bg-surface text-on-surface shadow-sm'
+                : 'text-on-surface-variant hover:text-on-surface'
+                }`}
             >
               {t.label}
             </button>
@@ -250,7 +256,7 @@ export function SalesSection({
                         <span className="label-sm text-on-surface-variant">#{o.id_vent}</span>
                         <span className={`px-2 py-0.5 rounded-md text-[9px] font-semibold border ${ESTADO_COLORS[o.estado ?? 'pendiente']}`}>{o.estado}</span>
                       </div>
-                      <p className="text-sm font-medium text-on-surface break-words">{o.productos_resumen || 'Venta Directa'}</p>
+                      <p className="text-sm font-medium text-on-surface break-words">{resolveRef(o.productos_resumen)}</p>
                       <p className="label-sm text-on-surface-variant mt-1">
                         {o.fecha_vent ? new Date(o.fecha_vent).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
                         <span className="mx-1.5 text-outline">•</span>
@@ -349,8 +355,8 @@ export function SalesSection({
                           <td className="px-5 py-4 label-md text-on-surface">
                             {o.fecha_vent ? new Date(o.fecha_vent).toLocaleString('es-CO') : '—'}
                           </td>
-                          <td className="px-5 py-4 body-md text-on-surface-variant max-w-[200px] truncate" title={o.productos_resumen || ''}>
-                            {o.productos_resumen || (o.metodopago_usu === 'tarjeta' ? 'Pago con Tarjeta' : 'Venta Directa')}
+                          <td className="px-5 py-4 body-md text-on-surface max-w-[200px] truncate" title={resolveRef(o.productos_resumen)}>
+                            {resolveRef(o.productos_resumen)}
                           </td>
                           <td className="px-5 py-4 text-right label-md text-tertiary">
                             ${safePrice(o.montofinal_vent).toLocaleString('es-CO')}
@@ -466,10 +472,9 @@ export function SalesSection({
                           </td>
                           {isAdmin && (
                             <td className="px-5 py-4">
-                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
-                                r.prioridad === 'alta' ? 'bg-error-container/30 text-error' :
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${r.prioridad === 'alta' ? 'bg-error-container/30 text-error' :
                                 r.prioridad === 'media' ? 'bg-secondary-container/20 text-secondary-container' : 'bg-tertiary/10 text-tertiary'
-                              }`}>
+                                }`}>
                                 {r.prioridad}
                               </span>
                             </td>
@@ -569,11 +574,10 @@ export function SalesSection({
                         key={p}
                         type="button"
                         onClick={() => setIncidentForm(f => ({ ...f, prioridad: p }))}
-                        className={`flex-1 py-2.5 rounded-lg label-sm transition-all border ${
-                          incidentForm.prioridad === p
-                            ? 'bg-primary text-on-primary border-primary'
-                            : 'bg-surface text-on-surface-variant border-outline-variant/50 hover:border-outline'
-                        }`}
+                        className={`flex-1 py-2.5 rounded-lg label-sm transition-all border ${incidentForm.prioridad === p
+                          ? 'bg-primary text-on-primary border-primary'
+                          : 'bg-surface text-on-surface-variant border-outline-variant/50 hover:border-outline'
+                          }`}
                       >
                         {p}
                       </button>
@@ -630,10 +634,9 @@ export function SalesSection({
           <div className="relative w-full max-w-md bg-surface-bright shadow-2xl animate-in slide-in-from-right duration-500 border-l border-outline-variant/30 flex flex-col">
             <div className="px-6 py-5 border-b border-outline-variant/30">
               <div className="flex items-center justify-between mb-3">
-                <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-semibold ${
-                  managingIncident.prioridad === 'alta' ? 'bg-error-container/30 text-error' :
+                <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-semibold ${managingIncident.prioridad === 'alta' ? 'bg-error-container/30 text-error' :
                   managingIncident.prioridad === 'media' ? 'bg-secondary-container/20 text-secondary-container' : 'bg-tertiary/10 text-tertiary'
-                }`}>
+                  }`}>
                   Prioridad {managingIncident.prioridad}
                 </span>
                 <button onClick={() => setManagingIncident(null)} className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all">
@@ -652,6 +655,21 @@ export function SalesSection({
                 </div>
               </div>
 
+              {managingIncident.cod_prod && (
+                <div className="space-y-1.5">
+                  <label className="label-sm text-on-surface-variant">Producto Afectado</label>
+                  <div className="flex items-center gap-3 bg-surface-container rounded-lg border border-outline-variant/30 px-4 py-3">
+                    <span className="material-symbols-outlined text-primary" style={{ fontSize: '20px' }}>inventory_2</span>
+                    <div className="min-w-0">
+                      <p className="label-md text-on-surface font-semibold truncate">
+                        {productMap[String(managingIncident.cod_prod)] || `Prod #${managingIncident.cod_prod}`}
+                      </p>
+                      <p className="label-sm text-on-surface-variant">Código: #{managingIncident.cod_prod}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <label className="label-sm text-on-surface-variant">Actualizar Estado</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -659,11 +677,10 @@ export function SalesSection({
                     <button
                       key={s}
                       onClick={() => void handleUpdateIncidentStatus(managingIncident.id_rep, s)}
-                      className={`px-4 py-3 rounded-lg label-sm transition-all border ${
-                        managingIncident.estado === s
-                          ? 'bg-primary text-on-primary border-primary'
-                          : 'bg-surface text-on-surface-variant border-outline-variant/50 hover:border-outline'
-                      }`}
+                      className={`px-4 py-3 rounded-lg label-sm transition-all border ${managingIncident.estado === s
+                        ? 'bg-primary text-on-primary border-primary'
+                        : 'bg-surface text-on-surface-variant border-outline-variant/50 hover:border-outline'
+                        }`}
                     >
                       {s.replace('_', ' ')}
                     </button>
@@ -699,9 +716,8 @@ export function SalesSection({
             onClick={() => { setReasonModal(prev => ({ ...prev, isOpen: false })); }}
           />
           <div className="relative w-full max-w-sm bg-surface rounded-xl shadow-lg border border-outline-variant/30 p-6 animate-in zoom-in-95 duration-300">
-            <div className={`mx-auto w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-              reasonModal.type === 'refund' ? 'bg-primary-fixed/30 text-primary-container' : 'bg-error-container/30 text-error'
-            }`}>
+            <div className={`mx-auto w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${reasonModal.type === 'refund' ? 'bg-primary-fixed/30 text-primary-container' : 'bg-error-container/30 text-error'
+              }`}>
               <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
                 {reasonModal.type === 'refund' ? 'currency_exchange' : 'block'}
               </span>
@@ -746,9 +762,8 @@ export function SalesSection({
               <button
                 onClick={() => void handleConfirmReason()}
                 disabled={!reasonModal.reason.trim()}
-                className={`flex-1 rounded-lg py-2.5 label-sm text-on-primary shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${
-                  reasonModal.type === 'refund' ? 'bg-primary-container' : 'bg-error'
-                }`}
+                className={`flex-1 rounded-lg py-2.5 label-sm text-on-primary shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${reasonModal.type === 'refund' ? 'bg-primary-container' : 'bg-error'
+                  }`}
               >
                 {reasonModal.type === 'refund' ? 'Confirmar Reembolso' : 'Sí, Anular'}
               </button>

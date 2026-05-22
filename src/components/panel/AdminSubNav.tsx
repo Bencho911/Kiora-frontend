@@ -13,6 +13,8 @@ interface AdminSubNavProps {
 }
 
 export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick, isAdmin }) => {
+  const [isChatOpen, setIsChatOpen] = React.useState(false);
+  
   const items: NavItem[] = useMemo(() => {
     const list: NavItem[] = [
       {
@@ -45,10 +47,10 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
       },
       {
         id: 'inventario',
-        label: 'Inventario',
+        label: 'Proveedores',
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.25v11.25m0-11.25h-3.75v11.25m0-11.25H6.75m3.75 0H6.75M6.75 7.5v11.25M6.75 7.5h-3.75" />
           </svg>
         ),
       },
@@ -149,39 +151,141 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
           })}
         </nav>
 
+        {/* AI Agent Prototype */}
+        <div className="px-4 py-4 mt-auto">
+          <div 
+            onClick={() => setIsChatOpen(true)}
+            className="group relative flex flex-col gap-3 p-4 rounded-xl border border-outline-variant/30 bg-surface-container-lowest cursor-pointer transition-all duration-300 hover:border-on-surface/20 hover:bg-surface-container-low"
+          >
+            {/* Minimalist glow effect */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-on-surface/0 via-on-surface/0 to-on-surface/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+            
+            <div className="flex items-center justify-between z-10">
+              <div className="w-10 h-10 rounded-lg bg-surface border border-outline-variant/50 flex items-center justify-center text-on-surface shadow-sm group-hover:shadow transition-all">
+                <span className="material-symbols-outlined font-light text-[22px]">auto_awesome</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-outline-variant/30 bg-surface/50">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse"></div>
+                <span className="text-[9px] font-medium text-on-surface-variant tracking-widest uppercase">Online</span>
+              </div>
+            </div>
+            
+            <div className="z-10 mt-1">
+              <h4 className="text-sm font-semibold text-on-surface tracking-wide">Kiora AI</h4>
+              <p className="text-xs text-on-surface-variant/70 mt-0.5">Asistente Operativo</p>
+            </div>
+          </div>
+        </div>
+
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-outline-variant/30">
+        <div className="px-5 py-3 border-t border-outline-variant/30 shrink-0">
           <p className="text-[10px] font-medium text-on-surface-variant">Kiora v2.0</p>
         </div>
       </aside>
 
+      {/* ─── AI CHAT POPOVER ─── */}
+      {isChatOpen && (
+        <div className="fixed inset-0 z-[200] pointer-events-none">
+          {/* Backdrop (invisible to avoid focus effect) */}
+          <div 
+            className="absolute inset-0 pointer-events-auto"
+            onClick={() => setIsChatOpen(false)}
+          ></div>
+          
+          {/* Popover Window */}
+          <div className="absolute left-[240px] bottom-[24px] w-[380px] h-[600px] max-h-[85vh] bg-surface rounded-[20px] border border-outline-variant/30 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] flex flex-col animate-in zoom-in-75 slide-in-from-left-4 slide-in-from-bottom-8 duration-300 overflow-hidden origin-bottom-left pointer-events-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-outline-variant/20 bg-surface-container-lowest">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-surface-container-low border border-outline-variant/50 flex items-center justify-center text-on-surface">
+                  <span className="material-symbols-outlined">auto_awesome</span>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-on-surface tracking-wide">Kiora AI</h3>
+                  <p className="text-[10px] text-on-surface-variant">Inteligencia Artificial</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsChatOpen(false)}
+                className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-surface-container-lowest/50">
+              {/* System message */}
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant/30 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[16px] text-on-surface">auto_awesome</span>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="bg-surface border border-outline-variant/30 rounded-2xl rounded-tl-sm p-3 shadow-sm max-w-[85%]">
+                    <p className="text-sm text-on-surface leading-relaxed">
+                      Hola. Soy Kiora AI, tu asistente operativo. ¿En qué puedo ayudarte a optimizar tu negocio hoy?
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-on-surface-variant/60 ml-1">Justo ahora</span>
+                </div>
+              </div>
+              
+              {/* Suggested prompts */}
+              <div className="flex flex-col gap-2 pt-4">
+                <button className="text-left px-4 py-3 rounded-xl border border-outline-variant/30 text-xs text-on-surface-variant hover:bg-surface-container hover:text-on-surface hover:border-outline-variant transition-colors flex items-center justify-between group shadow-sm">
+                  Analizar ventas de hoy
+                  <span className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </button>
+                <button className="text-left px-4 py-3 rounded-xl border border-outline-variant/30 text-xs text-on-surface-variant hover:bg-surface-container hover:text-on-surface hover:border-outline-variant transition-colors flex items-center justify-between group shadow-sm">
+                  Sugerir pedidos de inventario
+                  <span className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Input Area */}
+            <div className="p-5 border-t border-outline-variant/20 bg-surface">
+              <div className="relative flex items-center">
+                <input 
+                  type="text" 
+                  placeholder="Escribe un comando o pregunta..." 
+                  className="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-[20px] pl-5 pr-14 py-3.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-on-surface/40 focus:ring-1 focus:ring-on-surface/40 transition-all shadow-sm"
+                />
+                <button className="absolute right-2 w-8 h-8 rounded-full bg-on-surface text-surface flex items-center justify-center hover:opacity-90 transition-opacity">
+                  <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
+                </button>
+              </div>
+              <p className="text-[9px] text-center text-on-surface-variant/50 mt-3">
+                Kiora AI puede cometer errores. Verifica la información.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── MOBILE BOTTOM NAV ─── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-outline-variant/50 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex items-center justify-around px-1 py-1">
-          {items.slice(0, 5).map((item) => {
+        <div className="flex items-center justify-between px-2 py-2.5 overflow-x-auto no-scrollbar">
+          {items.filter(i => i.id !== 'actividad').map((item) => {
             const active = activeId === item.id;
             return (
               <button
                 key={item.id}
                 type="button"
+                title={item.label}
                 onClick={() => onItemClick(item.id)}
-                className={`flex flex-col items-center justify-center gap-0.5 py-2 px-2 min-w-0 transition-all duration-200 ${
+                className={`relative flex flex-col items-center justify-center p-1.5 min-w-0 transition-all duration-200 active:scale-95 ${
                   active ? 'text-primary' : 'text-on-surface-variant/60'
                 }`}
               >
                 <div className={`flex items-center justify-center transition-transform duration-200 ${
-                  active ? 'scale-110' : ''
+                  active ? 'scale-110 drop-shadow-sm' : 'hover:scale-105'
                 }`}>
                   {item.icon}
                 </div>
-                <span className={`text-[9px] font-semibold leading-none transition-all ${
-                  active ? 'opacity-100' : 'opacity-60'
-                }`}>
-                  {item.label}
-                </span>
                 {active && (
-                  <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-primary" />
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full bg-primary" />
                 )}
               </button>
             );

@@ -7,32 +7,34 @@ interface IncidentListProps {
   isLoading: boolean;
   isAdmin: boolean;
   onUpdateStatus: (id: number, status: Incident['estado']) => Promise<void>;
+  onDeleteIncident: (id: number) => Promise<void>;
 }
 
 export const IncidentList: React.FC<IncidentListProps> = ({
   incidents,
   isLoading,
   isAdmin,
-  onUpdateStatus
+  onUpdateStatus,
+  onDeleteIncident
 }) => {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const priorityStyle = (p: string) => {
-    switch (p) {
-      case 'alta': return 'bg-error-container/30 text-error border-error/20';
-      case 'media': return 'bg-secondary-container/20 text-secondary-container border-secondary-container/30';
-      case 'baja': return 'bg-tertiary/10 text-tertiary border-tertiary/20';
+    switch (p?.toLowerCase()) {
+      case 'alta': return 'bg-red-500 text-white border-transparent font-medium shadow-sm';
+      case 'media': return 'bg-amber-500 text-white border-transparent font-medium shadow-sm';
+      case 'baja': return 'bg-emerald-500 text-white border-transparent font-medium shadow-sm';
       default: return 'bg-surface-container-high text-on-surface-variant border-outline-variant/50';
     }
   };
 
   const statusStyle = (s: string) => {
-    switch (s) {
-      case 'pendiente': return 'bg-secondary-container/20 text-secondary-container';
-      case 'en_proceso': return 'bg-surface-container-high text-on-surface-variant';
-      case 'resuelto': return 'bg-tertiary/10 text-tertiary';
-      case 'cerrado': return 'bg-surface-container-high text-on-surface-variant';
-      default: return 'bg-surface-container-high text-on-surface-variant';
+    switch (s?.toLowerCase()) {
+      case 'pendiente': return 'bg-amber-500/20 text-amber-700 border border-amber-500/30';
+      case 'en_proceso': return 'bg-blue-500/20 text-blue-700 border border-blue-500/30';
+      case 'resuelto': return 'bg-emerald-500 text-white font-medium shadow-sm border border-transparent';
+      case 'cerrado': return 'bg-gray-500 text-white font-medium shadow-sm border border-transparent';
+      default: return 'bg-surface-container-high text-on-surface-variant border-outline-variant/50';
     }
   };
 
@@ -57,8 +59,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-24">
           {incidents.map(incident => (
-            <div key={incident.id_rep} className="bg-surface rounded-xl border border-outline-variant/30 hover:shadow-md hover:border-primary/20 transition-all duration-300 overflow-hidden">
-              <div className="p-5 flex flex-col gap-4">
+            <div key={incident.id_rep} className="bg-surface rounded-xl border border-outline-variant/30 hover:shadow-md hover:border-primary/20 transition-all duration-300 overflow-hidden flex flex-col h-full">
+              <div className="p-5 flex flex-col flex-grow gap-4">
                 {/* Top row: priority/id + status */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2 min-w-0">
@@ -81,7 +83,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                   {incident.titulo || 'Sin título'}
                 </h4>
 
-                <p className="body-md text-on-surface-variant leading-relaxed break-words">
+                <p className="body-md text-on-surface-variant leading-relaxed break-words whitespace-pre-wrap">
                   {incident.descripcion}
                 </p>
 
@@ -99,6 +101,14 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                       className="px-4 py-2 rounded-lg border border-outline-variant/50 label-sm text-on-surface-variant hover:bg-primary hover:text-on-primary hover:border-primary transition-all active:scale-[0.98]"
                     >
                       {expandedId === incident.id_rep ? 'Cerrar' : 'Detalles'}
+                    </button>
+
+                    <button
+                      onClick={() => onDeleteIncident(incident.id_rep!)}
+                      className="p-2 rounded-lg bg-error/10 text-error hover:bg-error hover:text-on-error transition-all"
+                      title="Eliminar incidencia"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                     </button>
 
                     {isAdmin && incident.estado !== 'cerrado' && incident.estado !== 'resuelto' && (

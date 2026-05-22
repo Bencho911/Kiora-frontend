@@ -135,10 +135,16 @@ export function CategoriasSection() {
                 className="group bg-surface rounded-xl border border-outline-variant/30 p-5 flex flex-col items-center text-center hover:shadow-md hover:border-primary/20 transition-all duration-300"
               >
                 <div className="w-12 h-12 rounded-xl bg-surface-container-high text-on-surface-variant group-hover:bg-primary group-hover:text-on-primary flex items-center justify-center mb-4 transition-all duration-300">
-                  <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>{categoryIcons[iconIdx]}</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
+                    {cat.descrip_cat?.startsWith('ICON:') ? cat.descrip_cat.split('|')[0].replace('ICON:', '') : 'category'}
+                  </span>
                 </div>
                 <h3 className="label-md text-on-surface mb-1 leading-tight">{cat.nom_cat}</h3>
-                <p className="label-sm text-on-surface-variant mb-4 leading-tight break-words">{cat.descrip_cat || 'Sin descripción'}</p>
+                <p className="label-sm text-on-surface-variant mb-4 leading-tight break-words">
+                  {cat.descrip_cat?.startsWith('ICON:')
+                    ? cat.descrip_cat.split('|').slice(1).join('|') || 'Sin descripción'
+                    : cat.descrip_cat || 'Sin descripción'}
+                </p>
 
                 <div className="flex gap-2 mt-auto">
                   <button

@@ -69,15 +69,6 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       const res = await productService.getLowStock();
       const lowStockItems = res && 'data' in res ? (res as any).data : (Array.isArray(res) ? res : []);
       set({ lowStockItems });
-      if (lowStockItems.length > 0 && Date.now() - lastLowStockPush > 90_000) {
-        lastLowStockPush = Date.now();
-        pushAppNotification(
-          'warning',
-          'Stock bajo',
-          `${lowStockItems.length} producto(s) por debajo del mínimo. Revisa inventario.`,
-          { category: 'stock', toast: false }
-        );
-      }
     } catch (error) {
       console.error('Error fetching low stock in store:', error);
       pushAppNotification('error', 'Inventario', 'No se pudieron cargar las alertas de stock bajo.', {

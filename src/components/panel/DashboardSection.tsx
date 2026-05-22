@@ -83,12 +83,14 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
       trend: statsData ? '+12% vs ayer' : null,
       trendUp: true,
       icon: 'payments',
+      navigateTo: 'ventas',
     },
     {
       label: 'Órdenes',
       value: (statsData?.ventas_hoy || 0).toString(),
       meta: 'Última hace 5 min',
       icon: 'receipt_long',
+      navigateTo: 'ventas',
     },
     {
       label: 'Ticket Promedio',
@@ -96,6 +98,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
       trend: '+3% vs ayer',
       trendUp: true,
       icon: 'sell',
+      navigateTo: 'reportes',
     },
     {
       label: 'Alertas Stock',
@@ -103,6 +106,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
       alert: true,
       icon: 'warning',
       cta: 'Requiere atención',
+      navigateTo: 'inventario',
     },
   ];
 
@@ -144,19 +148,23 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
       </div>
 
       {/* ─── KPI Row ─── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className={`relative overflow-hidden rounded-xl p-5 border transition-all hover:shadow-md ${
+            role="button"
+            tabIndex={0}
+            onClick={() => onNavigate(stat.navigateTo)}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onNavigate(stat.navigateTo)}
+            className={`relative overflow-hidden rounded-xl p-3.5 sm:p-5 border transition-all hover:shadow-md cursor-pointer select-none active:scale-[0.98] flex flex-col justify-between ${
               stat.alert
-                ? 'bg-surface border-error'
-                : 'bg-surface border-outline-variant/40'
+                ? 'bg-surface border-error hover:border-error/80'
+                : 'bg-surface border-outline-variant/40 hover:border-primary/40'
             }`}
           >
             {/* Background icon */}
             <div className="absolute top-2 right-2 opacity-[0.06] pointer-events-none">
-              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1">
+              <svg className="w-10 h-10 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1">
                 <path strokeLinecap="round" strokeLinejoin="round" d={
                   stat.icon === 'payments' ? 'M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z' :
                   stat.icon === 'receipt_long' ? 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z' :
@@ -166,10 +174,10 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
               </svg>
             </div>
 
-            <div className={`label-sm mb-2 ${stat.alert ? 'text-error' : 'text-on-surface-variant'}`}>
+            <div className={`text-[11px] sm:text-xs font-medium mb-1.5 truncate ${stat.alert ? 'text-error' : 'text-on-surface-variant'}`}>
               {stat.label}
             </div>
-            <div className={`headline-xl mb-1 ${
+            <div className={`text-base sm:text-2xl font-bold tracking-tight mb-1 truncate ${
               stat.alert ? 'text-error' : 'text-on-surface'
             }`}>
               {stat.value}
@@ -215,7 +223,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
         <div className="lg:col-span-2 flex flex-col gap-4">
 
           {/* Chart */}
-          <div className="bg-surface rounded-xl border border-outline-variant/40 p-5">
+          <div id="section-tendencia" className="bg-surface rounded-xl border border-outline-variant/40 p-5 scroll-mt-20">
             <div className="flex items-center justify-between mb-5">
               <h3 className="headline-sm text-on-surface">Tendencia de Ventas</h3>
               <select className="bg-surface-container-high border-none rounded-lg text-sm text-on-surface-variant px-3 py-1.5 focus:ring-2 focus:ring-primary/30">
@@ -255,7 +263,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
           </div>
 
           {/* Recent Sales Table */}
-          <div className="bg-surface rounded-xl border border-outline-variant/40 p-5">
+          <div id="section-ventas-recientes" className="bg-surface rounded-xl border border-outline-variant/40 p-5 scroll-mt-20">
             <div className="flex items-center justify-between mb-5">
               <h3 className="headline-sm text-on-surface">Ventas Recientes</h3>
               <button onClick={() => onNavigate('ventas')} className="text-sm font-semibold text-primary hover:underline">Ver todas</button>
@@ -334,7 +342,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
           </div>
 
           {/* Stock Alerts */}
-          <div className="bg-surface rounded-xl border border-outline-variant/40 flex flex-col overflow-hidden">
+          <div id="section-alertas-stock" className="bg-surface rounded-xl border border-outline-variant/40 flex flex-col overflow-hidden scroll-mt-20">
             <div className="px-5 py-4 border-b border-outline-variant/30 flex items-center gap-2">
               <svg className="w-5 h-5 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />

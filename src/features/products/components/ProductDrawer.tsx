@@ -6,6 +6,7 @@ import { alertService, getImageUrl } from '@/config/setup';
 import { pushAppNotification } from '@/lib/pushAppNotification';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { ProductStockTab } from '@/components/panel/inventory/ProductStockTab';
+import { processProductImage } from '@/utils/processProductImage';
 
 interface ProductDrawerProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ export function ProductDrawer({
   const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [processingImage, setProcessingImage] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'info' | 'stock'>('info');
   const [savingMov, setSavingMov] = useState(false);
@@ -112,13 +114,27 @@ export function ProductDrawer({
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
+    setProcessingImage(true);
+    try {
+      const processed = await processProductImage(file);
+      setImageFile(processed);
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(processed);
+    } catch {
+      // Fallback: use original file without processing
+      alertService.showToast('warning', 'No se pudo procesar la imagen, se usará la original.');
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
+    } finally {
+      setProcessingImage(false);
     }
   };
 
@@ -176,9 +192,14 @@ export function ProductDrawer({
             <div className="space-y-1.5">
               <label className="label-sm text-on-surface-variant">Imagen del Producto</label>
               <div className="relative group aspect-video rounded-xl border-2 border-dashed border-outline-variant/50 bg-surface-container-low flex items-center justify-center overflow-hidden transition-all hover:border-primary/30">
-                {imagePreview ? (
+                {processingImage ? (
+                  <div className="flex flex-col items-center gap-2 p-4">
+                    <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                    <p className="label-sm text-on-surface-variant">Procesando imagen...</p>
+                  </div>
+                ) : imagePreview ? (
                   <>
-                    <img src={imagePreview} className="h-full w-full object-contain p-4" alt="Preview" />
+                    <img src={imagePreview} className="h-full w-full object-contain p-4 mix-blend-multiply" alt="Preview" style={{ background: 'transparent' }} />
                     <div className="absolute inset-0 bg-inverse-surface/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); }} className="p-2 bg-surface rounded-lg text-error hover:scale-110 transition-transform shadow-sm">
                         <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>
@@ -191,9 +212,16 @@ export function ProductDrawer({
                       <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>image</span>
                     </div>
                     <p className="label-sm text-on-surface-variant">Subir Fotografía</p>
+                    <p className="text-[10px] text-on-surface-variant/60 mt-1">PNG, JPG, WebP · El fondo se eliminará automáticamente</p>
                   </div>
                 )}
-                <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                  onChange={handleImageChange}
+                  disabled={processingImage}
+                  className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                />
               </div>
             </div>
 

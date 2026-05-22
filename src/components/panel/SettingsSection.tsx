@@ -44,6 +44,16 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
             }
           },
         },
+        {
+          label: 'Historial de Actividad',
+          desc: 'Registro de auditoría del sistema.',
+          icon: 'manage_history',
+          bg: 'bg-primary/10',
+          color: 'text-primary',
+          hover: 'hover:border-primary/30',
+          mobileOnly: true,
+          onClick: () => useAppStore.getState().setActiveTab('actividad'),
+        },
       ],
     },
     {
@@ -105,7 +115,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
                   <div
                     key={item.label}
                     onClick={item.onClick}
-                    className={`group flex flex-col gap-3 p-5 bg-surface border border-outline-variant/30 rounded-xl cursor-pointer ${item.hover} hover:shadow-md hover:-translate-y-0.5 transition-all`}
+                    className={`group flex-col gap-3 p-5 bg-surface border border-outline-variant/30 rounded-xl cursor-pointer ${item.hover} hover:shadow-md hover:-translate-y-0.5 transition-all ${'mobileOnly' in item && item.mobileOnly ? 'md:hidden flex' : 'flex'}`}
                   >
                     <div className={`w-11 h-11 rounded-xl ${item.bg} ${item.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
                       <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>{item.icon}</span>

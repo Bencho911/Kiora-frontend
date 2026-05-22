@@ -6,6 +6,7 @@ import { useSalesStore } from '@/store/useSalesStore';
 import { useInventoryStore } from '@/store/useInventoryStore';
 import { useDebounce } from '@/hooks/useDebounce';
 import Fuse from 'fuse.js';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 export function OrderDrawer() {
   const {
@@ -59,6 +60,9 @@ export function OrderDrawer() {
 
   const safePrice = (v: unknown) => Number(v) || 0;
 
+  // Lock body scroll while the POS drawer is open (must be before early return)
+  useScrollLock(drawerOpen);
+
   if (!drawerOpen) return null;
 
   const onClose = () => setIsOrderDrawerOpen(false);
@@ -94,10 +98,10 @@ export function OrderDrawer() {
         </div>
 
         {/* ── Body ── */}
-        <div className="flex-1 overflow-hidden flex flex-col lg:flex-row bg-surface-container-low min-h-0">
+        <div className="flex-1 overflow-y-auto lg:overflow-hidden flex flex-col lg:flex-row bg-surface-container-low min-h-0 relative">
 
           {/* ── Product Selector ── */}
-          <div className="flex-[3] lg:flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-outline-variant/30 bg-surface min-h-[40vh] lg:min-h-0">
+          <div className="flex-none h-[65vh] lg:h-auto lg:flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-outline-variant/30 bg-surface min-h-0">
             <div className="p-3 sm:p-4 border-b border-outline-variant/30 space-y-3 shrink-0">
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 pointer-events-none" style={{ fontSize: '18px' }}>search</span>
@@ -136,7 +140,7 @@ export function OrderDrawer() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 content-start">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-max gap-3 sm:gap-4 content-start pb-10">
               {isLoading ? (
                 <div className="col-span-full"><ProductGridSkeleton count={8} /></div>
               ) : filteredProducts.length === 0 ? (
@@ -157,7 +161,7 @@ export function OrderDrawer() {
                       onClick={() => !outOfStock && addToCart(p)}
                       disabled={outOfStock}
                       title={p.nom_prod} // Tooltip nativo para ver el nombre al pasar el mouse
-                      className={`group aspect-[4/3] flex items-center justify-center bg-surface p-4 rounded-2xl border border-outline-variant/30 transition-all overflow-hidden relative ${
+                      className={`group flex flex-col items-center justify-center bg-surface p-3 sm:p-4 rounded-2xl border border-outline-variant/30 transition-all overflow-hidden relative min-h-[140px] sm:min-h-0 sm:aspect-[4/3] ${
                         outOfStock ? 'opacity-50 cursor-not-allowed bg-surface-container-low grayscale' : 'hover:shadow-md hover:border-primary/30 active:scale-95'
                       }`}
                     >
@@ -184,7 +188,7 @@ export function OrderDrawer() {
                         <img
                           src={getImageUrl(p.imagen_prod)}
                           alt={p.nom_prod}
-                          className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 mix-blend-multiply"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
                       ) : (
@@ -198,7 +202,7 @@ export function OrderDrawer() {
           </div>
 
           {/* ── Cart ── */}
-          <div className="flex-[4] lg:flex-none w-full lg:w-[380px] flex flex-col bg-surface-dim lg:border-l border-outline-variant/30 z-10 min-h-[45vh] lg:min-h-0">
+          <div className="flex-none lg:flex-none w-full lg:w-[380px] flex flex-col bg-surface-dim lg:border-l border-outline-variant/30 z-10 lg:h-full">
             <div className="p-3 sm:p-4 border-b border-outline-variant/30 bg-surface flex items-center justify-between shrink-0">
               <h3 className="label-md text-on-surface flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary" style={{ fontSize: '18px' }}>shopping_cart</span>
@@ -209,7 +213,7 @@ export function OrderDrawer() {
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 min-h-0">
+            <div className="flex-none lg:flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 min-h-[250px] max-h-[50vh] lg:max-h-none lg:min-h-0 bg-surface-container-lowest">
               {orderForm.items.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center opacity-70 px-6 animate-in zoom-in-95 duration-500">
                   <div className="w-14 h-14 bg-surface rounded-xl flex items-center justify-center mb-4 shadow-sm border border-outline-variant/30 text-on-surface-variant/40">
@@ -223,7 +227,7 @@ export function OrderDrawer() {
                   <div key={item.cod_prod} className="flex gap-2 sm:gap-3 bg-surface p-2.5 sm:p-3 rounded-xl border border-outline-variant/30 shadow-sm">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-surface-container-low shrink-0 border border-outline-variant/20">
                       {item.url_imagen ? (
-                        <img src={getImageUrl(item.url_imagen)} alt="" className="w-full h-full object-contain p-1" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <img src={getImageUrl(item.url_imagen)} alt="" className="w-full h-full object-contain p-1 mix-blend-multiply" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-xs font-bold text-on-surface-variant/40">?</div>
                       )}

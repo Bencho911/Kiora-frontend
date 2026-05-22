@@ -52,7 +52,12 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [alertFilter, setAlertFilter] = useState<'all' | AppNotificationCategory>('all');
+  const [hideStockAlerts, setHideStockAlerts] = useState(false);
   const notifPanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setHideStockAlerts(false);
+  }, [lowStockItems.length]);
 
   useEffect(() => {
     if (isNotificationsOpen) void fetchLowStock();
@@ -81,7 +86,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
       };
 
   const mergedAlerts = useMemo(() => {
-    const stockRows: MergedRow[] = lowStockItems.map((p: Product) => ({
+    const stockRows: MergedRow[] = hideStockAlerts ? [] : lowStockItems.map((p: Product) => ({
       key: `stock-${p.cod_prod}`, kind: 'stock' as const, category: 'stock' as const,
       title: p.nom_prod, description: `Stock bajo: ${p.stock_actual} uds (mín. ${p.stock_minimo ?? '—'})`, type: 'warning' as const,
     }));
@@ -93,7 +98,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
     return all.filter((r) => r.category === alertFilter);
   }, [lowStockItems, notifications, alertFilter]);
 
-  const badgeCount = lowStockItems.length + unreadApp;
+  const badgeCount = (hideStockAlerts ? 0 : lowStockItems.length) + unreadApp;
 
   return (
     <header className="sticky top-0 z-30 bg-surface border-b border-outline-variant/50 shadow-[0px_4px_12px_rgba(61,26,16,0.06)]">
@@ -144,28 +149,34 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
 
             {/* Notifications dropdown */}
             {isNotificationsOpen && (
-              <div className="absolute right-0 top-full mt-2 w-[22rem] max-w-[calc(100vw-1rem)] origin-top-right overflow-hidden rounded-xl bg-surface shadow-lg ring-1 ring-outline-variant/30 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between border-b border-outline-variant/30 px-4 py-3">
+              <div className="fixed sm:absolute right-4 sm:right-0 top-[3.5rem] sm:top-full mt-2 w-[calc(100vw-2rem)] sm:w-[22rem] origin-top-right overflow-hidden rounded-xl bg-surface shadow-xl ring-1 ring-outline-variant/30 animate-in fade-in zoom-in-95 duration-200 z-[100]">
+                <div className="flex items-center justify-between border-b border-outline-variant/30 px-4 py-3 bg-surface-container-lowest">
                   <h3 className="text-xs font-semibold text-on-surface">Centro de alertas</h3>
                   <button
                     type="button"
-                    onClick={() => clearAppNotifications()}
+                    onClick={() => {
+                      clearAppNotifications();
+                      setHideStockAlerts(true);
+                    }}
                     className="text-[10px] font-semibold text-on-surface-variant hover:text-primary transition-colors"
                   >
                     Limpiar
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-1 border-b border-outline-variant/30 px-3 py-2">
+                <div className="flex gap-2 border-b border-outline-variant/30 px-3 py-3 overflow-x-auto no-scrollbar scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {(Object.keys(FILTER_LABELS) as ('all' | AppNotificationCategory)[]).map((k) => (
                     <button
                       key={k}
                       type="button"
-                      onClick={() => setAlertFilter(k)}
-                      className={`rounded-lg px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAlertFilter(k);
+                      }}
+                      className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-bold transition-all ${
                         alertFilter === k
-                          ? 'bg-primary text-on-primary'
-                          : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
+                          ? 'bg-primary text-on-primary shadow-sm'
+                          : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'
                       }`}
                     >
                       {FILTER_LABELS[k]}

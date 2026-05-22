@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { authService, alertService, incidentService } from '@/config/setup';
 import type { Incident, CreateIncidentDto } from '@/models/Incident';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import { pushAppNotification } from '@/lib/pushAppNotification';
 import { IncidentForm } from './maintenance/IncidentForm';
 import { IncidentList } from './maintenance/IncidentList';
 
@@ -39,6 +40,7 @@ export function MaintenanceSection() {
         fk_id_usu: Number(user.id_usu)
       });
       alertService.showToast('success', 'Reporte enviado correctamente');
+      pushAppNotification('success', 'Nuevo Ticket', `Se ha generado un nuevo reporte de incidencia.`, { category: 'system', toast: false });
       setShowForm(false);
       void loadIncidents();
     } catch (e) {
@@ -52,9 +54,29 @@ export function MaintenanceSection() {
     try {
       await incidentService.updateStatus(id, status);
       alertService.showToast('success', 'Estado actualizado');
+      pushAppNotification('info', 'Estado Actualizado', `El estado de la incidencia #${id} ha cambiado a ${status}.`, { category: 'system', toast: false });
       void loadIncidents();
     } catch (e) {
       alertService.showToast('error', 'No se pudo actualizar el estado');
+    }
+  };
+
+  const deleteIncident = async (id: number) => {
+    try {
+      const confirmed = await alertService.showConfirm(
+        '¿Eliminar Incidencia?',
+        'Esta acción no se puede deshacer',
+        'Eliminar',
+        'Cancelar',
+        '#ec131e'
+      );
+      if (!confirmed) return;
+      await incidentService.delete(id);
+      alertService.showToast('success', 'Incidencia eliminada correctamente');
+      pushAppNotification('warning', 'Incidencia Eliminada', `El reporte #${id} ha sido borrado del sistema.`, { category: 'system', toast: false });
+      void loadIncidents();
+    } catch (e) {
+      alertService.showToast('error', getErrorMessage(e, 'No se pudo eliminar la incidencia'));
     }
   };
 
@@ -92,6 +114,7 @@ export function MaintenanceSection() {
         isLoading={isLoading}
         isAdmin={isAdmin}
         onUpdateStatus={updateStatus}
+        onDeleteIncident={deleteIncident}
       />
     </div>
   );

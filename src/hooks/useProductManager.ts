@@ -15,7 +15,7 @@ export function useProductManager() {
   const [activeFilters, setActiveFilters] = useState({
     search: '',
     categories: [] as number[],
-    stock: 'all' as 'all' | 'low' | 'out',
+    stock: 'all' as 'all' | 'available' | 'low' | 'out',
     minPrice: '',
     maxPrice: ''
   });
@@ -64,9 +64,11 @@ export function useProductManager() {
       if (isEdit && selectedProduct?.cod_prod) {
         await productService.updateProduct(selectedProduct.cod_prod, dto);
         alertService.showToast('success', 'Producto actualizado');
+        pushAppNotification('info', 'Producto Actualizado', `Se han modificado los detalles del producto.`, { category: 'inventory', toast: false });
       } else {
         await productService.createProduct(dto);
         alertService.showToast('success', 'Producto creado');
+        pushAppNotification('success', 'Nuevo Producto', `Se ha añadido un nuevo producto al catálogo.`, { category: 'inventory', toast: false });
       }
       loadData();
     } catch (e) {
@@ -81,6 +83,7 @@ export function useProductManager() {
     try {
       await inventoryService.createMovement(mov);
       alertService.showToast('success', 'Movimiento registrado');
+      pushAppNotification('info', 'Movimiento de Inventario', `Se registró un movimiento de tipo ${mov.tipo_movimiento === 'ENTRADA' ? 'entrada' : 'salida'}.`, { category: 'inventory', toast: false });
       if (mov.cod_prod) await loadMovements(mov.cod_prod);
       loadData();
     } catch (e) {
@@ -99,6 +102,7 @@ export function useProductManager() {
       result = result.filter(p => p.fk_cod_cats?.some(c => selCats.includes(c)));
     }
 
+    if (stock === 'available') result = result.filter(p => (p.stock_actual || 0) > (p.stock_minimo || 5));
     if (stock === 'low') result = result.filter(p => (p.stock_actual || 0) <= (p.stock_minimo || 5) && (p.stock_actual || 0) > 0);
     if (stock === 'out') result = result.filter(p => (p.stock_actual || 0) === 0);
 
@@ -120,20 +124,19 @@ export function useProductManager() {
   };
 
   const handleClearFilters = () => {
-    const cleared = { search: '', categories: [], stock: 'all' as const, minPrice: '', maxPrice: '' };
+    const cleared = { search: '', categories: [], stock: 'all' as 'all' | 'available' | 'low' | 'out', minPrice: '', maxPrice: '' };
     setPendingFilters(cleared);
     setActiveFilters(cleared);
   };
 
   const handleDelete = async (id: number) => {
-    if (await alertService.showConfirm('¿Eliminar Producto?', 'Esta acción es irreversible.', 'Sí, eliminar', 'Cancelar')) {
-      try {
-        await productService.deleteProduct(id);
-        alertService.showToast('success', 'Producto eliminado');
-        loadData();
-      } catch (e) { 
-        alertService.showToast('error', getErrorMessage(e, 'Error al eliminar')); 
-      }
+    try {
+      await productService.deleteProduct(id);
+      alertService.showToast('success', 'Producto eliminado');
+      pushAppNotification('warning', 'Producto Eliminado', `Un producto ha sido eliminado del catálogo.`, { category: 'inventory', toast: false });
+      loadData();
+    } catch (e) { 
+      alertService.showToast('error', getErrorMessage(e, 'Error al eliminar')); 
     }
   };
 

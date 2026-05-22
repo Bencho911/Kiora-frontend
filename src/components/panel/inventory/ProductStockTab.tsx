@@ -66,6 +66,17 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate expiration date: must be a future date (strictly after today)
+    if (movForm.fecha_vencimiento) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const expDate = new Date(movForm.fecha_vencimiento + 'T00:00:00');
+      if (expDate <= today) {
+        alertService.showToast('warning', 'La fecha de vencimiento debe ser una fecha futura válida.');
+        return;
+      }
+    }
+
     let finalAmount = movForm.cantidad;
     let finalType = movForm.tipo_mov;
 
@@ -151,7 +162,7 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
             </div>
             <div className="space-y-1.5">
               <label className="label-sm text-on-surface-variant">Fecha Vencimiento</label>
-              <input type="date" value={movForm.fecha_vencimiento || ''} onChange={e => setMovForm(f => ({ ...f, fecha_vencimiento: e.target.value }))} className="w-full rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <input type="date" value={movForm.fecha_vencimiento || ''} onChange={e => setMovForm(f => ({ ...f, fecha_vencimiento: e.target.value }))} min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)} className="w-full rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </div>
           </div>
         )}
@@ -278,33 +289,53 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
           </div>
         ) : (
           <div className="space-y-2">
-            {filteredMovements.map((m) => (
-              <div
-                key={m.id_mov}
-                onClick={() => onViewMovement?.(m)}
-                className={`bg-surface p-3 rounded-xl border border-outline-variant/30 flex items-center justify-between group hover:border-outline transition-colors ${onViewMovement ? 'cursor-pointer' : ''}`}
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                      m.tipo_mov === 'entrada' ? 'bg-tertiary/10 text-tertiary' :
-                      m.tipo_mov === 'ajuste' ? 'bg-surface-container-high text-on-surface-variant' :
-                      'bg-error-container/30 text-error'
-                    }`}>
-                      {m.tipo_mov}
-                    </span>
-                    <span className="label-sm text-on-surface font-semibold">{product.nom_prod}</span>
-                    <span className="label-sm text-on-surface-variant">• {m.fecha_mov ? new Date(m.fecha_mov).toLocaleDateString() : '—'}</span>
+            {filteredMovements.map((m) => {
+              const isAbastecimiento = (m.desc_mov || '').toLowerCase().includes('abastecimiento');
+              const badgeClass =
+                isAbastecimiento                ? 'bg-purple-100 text-purple-700 border border-purple-200' :
+                m.tipo_mov === 'entrada'        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                m.tipo_mov === 'salida'         ? 'bg-red-100 text-red-700 border border-red-200' :
+                m.tipo_mov === 'ajuste'         ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                                                  'bg-surface-container-high text-on-surface-variant';
+              const qtyClass =
+                isAbastecimiento                ? 'text-purple-600' :
+                m.tipo_mov === 'entrada'        ? 'text-emerald-600' :
+                m.tipo_mov === 'salida'         ? 'text-red-600' :
+                                                  'text-amber-600';
+              const qtyPrefix =
+                m.tipo_mov === 'entrada' ? '+' :
+                m.tipo_mov === 'salida'  ? '−' : '~';
+
+              return (
+                <div
+                  key={m.id_mov}
+                  onClick={() => onViewMovement?.(m)}
+                  className={`bg-surface p-3 rounded-xl border border-outline-variant/30 flex items-center justify-between group hover:border-outline transition-colors ${onViewMovement ? 'cursor-pointer' : ''}`}
+                >
+                  <div className="min-w-0 flex-1">
+                    {/* Reference header: product name + badge + date */}
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>
+                        {isAbastecimiento ? 'abastecimiento' : m.tipo_mov}
+                      </span>
+                      <span className="label-sm text-on-surface font-semibold truncate max-w-[160px]">
+                        {product.nom_prod}
+                      </span>
+                      <span className="text-[10px] text-on-surface-variant">
+                        {m.fecha_mov ? new Date(m.fecha_mov).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      </span>
+                    </div>
+                    {/* Description / reference */}
+                    <p className="text-xs text-on-surface-variant truncate max-w-[240px]">
+                      {m.desc_mov || 'Sin referencia'}
+                    </p>
                   </div>
-                  <p className="text-xs font-medium text-on-surface-variant truncate max-w-[200px]">{m.desc_mov || 'Sin justificación'}</p>
+                  <span className={`text-base font-black ml-3 shrink-0 ${qtyClass}`}>
+                    {qtyPrefix}{m.cantidad}
+                  </span>
                 </div>
-                <span className={`text-base font-bold ${
-                  m.tipo_mov === 'entrada' ? 'text-tertiary' : m.tipo_mov === 'salida' ? 'text-error' : 'text-on-surface-variant'
-                }`}>
-                  {m.tipo_mov === 'entrada' ? '+' : m.tipo_mov === 'salida' ? '-' : ''}{m.cantidad}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
