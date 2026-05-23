@@ -7,8 +7,9 @@ import { SupplierDrawer } from './SupplierDrawer';
 export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string }) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSubTab, setActiveSubTab] = useState<'lista' | 'alertas'>('lista');
+  const [activeSubTab, setActiveSubTab] = useState<'lista' | 'alertas' | 'por_vencer'>('lista');
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
+  const [expiringProducts, setExpiringProducts] = useState<any[]>([]);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -25,12 +26,15 @@ export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string })
       if (activeSubTab === 'lista') {
         const res = await inventoryService.getSuppliers();
         if (res && res.data) setSuppliers(res.data);
+      } else if (activeSubTab === 'por_vencer') {
+        const res = await productService.getExpiringProducts(15);
+        setExpiringProducts(res);
       } else {
         const res = await productService.getLowStockProducts();
         setLowStockProducts(res);
       }
     } catch (error: any) {
-      alertService.showError('Error', error.message || 'Error cargando datos de proveedores');
+      alertService.showError('Error', error.message || 'Error cargando datos');
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +118,16 @@ export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string })
           >
             Stock Bajo
           </button>
+          <button
+            onClick={() => setActiveSubTab('por_vencer')}
+            className={`flex-1 sm:flex-none px-6 py-2 rounded-md label-sm transition-all ${
+              activeSubTab === 'por_vencer'
+                ? 'bg-surface text-on-surface shadow-sm'
+                : 'text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            Por Vencer
+          </button>
         </div>
 
         <button
@@ -174,7 +188,7 @@ export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string })
             ))
           )}
         </div>
-      ) : (
+      ) : activeSubTab === 'alertas' ? (
         /* ─── STOCK BAJO ─── */
         <div className="pb-24">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -207,6 +221,43 @@ export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string })
                 </div>
                 <p className="headline-sm text-on-surface mb-1">Todo en orden</p>
                 <p className="body-md text-on-surface-variant">No hay productos con bajo stock actualmente.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* ─── POR VENCER ─── */
+        <div className="pb-24">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {expiringProducts.length > 0 ? (
+              expiringProducts.map(p => {
+                const daysLeft = Math.ceil((new Date(p.fechaven_prod) - new Date()) / 86400000);
+                return (
+                  <div key={p.cod_prod} className="bg-surface rounded-xl border border-secondary-container/30 p-5 flex flex-col hover:shadow-md transition-all duration-300">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-secondary-container/20 text-secondary-container flex items-center justify-center">
+                        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>calendar_month</span>
+                      </div>
+                      <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md ${daysLeft <= 7 ? 'bg-error-container/30 text-error' : 'bg-secondary-container/20 text-secondary-container'}`}>
+                        {daysLeft} días
+                      </span>
+                    </div>
+                    <h4 className="label-md text-on-surface mb-1 line-clamp-1 break-words">{p.nom_prod}</h4>
+                    <p className="label-sm text-on-surface-variant">Vence: {new Date(p.fechaven_prod).toLocaleDateString('es-CO')}</p>
+                    <div className="w-full bg-surface-container-high rounded-full h-1.5 mt-3">
+                      <div className="bg-secondary-container h-1.5 rounded-full" style={{ width: `${Math.max(0, Math.min(100, ((15 - daysLeft) / 15) * 100))}%` }} />
+                    </div>
+                    <p className="label-sm text-on-surface-variant/60 mt-1">{daysLeft} días restantes</p>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full py-20 text-center">
+                <div className="w-14 h-14 bg-tertiary/10 rounded-xl flex items-center justify-center mx-auto mb-4 text-tertiary">
+                  <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>check_circle</span>
+                </div>
+                <p className="headline-sm text-on-surface mb-1">Sin productos próximos a vencer</p>
+                <p className="body-md text-on-surface-variant">Ningún producto vence en los próximos 15 días.</p>
               </div>
             )}
           </div>

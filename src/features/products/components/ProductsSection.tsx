@@ -355,9 +355,27 @@ export function ProductsSection() {
                         <td className="px-6 py-4">
                           <span className="bg-surface-container-high text-on-surface px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider">{catName}</span>
                         </td>
-                        <td className="px-6 py-4 label-md text-on-surface text-right">
-                          <span className="text-xs text-primary font-bold mr-0.5">$</span>
-                          {(Number(p.precio_prod) || 0).toLocaleString('es-CO')}
+                        <td className="px-6 py-4 label-md text-right">
+                          {(Number(p.descuento) || 0) > 0 ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-[10px] line-through text-on-surface-variant/60">
+                                ${(Number(p.precio_prod) || 0).toLocaleString('es-CO')}
+                              </span>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="bg-primary text-on-primary text-[9px] font-bold px-1.5 py-0.5 rounded">
+                                  -{Number(p.descuento)}%
+                                </span>
+                                <span className="text-sm font-bold text-primary">
+                                  ${((Number(p.precio_prod) || 0) * (1 - (Number(p.descuento) || 0) / 100)).toLocaleString('es-CO')}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-on-surface font-semibold">
+                              <span className="text-xs text-primary font-bold mr-0.5">$</span>
+                              {(Number(p.precio_prod) || 0).toLocaleString('es-CO')}
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">

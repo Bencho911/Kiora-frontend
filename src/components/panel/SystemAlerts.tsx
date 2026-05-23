@@ -9,15 +9,17 @@ export const SystemAlerts: React.FC = () => {
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        const [lowRes, expRes] = await Promise.all([
+        const [lowRes, expRes, soonRes] = await Promise.all([
           productService.getLowStock(),
-          productService.getExpiredProducts()
+          productService.getExpiredProducts(),
+          productService.getExpiringProducts(7)
         ]);
-        
+
         const lowStock = (lowRes?.data || []).map((p: any) => ({ ...p, alertType: 'stock' }));
         const expired = (expRes || []).map((p: any) => ({ ...p, alertType: 'expired' }));
-        
-        setAlerts([...lowStock, ...expired]);
+        const soon = (soonRes || []).map((p: any) => ({ ...p, alertType: 'expiring_soon' }));
+
+        setAlerts([...lowStock, ...expired, ...soon]);
       } catch (err) {
         // Silently handle backend downtime
       } finally {
@@ -39,15 +41,33 @@ export const SystemAlerts: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {alerts.slice(0, 4).map((alert) => (
-          <div key={alert.cod_prod} className="bg-error-container/20 border border-error-container/50 p-3 sm:p-4 rounded-xl flex items-center gap-3 sm:gap-4 transition-all hover:bg-error-container/30">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-surface border border-error-container/50 flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <div key={`${alert.alertType}-${alert.cod_prod}`} className={`p-3 sm:p-4 rounded-xl flex items-center gap-3 sm:gap-4 transition-all hover:bg-opacity-80 ${
+            alert.alertType === 'expiring_soon'
+              ? 'bg-secondary-container/20 border border-secondary-container/30'
+              : 'bg-error-container/20 border border-error-container/50'
+          }`}>
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-surface border shrink-0 flex items-center justify-center ${
+              alert.alertType === 'expiring_soon' ? 'border-secondary-container/30 text-secondary-container' : 'border-error-container/50 text-error'
+            }`}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                {alert.alertType === 'expiring_soon' ? 'schedule' : 'warning'}
+              </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-on-surface truncate">Stock bajo: {alert.nom_prod}</p>
-              <p className="text-xs text-on-surface-variant">Quedan {alert.stock_actual} uds (mín. {alert.stock_minimo})</p>
+              <p className="text-sm font-semibold text-on-surface truncate">
+                {alert.alertType === 'expiring_soon' ? `Próximo a vencer: ${alert.nom_prod}` : `Stock bajo: ${alert.nom_prod}`}
+              </p>
+              <p className="text-xs text-on-surface-variant">
+                {alert.alertType === 'expiring_soon'
+                  ? `Vence el ${new Date(alert.fechaven_prod).toLocaleDateString('es-CO')}`
+                  : `Quedan ${alert.stock_actual} uds (mín. ${alert.stock_minimo})`}
+              </p>
             </div>
-            <span className="shrink-0 text-[10px] font-semibold text-error bg-error-container/20 px-2 py-1 rounded-md">Urgente</span>
+            <span className={`shrink-0 text-[10px] font-semibold px-2 py-1 rounded-md ${
+              alert.alertType === 'expiring_soon' ? 'bg-secondary-container/20 text-secondary-container' : 'bg-error-container/20 text-error'
+            }`}>
+              {alert.alertType === 'expiring_soon' ? 'Próximo' : 'Urgente'}
+            </span>
           </div>
         ))}
       </div>

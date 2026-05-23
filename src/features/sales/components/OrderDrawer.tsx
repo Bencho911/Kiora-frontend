@@ -1,6 +1,6 @@
 import type { Product } from '@/models/Product';
 import { getImageUrl } from '@/config/setup';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { ProductGridSkeleton } from '@/components/ui/ProductSkeleton';
 import { useSalesStore } from '@/store/useSalesStore';
 import { useInventoryStore } from '@/store/useInventoryStore';
@@ -26,12 +26,33 @@ export function OrderDrawer() {
     isSavingOrder: saving
   } = useSalesStore();
 
+  const [rfidState, setRfidState] = useState<'idle' | 'waiting' | 'approved' | 'error'>('idle');
+  const rfidInputRef = useRef<HTMLInputElement>(null);
+  const [rfidBuffer, setRfidBuffer] = useState('');
+
+  // Ref al input de búsqueda para leer el valor inmediato (sin depender del estado React).
+  // Los lectores de barras físicos envían caracteres muy rápido + Enter casi simultáneamente,
+  // lo que causa que el estado de React (prodSearch) aún no se haya actualizado cuando
+  // llega el evento onKeyDown('Enter'). Con la ref leemos el valor real del DOM directamente.
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleRfidInput = async (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && rfidBuffer.trim()) {
+      setRfidState('approved');
+      await new Promise(r => setTimeout(r, 600));
+      setRfidState('idle');
+      await handleCreateOrder();
+    }
+  };
+
   const { products: allProducts, categories, isLoading, fetchProducts, fetchCategories } = useInventoryStore();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (drawerOpen) {
       void fetchProducts();
       void fetchCategories();
+      // Auto-focus en el campo de búsqueda al abrir (listo para escanear)
+      setTimeout(() => searchInputRef.current?.focus(), 150);
     }
   }, [drawerOpen, fetchProducts, fetchCategories]);
 
@@ -53,6 +74,7 @@ export function OrderDrawer() {
     }
     return result;
   }, [allProducts, debouncedSearch, selectedCategoryId]);
+
 
   const cartTotal = useMemo(() => {
     return orderForm.items.reduce((acc, item) => acc + (item.cantidad * (item.precio_unit || 0)), 0);
@@ -106,10 +128,53 @@ export function OrderDrawer() {
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 pointer-events-none" style={{ fontSize: '18px' }}>search</span>
                 <input
+                  ref={searchInputRef}
                   type="text"
-                  placeholder="Buscar producto..."
+                  placeholder="Buscar producto o escanear código de barras..."
                   value={prodSearch}
                   onChange={(e) => setProdSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      // Leemos el valor DIRECTAMENTE del DOM para evitar el problema de closure
+                      // stale con lectores de barras (envían chars + Enter casi simultáneamente).
+                      const rawValue = searchInputRef.current?.value?.trim() ?? prodSearch.trim();
+                      if (!rawValue) return;
+
+                      // 1. Coincidencia exacta por código de barras
+                      const barcodeMatch = allProducts.find(p =>
+                        p.codigo_barras && p.codigo_barras.trim() === rawValue
+                      );
+                      if (barcodeMatch) {
+                        if ((barcodeMatch.stock_actual || 0) > 0) {
+                          addToCart(barcodeMatch);
+                        }
+                        setProdSearch('');
+                        return;
+                      }
+
+                      // 2. Coincidencia exacta por cod_prod numérico
+                      const numericId = Number(rawValue);
+                      if (!isNaN(numericId) && numericId > 0) {
+                        const idMatch = allProducts.find(p => p.cod_prod === numericId);
+                        if (idMatch) {
+                          if ((idMatch.stock_actual || 0) > 0) {
+                            addToCart(idMatch);
+                          }
+                          setProdSearch('');
+                          return;
+                        }
+                      }
+
+                      // 3. Si hay exactamente un resultado filtrado, agregarlo
+                      if (filteredProducts.length === 1) {
+                        const only = filteredProducts[0];
+                        if ((only.stock_actual || 0) > 0) {
+                          addToCart(only);
+                        }
+                        setProdSearch('');
+                      }
+                    }
+                  }}
                   className="w-full rounded-lg border border-outline-variant/50 bg-surface-container-low py-2.5 pl-9 pr-3 label-md text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                 />
               </div>
@@ -167,11 +232,28 @@ export function OrderDrawer() {
                     >
                       {/* Precio flotante */}
                       <div className="absolute top-2 right-2 bg-surface/80 backdrop-blur-md px-2 py-1 rounded-lg shadow-sm z-10 pointer-events-none border border-outline-variant/20">
-                        <span className="text-sm font-bold text-on-surface">
-                          <span className="text-[10px] text-primary mr-0.5">$</span>
-                          {safePrice(p.precio_prod).toLocaleString('es-CO')}
-                        </span>
+                        {(Number(p.descuento) || 0) > 0 ? (
+                          <div className="text-right">
+                            <span className="text-[10px] line-through text-on-surface-variant/60">
+                              ${safePrice(p.precio_prod).toLocaleString('es-CO')}
+                            </span>
+                            <span className="text-sm font-bold text-primary block">
+                              ${(safePrice(p.precio_prod) * (1 - (Number(p.descuento) || 0) / 100)).toLocaleString('es-CO')}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-bold text-on-surface">
+                            <span className="text-[10px] text-primary mr-0.5">$</span>
+                            {safePrice(p.precio_prod).toLocaleString('es-CO')}
+                          </span>
+                        )}
                       </div>
+                      {(Number(p.descuento) || 0) > 0 && (
+                        <div className="absolute top-2 left-2 bg-primary text-on-primary text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-sm z-10">
+                          -{Number(p.descuento)}%
+                        </div>
+                      )}
+
 
                       {/* Stock flotante */}
                       <div className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-md shadow-sm z-10 pointer-events-none text-[10px] font-bold border backdrop-blur-md ${
@@ -292,13 +374,44 @@ export function OrderDrawer() {
                   </div>
                 </div>
 
+                {/* Descuento global */}
+                <div className="space-y-2">
+                  <label className="label-sm text-on-surface-variant">Descuento global</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={orderForm.descuento_global ?? 0}
+                      onChange={e => setOrderForm({ ...orderForm, descuento_global: Math.min(100, Math.max(0, Number(e.target.value))) })}
+                      disabled={orderForm.items.length === 0}
+                      className="w-20 rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-lg font-bold text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-40"
+                      placeholder="0"
+                    />
+                    <span className="label-sm text-on-surface-variant">%</span>
+                    {orderForm.descuento_global > 0 && (
+                      <span className="label-sm text-primary font-semibold ml-auto">
+                        -${(cartTotal * (orderForm.descuento_global / 100)).toLocaleString('es-CO')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 {/* Total */}
-                <div className="flex items-end justify-between pt-2 border-t border-outline-variant/20">
-                  <span className="label-sm text-on-surface-variant">Total a Cobrar</span>
-                  <p className="headline-md text-tertiary flex items-start">
-                    <span className="text-base mt-0.5 mr-0.5">$</span>
-                    {cartTotal.toLocaleString('es-CO')}
-                  </p>
+                <div className="space-y-1 pt-2 border-t border-outline-variant/20">
+                  {orderForm.descuento_global > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="label-sm text-on-surface-variant/60">Subtotal</span>
+                      <span className="label-md text-on-surface-variant/60 line-through">${cartTotal.toLocaleString('es-CO')}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="label-sm text-on-surface-variant">Total a Cobrar</span>
+                    <p className="headline-md text-primary flex items-start">
+                      <span className="text-base mt-0.5 mr-0.5">$</span>
+                      {(cartTotal * (1 - (orderForm.descuento_global || 0) / 100)).toLocaleString('es-CO')}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Actions */}
@@ -313,7 +426,15 @@ export function OrderDrawer() {
                   </button>
 
                   <button
-                    onClick={() => { handleCreateOrder(); }}
+                    onClick={() => {
+                      if (orderForm.metodopago_usu === 'tarjeta') {
+                        setRfidState('waiting');
+                        setRfidBuffer('');
+                        setTimeout(() => rfidInputRef.current?.focus(), 100);
+                      } else {
+                        handleCreateOrder();
+                      }
+                    }}
                     disabled={saving || orderForm.items.length === 0}
                     className="w-full rounded-lg bg-primary text-on-primary py-3 label-md shadow-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
@@ -332,6 +453,53 @@ export function OrderDrawer() {
           </div>
         </div>
       </div>
+
+      {/* ─── RFID Capture Modal (simulación datáfono) ─── */}
+      {rfidState !== 'idle' && (
+        <div className="absolute inset-0 z-50 bg-surface/95 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="text-center">
+            {rfidState === 'waiting' && (
+              <>
+                <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+                  <span className="material-symbols-outlined text-4xl text-primary">contactless</span>
+                </div>
+                <h3 className="headline-sm text-on-surface mb-2">Toca la tarjeta en el lector</h3>
+                <p className="body-md text-on-surface-variant mb-6">Acerca la tarjeta RFID al lector para procesar el pago</p>
+                <div className="flex items-center gap-1.5 justify-center">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0s' }} />
+                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.15s' }} />
+                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.3s' }} />
+                </div>
+                <input
+                  ref={rfidInputRef}
+                  type="text"
+                  className="absolute opacity-0 h-0 w-0"
+                  value={rfidBuffer}
+                  onChange={e => setRfidBuffer(e.target.value)}
+                  onKeyDown={handleRfidInput}
+                  autoFocus
+                />
+                <p className="label-sm text-on-surface-variant/60 mt-8">O escribe cualquier código y presiona Enter para simular</p>
+                <button
+                  onClick={() => setRfidState('idle')}
+                  className="mt-4 label-sm text-on-surface-variant hover:text-primary transition-colors"
+                >
+                  Cancelar
+                </button>
+              </>
+            )}
+            {rfidState === 'approved' && (
+              <>
+                <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-tertiary/10 flex items-center justify-center animate-in zoom-in-95 duration-300">
+                  <span className="material-symbols-outlined text-4xl text-tertiary">check_circle</span>
+                </div>
+                <h3 className="headline-sm text-tertiary mb-2">Pago aprobado</h3>
+                <p className="body-md text-on-surface-variant">Tarjeta procesada correctamente</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

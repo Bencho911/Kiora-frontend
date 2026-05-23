@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { productService } from '@/config/setup';
 import { pushAppNotification } from '@/lib/pushAppNotification';
+import { getCache, setCache } from '@/lib/cache';
 
 let lastLowStockPush = 0;
 import type { Product, Category } from '@/models/Product';
@@ -31,8 +32,16 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
   fetchProducts: async () => {
     set({ isLoading: true });
+
+    // Cargar desde caché primero
+    const cached = getCache<Product[]>('products');
+    if (cached) {
+      const map: Record<string, string> = {};
+      cached.forEach((p) => { if (p.cod_prod) map[String(p.cod_prod)] = p.nom_prod; });
+      set({ products: cached, productMap: map, isLoading: false, lastUpdate: Date.now() });
+    }
+
     try {
-      console.log('[InventoryStore] Starting fetchProducts...');
       const res = await productService.getProducts(1, 1000);
       const products = res.data || [];
       console.log('[InventoryStore] Products received:', products.length);
@@ -42,12 +51,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
         if (p.cod_prod) map[String(p.cod_prod)] = p.nom_prod; 
       });
       
-      set({ 
-        products, 
-        productMap: map, 
-        lastUpdate: Date.now(), 
-        isLoading: false 
+      set({
+        products,
+        productMap: map,
+        lastUpdate: Date.now(),
+        isLoading: false
       });
+      setCache('products', products);
     } catch (error) {
       console.error('[InventoryStore] Error fetching products:', error);
       set({ isLoading: false });

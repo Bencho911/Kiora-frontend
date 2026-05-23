@@ -26,10 +26,12 @@ const EMPTY_PRODUCT: CreateProductDto = {
   nom_prod: '',
   desc_prod: '',
   precio_prod: 0,
+  descuento: 0,
   stock_actual: 0,
   stock_minimo: 0,
   fk_cod_cats: [],
   fechaven_prod: undefined,
+  codigo_barras: '',
 };
 
 function toInputDate(d?: string | null): string {
@@ -66,6 +68,8 @@ export function ProductDrawer({
         nom_prod: product.nom_prod || '',
         desc_prod: product.desc_prod || '',
         precio_prod: product.precio_prod || 0,
+        descuento: product.descuento || 0,
+        codigo_barras: product.codigo_barras || '',
         stock_actual: product.stock_actual || 0,
         stock_minimo: product.stock_minimo || 0,
         fk_cod_cats: product.fk_cod_cats || [],
@@ -253,6 +257,7 @@ export function ProductDrawer({
                 <input
                   type="date"
                   value={form.fechaven_prod ?? ''}
+                  min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => setForm(f => ({ ...f, fechaven_prod: e.target.value || undefined }))}
                   className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
                 />
@@ -269,6 +274,38 @@ export function ProductDrawer({
                   onChange={e => setForm(f => ({ ...f, precio_prod: Number(e.target.value) }))}
                   className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-lg font-bold text-on-surface focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="label-sm text-on-surface-variant">Descuento (%)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={form.descuento ?? 0}
+                    onChange={e => setForm(f => ({ ...f, descuento: Math.min(100, Math.max(0, Number(e.target.value))) }))}
+                    className="w-24 rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-lg font-bold text-on-surface focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
+                  />
+                  {form.descuento > 0 && (
+                    <span className="label-sm text-primary font-semibold">
+                      Precio final: ${(form.precio_prod * (1 - (form.descuento ?? 0) / 100)).toLocaleString('es-CO')}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="label-sm text-on-surface-variant">Código de Barras</label>
+                <input
+                  type="text"
+                  value={form.codigo_barras ?? ''}
+                  onChange={e => setForm(f => ({ ...f, codigo_barras: e.target.value }))}
+                  onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
+                  placeholder="Ej. 7701234567890"
+                  className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
+                />
+                <p className="label-sm text-on-surface-variant/60">Opcional. Para usar el lector de código de barras en el POS.</p>
               </div>
 
               <div className="space-y-1.5">

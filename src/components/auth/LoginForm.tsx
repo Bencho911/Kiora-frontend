@@ -50,7 +50,15 @@ export default function LoginForm() {
         setState('locked');
       } else {
         setState('error');
-        setErrorMsg(msg);
+        // Extraer número de intento del mensaje del backend: "Credenciales incorrectas. Intento 3 de 5."
+        const attemptMatch = msg.match(/Intento\s+(\d+)\s+de\s+(\d+)/i);
+        if (attemptMatch) {
+          const current = attemptMatch[1];
+          const max = attemptMatch[2];
+          setErrorMsg(`Credenciales incorrectas. Intento ${current} de ${max}.`);
+        } else {
+          setErrorMsg(msg);
+        }
       }
     }
   };
@@ -73,7 +81,17 @@ export default function LoginForm() {
           <span className="text-base shrink-0">
             {state === 'locked' ? '🔒' : state === 'rate-limited' ? '⏱' : state === 'error' ? '⚠️' : '✓'}
           </span>
-          {status.text}
+          <div>
+            <span>{status.text}</span>
+            {state === 'error' && errorMsg.match(/Intento\s+(\d+)\s+de\s+(\d+)/i) && (
+              <div className="mt-1.5 w-full bg-error-container/40 rounded-full h-1.5">
+                <div
+                  className="bg-error h-1.5 rounded-full transition-all"
+                  style={{ width: `${(parseInt(errorMsg.match(/Intento\s+(\d+)\s+de\s+(\d+)/i)![1]) / parseInt(errorMsg.match(/Intento\s+(\d+)\s+de\s+(\d+)/i)![2])) * 100}%` }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
 

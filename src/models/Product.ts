@@ -14,6 +14,8 @@ export interface Product {
   ref_lote?: string | null;
 
   alerta_stock_critico?: boolean;
+  descuento?: number;
+  codigo_barras?: string;
 }
 
 export interface Category {
