@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useAppStore } from '@/store/useAppStore';
 
 interface NavItem {
   id: string;
@@ -13,7 +14,8 @@ interface AdminSubNavProps {
 }
 
 export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick, isAdmin }) => {
-  const [isChatOpen, setIsChatOpen] = React.useState(false);
+  const isChatOpen = useAppStore((state) => state.isChatOpen);
+  const setIsChatOpen = useAppStore((state) => state.setIsChatOpen);
   
   const items: NavItem[] = useMemo(() => {
     const list: NavItem[] = [
@@ -162,7 +164,7 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
             
             <div className="flex items-center justify-between z-10">
               <div className="w-10 h-10 rounded-lg bg-surface border border-outline-variant/50 flex items-center justify-center text-on-surface shadow-sm group-hover:shadow transition-all">
-                <span className="material-symbols-outlined font-light text-[22px]">auto_awesome</span>
+                <span className="material-symbols-outlined font-light text-[22px]">support_agent</span>
               </div>
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-outline-variant/30 bg-surface/50">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse"></div>
@@ -193,12 +195,12 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
           ></div>
           
           {/* Popover Window */}
-          <div className="absolute left-[240px] bottom-[24px] w-[380px] h-[600px] max-h-[85vh] bg-surface rounded-[20px] border border-outline-variant/30 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] flex flex-col animate-in zoom-in-75 slide-in-from-left-4 slide-in-from-bottom-8 duration-300 overflow-hidden origin-bottom-left pointer-events-auto">
+          <div className="absolute md:left-[240px] md:bottom-[24px] md:w-[380px] md:h-[600px] md:max-h-[85vh] left-4 right-4 bottom-24 top-20 bg-surface rounded-[20px] border border-outline-variant/30 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] flex flex-col animate-in zoom-in-75 slide-in-from-bottom-8 duration-300 overflow-hidden origin-bottom-left pointer-events-auto">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-outline-variant/20 bg-surface-container-lowest">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-surface-container-low border border-outline-variant/50 flex items-center justify-center text-on-surface">
-                  <span className="material-symbols-outlined">auto_awesome</span>
+                  <span className="material-symbols-outlined">support_agent</span>
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-on-surface tracking-wide">Kiora AI</h3>
@@ -218,7 +220,7 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
               {/* System message */}
               <div className="flex gap-3">
                 <div className="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant/30 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[16px] text-on-surface">auto_awesome</span>
+                  <span className="material-symbols-outlined text-[16px] text-on-surface">support_agent</span>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <div className="bg-surface border border-outline-variant/30 rounded-2xl rounded-tl-sm p-3 shadow-sm max-w-[85%]">

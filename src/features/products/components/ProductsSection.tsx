@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { authService, getImageUrl } from '@/config/setup';
 import type { Product } from '@/models/Product';
 import { ProductDrawer } from './ProductDrawer';
@@ -10,8 +10,8 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 export function ProductsSection() {
   const isAdmin = authService.isAdmin();
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const [visibleCount, setVisibleCount] = useState(15);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   const {
     categories, isLoading,
@@ -31,12 +31,26 @@ export function ProductsSection() {
   const totalProducts = filteredProducts.length;
   const outOfStockCount = filteredProducts.filter(p => p.stock_actual <= 0).length;
   const lowStockCount = filteredProducts.filter(p => p.stock_actual > 0 && p.stock_actual <= 5).length;
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
-  const paginatedProducts = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
 
   useEffect(() => {
-    setCurrentPage(1);
+    setVisibleCount(15);
   }, [filteredProducts.length]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount(prev => prev + 15);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+    return () => observer.disconnect();
+  }, []);
 
   // Lock body scroll when any modal/drawer is open
   useScrollLock(isDrawerOpen || !!productToDelete || !!detailMovement);
@@ -231,7 +245,7 @@ export function ProductsSection() {
                 <button onClick={handleClearFilters} className="label-md text-primary hover:underline">Resetear filtros</button>
               </div>
             ) : (
-              paginatedProducts.map(p => {
+              visibleProducts.map(p => {
                 const isOutOfStock = p.stock_actual <= 0;
                 const isLowStock = p.stock_actual > 0 && p.stock_actual <= 5;
                 const catName = p.fk_cod_cats && p.fk_cod_cats.length > 0
@@ -239,10 +253,10 @@ export function ProductsSection() {
                   : 'Sin Categoría';
 
                 return (
-                  <div key={p.cod_prod} className={`p-4 hover:bg-surface-container-lowest transition-colors flex flex-col gap-4 ${isOutOfStock ? 'bg-error-container/10' : ''}`}>
+                  <div key={p.cod_prod} className={`p-4 hover:bg-surface-container-lowest transition-colors flex flex-col gap-4 ${isOutOfStock ? 'bg-surface-container-high/40 opacity-70 grayscale' : ''}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className={`w-14 h-14 shrink-0 rounded-md flex items-center justify-center border ${isOutOfStock ? 'bg-error-container/30 border-error/20 text-error' : 'bg-surface-container border-outline-variant/30 text-on-surface-variant/50'}`}>
+                        <div className={`w-14 h-14 shrink-0 rounded-md flex items-center justify-center border ${isOutOfStock ? 'bg-surface-container-highest border-outline-variant/30 text-on-surface-variant' : 'bg-surface-container border-outline-variant/30 text-on-surface-variant/50'}`}>
                           {p.imagen_prod ? (
                             <img src={getImageUrl(p.imagen_prod)} alt={p.nom_prod} className="w-full h-full object-cover rounded-md p-1 mix-blend-multiply" />
                           ) : (
@@ -250,7 +264,7 @@ export function ProductsSection() {
                           )}
                         </div>
                         <div>
-                          <p className={`label-lg font-bold transition-colors ${isOutOfStock ? 'text-error' : 'text-on-surface'}`}>{p.nom_prod}</p>
+                          <p className={`label-lg font-bold transition-colors ${isOutOfStock ? 'text-on-surface-variant' : 'text-on-surface'}`}>{p.nom_prod}</p>
                           <p className="text-xs text-on-surface-variant line-clamp-2 mt-0.5" title={p.desc_prod}>{p.desc_prod || 'Sin descripción'}</p>
                         </div>
                       </div>
@@ -284,7 +298,7 @@ export function ProductsSection() {
                       </div>
                       <div className="flex flex-col items-end">
                         <span className="text-[10px] uppercase font-bold text-on-surface-variant mb-0.5">Estado</span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${isOutOfStock ? 'bg-error-container/30 text-error border-error/20' : isLowStock ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-teal-100 text-teal-700 border-teal-200'}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${isOutOfStock ? 'bg-surface-container-highest text-on-surface-variant border-outline-variant/50' : isLowStock ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-teal-100 text-teal-700 border-teal-200'}`}>
                           {isOutOfStock ? 'Agotado' : isLowStock ? 'Bajo' : 'Activo'}
                         </span>
                       </div>
@@ -327,7 +341,7 @@ export function ProductsSection() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/20">
-                  {paginatedProducts.map(p => {
+                  {visibleProducts.map(p => {
                     const isOutOfStock = p.stock_actual <= 0;
                     const isLowStock = p.stock_actual > 0 && p.stock_actual <= 5;
                     const catName = p.fk_cod_cats && p.fk_cod_cats.length > 0
@@ -335,10 +349,10 @@ export function ProductsSection() {
                       : 'Sin Categoría';
 
                     return (
-                      <tr key={p.cod_prod} className={`hover:bg-surface-container-lowest transition-colors group ${isOutOfStock ? 'bg-error-container/10' : ''}`}>
+                      <tr key={p.cod_prod} className={`hover:bg-surface-container-lowest transition-colors group ${isOutOfStock ? 'bg-surface-container-high/40 opacity-70 grayscale' : ''}`}>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-md flex items-center justify-center border ${isOutOfStock ? 'bg-error-container/30 border-error/20 text-error' : 'bg-surface-container border-outline-variant/30 text-on-surface-variant/50'}`}>
+                            <div className={`w-12 h-12 rounded-md flex items-center justify-center border ${isOutOfStock ? 'bg-surface-container-highest border-outline-variant/30 text-on-surface-variant' : 'bg-surface-container border-outline-variant/30 text-on-surface-variant/50'}`}>
                               {p.imagen_prod ? (
                                 <img src={getImageUrl(p.imagen_prod)} alt={p.nom_prod} className="w-full h-full object-cover rounded-md p-1 mix-blend-multiply" />
                               ) : (
@@ -346,7 +360,7 @@ export function ProductsSection() {
                               )}
                             </div>
                             <div>
-                              <p className={`label-md font-semibold transition-colors ${isOutOfStock ? 'text-error' : 'text-on-surface group-hover:text-primary'}`}>{p.nom_prod}</p>
+                              <p className={`label-md font-semibold transition-colors ${isOutOfStock ? 'text-on-surface-variant' : 'text-on-surface group-hover:text-primary'}`}>{p.nom_prod}</p>
                               <p className="label-sm text-on-surface-variant truncate max-w-[180px]" title={p.desc_prod}>{p.desc_prod || 'Sin descripción'}</p>
                             </div>
                           </div>
@@ -420,38 +434,10 @@ export function ProductsSection() {
             )}
           </div>
 
-          {/* ─── Pagination ─── */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-5 py-3 border-t border-outline-variant/30 bg-surface-container-low/50">
-              <button
-                disabled={currentPage <= 1}
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                className="label-sm text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                ← Anterior
-              </button>
-              <div className="flex flex-wrap items-center justify-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`w-7 h-7 rounded-md text-xs font-semibold transition-all ${
-                      currentPage === page
-                        ? 'bg-primary text-on-primary'
-                        : 'text-on-surface-variant hover:bg-surface-container-high'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-              <button
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                className="label-sm text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Siguiente →
-              </button>
+          {/* ─── Infinite Scroll Observer ─── */}
+          {visibleCount < filteredProducts.length && (
+            <div ref={observerTarget} className="p-8 flex justify-center items-center">
+              <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
             </div>
           )}
         </div>
