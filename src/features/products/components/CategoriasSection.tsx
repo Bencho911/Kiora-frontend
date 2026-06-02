@@ -48,6 +48,17 @@ export function CategoriasSection() {
     const confirmed = await alertService.showConfirm('¿Eliminar Categoría?', 'Esta acción no se puede deshacer', 'Sí, eliminar', 'Cancelar');
     if (!confirmed) return;
     try {
+      // 1. Fetch products to check if this category is in use
+      const productsRes = await productService.getProducts(1, 1000);
+      const products = Array.isArray(productsRes) ? productsRes : (productsRes?.data || []);
+      const isUsed = products.some((p: any) => p.fk_cod_cats?.includes(id));
+      
+      if (isUsed) {
+        alertService.showError('Acción denegada', 'No puedes eliminar esta categoría porque está siendo utilizada por uno o más productos. Por favor, reasigna los productos a otra categoría antes de eliminarla.');
+        return;
+      }
+
+      // 2. Proceed with deletion
       await productService.deleteCategory(id);
       alertService.showSuccess('Eliminado', 'Categoría eliminada exitosamente');
       loadCategories();

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { aiService } from '@/config/setup';
 import type { ChatMessage } from '@/services/AiService';
-
+import { useAppStore } from '@/store/useAppStore';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -18,7 +18,8 @@ interface AdminSubNavProps {
 }
 
 export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick, isAdmin }) => {
-  const [isChatOpen, setIsChatOpen] = React.useState(false);
+  const isChatOpen = useAppStore((state) => state.isChatOpen);
+  const setIsChatOpen = useAppStore((state) => state.setIsChatOpen);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +57,6 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
   const handleSuggestion = useCallback((text: string) => {
     sendMessage(text);
   }, [sendMessage]);
-
   const items: NavItem[] = useMemo(() => {
     const list: NavItem[] = [
       {
@@ -203,7 +203,7 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
 
             <div className="flex items-center justify-between z-10">
               <div className="w-10 h-10 rounded-lg bg-surface border border-outline-variant/50 flex items-center justify-center text-on-surface shadow-sm group-hover:shadow transition-all">
-                <span className="material-symbols-outlined font-light text-[22px]">auto_awesome</span>
+                <span className="material-symbols-outlined font-light text-[22px]">support_agent</span>
               </div>
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-outline-variant/30 bg-surface/50">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse"></div>
@@ -231,13 +231,13 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
             className="absolute inset-0 pointer-events-auto"
             onClick={() => setIsChatOpen(false)}
           ></div>
-
-          <div className="absolute left-[240px] bottom-[24px] w-[380px] h-[600px] max-h-[85vh] bg-surface rounded-[20px] border border-outline-variant/30 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] flex flex-col animate-in zoom-in-75 slide-in-from-left-4 slide-in-from-bottom-8 duration-300 overflow-hidden origin-bottom-left pointer-events-auto">
+          {/* Popover Window */}
+          <div className="absolute md:left-[240px] md:bottom-[24px] md:w-[380px] md:h-[600px] md:max-h-[85vh] left-4 right-4 bottom-24 top-20 bg-surface rounded-[20px] border border-outline-variant/30 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] flex flex-col animate-in zoom-in-75 slide-in-from-bottom-8 duration-300 overflow-hidden origin-bottom-left pointer-events-auto">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-outline-variant/20 bg-surface-container-lowest shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-surface-container-low border border-outline-variant/50 flex items-center justify-center text-on-surface">
-                  <span className="material-symbols-outlined">auto_awesome</span>
+                  <span className="material-symbols-outlined">support_agent</span>
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-on-surface tracking-wide">Kiora AI</h3>

@@ -114,6 +114,15 @@ export function useProductManager() {
       result = fuse.search(search).map(r => r.item);
     }
 
+    // Ordenar: los agotados (stock <= 0) van al final
+    result.sort((a, b) => {
+      const aOut = (a.stock_actual || 0) <= 0;
+      const bOut = (b.stock_actual || 0) <= 0;
+      if (aOut && !bOut) return 1;
+      if (!aOut && bOut) return -1;
+      return 0;
+    });
+
     return result;
   }, [products, activeFilters]);
 
@@ -131,6 +140,14 @@ export function useProductManager() {
 
   const handleDelete = async (id: number) => {
     try {
+      const movementsData = await inventoryService.getMovements(id, 1, 1);
+      const movementsArray = movementsData && 'data' in movementsData ? movementsData.data : (Array.isArray(movementsData) ? movementsData : []);
+      
+      if (movementsArray.length > 0) {
+        alertService.showError('Acción no permitida', 'No se puede eliminar el producto porque tiene historial de movimientos de inventario o ventas asociadas. Por favor, asegúrese de que el producto no tenga dependencias antes de eliminarlo.');
+        return;
+      }
+
       await productService.deleteProduct(id);
       alertService.showToast('success', 'Producto eliminado');
       pushAppNotification('warning', 'Producto Eliminado', `Un producto ha sido eliminado del catálogo.`, { category: 'inventory', toast: false });

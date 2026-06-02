@@ -25,10 +25,10 @@ interface ProductDrawerProps {
 const EMPTY_PRODUCT: CreateProductDto = {
   nom_prod: '',
   desc_prod: '',
-  precio_prod: 0,
+  precio_prod: '' as unknown as number,
   descuento: 0,
-  stock_actual: 0,
-  stock_minimo: 0,
+  stock_actual: '' as unknown as number,
+  stock_minimo: '' as unknown as number,
   fk_cod_cats: [],
   fechaven_prod: undefined,
   codigo_barras: '',
@@ -70,8 +70,8 @@ export function ProductDrawer({
         precio_prod: product.precio_prod || 0,
         descuento: product.descuento || 0,
         codigo_barras: product.codigo_barras || '',
-        stock_actual: product.stock_actual || 0,
-        stock_minimo: product.stock_minimo || 0,
+        stock_actual: product.stock_actual ?? ('' as unknown as number),
+        stock_minimo: product.stock_minimo ?? ('' as unknown as number),
         fk_cod_cats: product.fk_cod_cats || [],
         fechaven_prod: toInputDate(product.fechaven_prod) || undefined,
       });
@@ -92,6 +92,45 @@ export function ProductDrawer({
       void onLoadMovements(product.cod_prod);
     }
   }, [activeTab, product?.cod_prod, onLoadMovements]);
+
+  const hasChanges = React.useMemo(() => {
+    if (!product) return true;
+
+    const initialFormState = {
+      nom_prod: product.nom_prod || '',
+      desc_prod: product.desc_prod || '',
+      precio_prod: product.precio_prod || 0,
+      descuento: product.descuento || 0,
+      codigo_barras: product.codigo_barras || '',
+      stock_actual: product.stock_actual ?? ('' as unknown as number),
+      stock_minimo: product.stock_minimo ?? ('' as unknown as number),
+      fk_cod_cats: product.fk_cod_cats || [],
+      fechaven_prod: toInputDate(product.fechaven_prod) || undefined,
+    };
+
+    const arraysEqual = (a: number[], b: number[]) => {
+      if (a.length !== b.length) return false;
+      const sortedA = [...a].sort();
+      const sortedB = [...b].sort();
+      return sortedA.every((val, index) => val === sortedB[index]);
+    };
+
+    const isFormDifferent = 
+      form.nom_prod !== initialFormState.nom_prod ||
+      form.desc_prod !== initialFormState.desc_prod ||
+      form.precio_prod !== initialFormState.precio_prod ||
+      form.descuento !== initialFormState.descuento ||
+      form.codigo_barras !== initialFormState.codigo_barras ||
+      form.stock_actual !== initialFormState.stock_actual ||
+      form.stock_minimo !== initialFormState.stock_minimo ||
+      form.fechaven_prod !== initialFormState.fechaven_prod ||
+      !arraysEqual(form.fk_cod_cats || [], initialFormState.fk_cod_cats || []);
+
+    const initialImagePreview = product.imagen_prod ? getImageUrl(product.imagen_prod) : null;
+    const isImageDifferent = imageFile !== null || imagePreview !== initialImagePreview;
+
+    return isFormDifferent || isImageDifferent;
+  }, [form, product, imageFile, imagePreview]);
 
   const handleSaveMovement = async (movForm: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; fk_cod_prov?: number }) => {
     if (!product?.cod_prod) return;
@@ -145,7 +184,12 @@ export function ProductDrawer({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nom_prod.trim()) return alertService.showToast('warning', 'El nombre es obligatorio');
-    if (form.precio_prod <= 0) return alertService.showToast('warning', 'El precio debe ser mayor a 0');
+    if (form.precio_prod === '' as unknown as number || form.precio_prod <= 0) return alertService.showToast('warning', 'El precio debe ser mayor a 0');
+    if (!form.fk_cod_cats || form.fk_cod_cats.length === 0) return alertService.showToast('warning', 'Debes seleccionar al menos una categoría');
+    
+    if (form.stock_actual === '' as unknown as number) return alertService.showToast('warning', 'El stock inicial es obligatorio');
+    if (form.stock_minimo === '' as unknown as number) return alertService.showToast('warning', 'El stock mínimo es obligatorio');
+
     setSaving(true);
     try {
       await onSave({ ...form, imagen: imageFile || undefined }, !!product?.cod_prod);
@@ -269,9 +313,9 @@ export function ProductDrawer({
                 <input
                   type="number"
                   required
-                  value={form.precio_prod === 0 ? '' : form.precio_prod}
+                  value={form.precio_prod}
                   onFocus={e => e.target.select()}
-                  onChange={e => setForm(f => ({ ...f, precio_prod: Number(e.target.value) }))}
+                  onChange={e => setForm(f => ({ ...f, precio_prod: e.target.value === '' ? '' as unknown as number : Number(e.target.value) }))}
                   className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-lg font-bold text-on-surface focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
                 />
               </div>
@@ -338,23 +382,23 @@ export function ProductDrawer({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="label-sm text-on-surface-variant">Stock Inicial</label>
+                  <label className="label-sm text-on-surface-variant">Stock Inicial *</label>
                   <input
                     type="number"
-                    value={form.stock_actual === 0 ? '' : form.stock_actual}
+                    value={form.stock_actual}
                     disabled={!!product}
                     onFocus={e => e.target.select()}
-                    onChange={e => setForm(f => ({ ...f, stock_actual: Number(e.target.value) }))}
+                    onChange={e => setForm(f => ({ ...f, stock_actual: e.target.value === '' ? '' as unknown as number : Number(e.target.value) }))}
                     className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all disabled:opacity-40 disabled:bg-surface-container-low"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="label-sm text-on-surface-variant">Límite Mínimo</label>
+                  <label className="label-sm text-on-surface-variant">Límite Mínimo *</label>
                   <input
                     type="number"
-                    value={form.stock_minimo === 0 ? '' : form.stock_minimo}
+                    value={form.stock_minimo}
                     onFocus={e => e.target.select()}
-                    onChange={e => setForm(f => ({ ...f, stock_minimo: Number(e.target.value) }))}
+                    onChange={e => setForm(f => ({ ...f, stock_minimo: e.target.value === '' ? '' as unknown as number : Number(e.target.value) }))}
                     className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
                   />
                 </div>
@@ -384,10 +428,14 @@ export function ProductDrawer({
             <button
               type="submit"
               form="productForm"
-              disabled={saving}
-              className="flex-1 rounded-xl bg-primary text-on-primary py-2.5 label-sm shadow-sm hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-60"
+              disabled={saving || (!hasChanges && !!product)}
+              className={`flex-1 rounded-xl py-2.5 label-sm shadow-sm transition-all active:scale-[0.98] ${
+                !hasChanges && !!product 
+                  ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed'
+                  : 'bg-primary text-on-primary hover:opacity-90 disabled:opacity-60'
+              }`}
             >
-              {saving ? 'Procesando...' : (product ? 'Guardar Cambios' : 'Crear Producto')}
+              {saving ? 'Procesando...' : (product ? (hasChanges ? 'Guardar Cambios (Seguro)' : 'Sin Cambios') : 'Crear Producto')}
             </button>
           )}
         </div>

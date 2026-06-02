@@ -120,10 +120,10 @@ export function OrderDrawer() {
         </div>
 
         {/* ── Body ── */}
-        <div className="flex-1 overflow-y-auto lg:overflow-hidden flex flex-col lg:flex-row bg-surface-container-low min-h-0 relative">
+        <div className="flex-1 overflow-y-auto md:overflow-hidden flex flex-col md:flex-row bg-surface-container-low min-h-0 relative">
 
           {/* ── Product Selector ── */}
-          <div className="flex-none h-[65vh] lg:h-auto lg:flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-outline-variant/30 bg-surface min-h-0">
+          <div className="flex-none h-[65vh] md:h-auto md:flex-1 flex flex-col border-b md:border-b-0 md:border-r border-outline-variant/30 bg-surface min-h-0 min-w-0">
             <div className="p-3 sm:p-4 border-b border-outline-variant/30 space-y-3 shrink-0">
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 pointer-events-none" style={{ fontSize: '18px' }}>search</span>
@@ -284,7 +284,7 @@ export function OrderDrawer() {
           </div>
 
           {/* ── Cart ── */}
-          <div className="flex-none lg:flex-none w-full lg:w-[380px] flex flex-col bg-surface-dim lg:border-l border-outline-variant/30 z-10 lg:h-full">
+          <div className="flex-none md:flex-none w-full md:w-[350px] lg:w-[380px] flex flex-col bg-surface-dim md:border-l border-outline-variant/30 z-10 md:h-full overflow-y-auto">
             <div className="p-3 sm:p-4 border-b border-outline-variant/30 bg-surface flex items-center justify-between shrink-0">
               <h3 className="label-md text-on-surface flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary" style={{ fontSize: '18px' }}>shopping_cart</span>
@@ -295,7 +295,7 @@ export function OrderDrawer() {
               </span>
             </div>
 
-            <div className="flex-none lg:flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 min-h-[250px] max-h-[50vh] lg:max-h-none lg:min-h-0 bg-surface-container-lowest">
+            <div className="flex-none md:flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 min-h-[150px] max-h-[50vh] md:max-h-none md:min-h-[100px] bg-surface-container-lowest">
               {orderForm.items.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center opacity-70 px-6 animate-in zoom-in-95 duration-500">
                   <div className="w-14 h-14 bg-surface rounded-xl flex items-center justify-center mb-4 shadow-sm border border-outline-variant/30 text-on-surface-variant/40">

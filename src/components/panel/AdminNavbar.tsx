@@ -155,6 +155,16 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
         {/* Right: actions */}
         <div className="flex items-center gap-2">
 
+          <button
+            type="button"
+            onClick={() => useAppStore.getState().setIsChatOpen(!useAppStore.getState().isChatOpen)}
+            className="md:hidden flex items-center justify-center gap-1.5 px-3 h-[36px] rounded-full border border-outline-variant/30 bg-surface-container-low/50 hover:bg-surface-container-low transition-all active:scale-[0.97]"
+            aria-label="Kiora AI"
+          >
+            <span className="material-symbols-outlined text-primary" style={{ fontSize: '18px' }}>support_agent</span>
+            <span className="text-[11px] font-bold text-on-surface">AI</span>
+          </button>
+
           {/* Dark mode toggle */}
           <button
             type="button"

@@ -4,6 +4,8 @@ import { persist } from 'zustand/middleware';
 interface AppState {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isChatOpen: boolean;
+  setIsChatOpen: (isOpen: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -11,6 +13,8 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       activeTab: 'dashboard',
       setActiveTab: (activeTab) => set({ activeTab }),
+      isChatOpen: false,
+      setIsChatOpen: (isChatOpen) => set({ isChatOpen }),
     }),
     {
       name: 'kiora-app-storage',

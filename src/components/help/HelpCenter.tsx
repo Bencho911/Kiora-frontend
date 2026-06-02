@@ -119,7 +119,6 @@ export default function HelpCenter({ hideBackButton = false }: HelpCenterProps) 
             )}
           </section>
 
-
         </div>
 
         <aside className="space-y-8">
@@ -133,7 +132,7 @@ export default function HelpCenter({ hideBackButton = false }: HelpCenterProps) 
               <CardDescription className="text-slate-400 font-medium text-xs">Atención prioritaria para tu tienda</CardDescription>
             </CardHeader>
             <CardContent className="pt-8 space-y-4">
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-[#ec131e]/30 transition-colors cursor-pointer">
+              <a href="mailto:soporte@kiora.app" className="block p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-[#ec131e]/30 transition-colors cursor-pointer">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#ec131e] shadow-sm group-hover:scale-110 transition-transform">
                     <Mail className="w-5 h-5" />
@@ -143,9 +142,9 @@ export default function HelpCenter({ hideBackButton = false }: HelpCenterProps) 
                     <p className="text-sm font-bold text-slate-900">soporte@kiora.app</p>
                   </div>
                 </div>
-              </div>
+              </a>
 
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-emerald-300 transition-colors cursor-pointer">
+              <a href="https://wa.me/573215322886" target="_blank" rel="noopener noreferrer" className="block p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-emerald-300 transition-colors cursor-pointer">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-500 shadow-sm group-hover:scale-110 transition-transform">
                     <Phone className="w-5 h-5" />
@@ -155,19 +154,27 @@ export default function HelpCenter({ hideBackButton = false }: HelpCenterProps) 
                     <p className="text-sm font-bold text-slate-900">+57 321 532 2886</p>
                   </div>
                 </div>
-              </div>
+              </a>
             </CardContent>
           </Card>
 
           <div className="space-y-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] px-2">Temas Populares</h3>
             <div className="grid grid-cols-1 gap-2.5">
-              {HELP_TOPICS.slice(0, 4).map((topic, idx) => (
-                <div key={idx} className="group flex items-center gap-3 p-3.5 bg-white border border-slate-100 rounded-2xl hover:border-[#ec131e]/20 hover:shadow-lg hover:shadow-[#ec131e]/5 transition-all cursor-pointer">
-                  <div className="text-[#ec131e] shrink-0 group-hover:scale-110 transition-transform">{topic.icon}</div>
-                  <span className="font-bold text-slate-700 text-xs leading-tight group-hover:text-slate-900 transition-colors">{topic.title}</span>
-                </div>
-              ))}
+              {HELP_TOPICS.slice(0, 4).map((topic, idx) => {
+                // Determine a relevant search keyword based on the topic title
+                const keyword = topic.title.split(' ')[0].toLowerCase();
+                return (
+                  <div 
+                    key={idx} 
+                    onClick={() => setSearchTerm(keyword)}
+                    className="group flex items-center gap-3 p-3.5 bg-white border border-slate-100 rounded-2xl hover:border-[#ec131e]/20 hover:shadow-lg hover:shadow-[#ec131e]/5 transition-all cursor-pointer"
+                  >
+                    <div className="text-[#ec131e] shrink-0 group-hover:scale-110 transition-transform">{topic.icon}</div>
+                    <span className="font-bold text-slate-700 text-xs leading-tight group-hover:text-slate-900 transition-colors">{topic.title}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </aside>
