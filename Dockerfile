@@ -17,7 +17,7 @@ ENV PUBLIC_SENTRY_DSN=$PUBLIC_SENTRY_DSN
 
 # Copiar manifests primero para aprovechar la caché de Docker
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 COPY . .
 # Generar tipos de Astro y construir

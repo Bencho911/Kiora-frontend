@@ -10,7 +10,7 @@ interface Props {
   lang?: string;
 }
 
-const { 
+const {
   title = "KIORA | Sistema para Kioskos",
   lang = "es"
 } = Astro.props;
@@ -23,27 +23,21 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL,GRAD,opsz@100..700,0..1,-50..200,20..48&display=block" rel="stylesheet" />
     <Icono />
     <ViewTransitions />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    
+
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#3E2723" />
+    <meta name="theme-color" content="#ec131e" />
     <meta name="description" content="Kiora Admin — Sistema de gestión para kioskos: ventas, productos, inventario y reportes en tiempo real." />
-    <!-- Apple PWA -->
     <link rel="apple-touch-icon" href="/img/logo-kiora-vectorizado.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Kiora" />
-    <!-- Android / Chrome -->
     <meta name="mobile-web-app-capable" content="yes" />
-    <!-- MS Tiles -->
-    <meta name="msapplication-TileColor" content="#3E2723" />
+    <meta name="msapplication-TileColor" content="#ec131e" />
     <meta name="msapplication-TileImage" content="/img/logo-kiora-vectorizado.png" />
-    
+
     <script is:inline>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
@@ -60,9 +54,6 @@ const {
         }
       });
     </script>
-    <script is:inline>
-      document.documentElement.setAttribute('data-path', window.location.pathname);
-    </script>
     <title>{title}</title>
 
     {weglotKey && (
@@ -75,40 +66,8 @@ const {
         }
       </script>
     )}
-    {weglotKey && (
-      <style is:inline>
-        .weglot-container {
-          position: fixed !important;
-          bottom: 1.5rem !important;
-          right: 1.5rem !important;
-          z-index: 9999 !important;
-        }
-        .is-panel .weglot-container {
-          display: none !important;
-        }
-        .wg-default, .wg-default .wg-li {
-          background: rgba(255, 255, 255, 0.95) !important;
-          backdrop-filter: blur(8px) !important;
-          border: 1px solid rgba(226, 232, 240, 0.8) !important;
-          border-radius: 0.5rem !important;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
-          color: #475569 !important;
-          font-family: 'Inter', sans-serif !important;
-          font-size: 0.80rem !important;
-          font-weight: 600 !important;
-          padding: 0.2rem 0.6rem !important;
-          transition: all 0.2s ease !important;
-        }
-        .wg-default:hover, .wg-default.wg-open {
-          border-color: #ec131e !important;
-          color: #ec131e !important;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-          transform: translateY(-2px) !important;
-        }
-      </style>
-    )}
   </head>
-  <body class="m-0 font-[Inter] bg-[#fafafc] text-[#334155] min-h-screen relative overflow-x-hidden">
+  <body class="m-0 min-h-screen relative overflow-x-hidden bg-background text-on-surface font-sans antialiased">
     <slot />
   </body>
 </html>

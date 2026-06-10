@@ -21,6 +21,8 @@ export function useUserManagement(isAdmin: boolean) {
   const [resettingUser, setResettingUser] = useState<User | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [newUser, setNewUser] = useState<RegisterUserDto>({
     nom_usu: '',
@@ -92,9 +94,11 @@ export function useUserManagement(isAdmin: boolean) {
         }
 
         alertService.showToast('success', 'Usuario actualizado correctamente');
+        pushAppNotification('info', 'Usuario Actualizado', `Se ha actualizado la información de ${newUser.nom_usu}`, { category: 'user', toast: false });
       } else {
         await userService.registerUser(newUser);
         alertService.showToast('success', 'Usuario registrado correctamente');
+        pushAppNotification('success', 'Nuevo Usuario', `Se ha registrado a ${newUser.nom_usu}`, { category: 'user', toast: false });
       }
       setIsDrawerOpen(false);
       void loadUsersList(currentPage);
@@ -114,14 +118,29 @@ export function useUserManagement(isAdmin: boolean) {
       if (isBlocked) {
         await userService.unlockUser(u.id_usu);
         alertService.showToast('success', 'Usuario desbloqueado');
+        pushAppNotification('success', 'Usuario Desbloqueado', `El usuario ${u.nom_usu} ha sido desbloqueado.`, { category: 'user', toast: false });
       } else {
         await userService.blockUser(u.id_usu);
         alertService.showToast('success', 'Usuario bloqueado temporalmente');
+        pushAppNotification('warning', 'Usuario Bloqueado', `El usuario ${u.nom_usu} ha sido bloqueado manualmente.`, { category: 'user', toast: false });
       }
       void loadUsersList(currentPage);
     } catch (e) {
       alertService.showToast('error', 'Error al cambiar estado del usuario');
       pushAppNotification('error', 'Usuario', 'No se pudo bloquear o desbloquear el usuario.', { category: 'user' });
+    }
+  }, [currentPage, loadUsersList]);
+
+  const handleDeleteUser = useCallback(async (id_usu: string | number) => {
+    try {
+      await userService.deleteUser(id_usu);
+      alertService.showToast('success', 'Usuario eliminado exitosamente');
+      pushAppNotification('info', 'Usuario Eliminado', `Se ha eliminado el usuario.`, { category: 'user', toast: false });
+      void loadUsersList(currentPage);
+    } catch (e) {
+      const msg = getErrorMessage(e, 'Error al eliminar usuario');
+      alertService.showToast('error', msg);
+      pushAppNotification('error', 'Usuario', msg, { category: 'user' });
     }
   }, [currentPage, loadUsersList]);
 
@@ -141,6 +160,7 @@ export function useUserManagement(isAdmin: boolean) {
     try {
       await userService.adminUpdatePassword(resettingUser.id_usu, pass);
       alertService.showToast('success', 'Contraseña restablecida exitosamente');
+      pushAppNotification('info', 'Seguridad', `Se restableció la contraseña de ${resettingUser.nom_usu}.`, { category: 'user', toast: false });
       setIsSecurityOpen(false);
     } catch (e) {
       alertService.showToast('error', 'Error al restablecer contraseña');
@@ -173,6 +193,9 @@ export function useUserManagement(isAdmin: boolean) {
     resettingUser,
     isResettingPassword,
     handleOpenSecurity,
-    handleConfirmPasswordReset
+    handleConfirmPasswordReset,
+    userToDelete,
+    setUserToDelete,
+    handleDeleteUser
   };
 }

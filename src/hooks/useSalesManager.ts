@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Fuse from 'fuse.js';
+import { useDebounce } from '@/hooks/useDebounce';
 import { orderService, alertService, authService, inventoryService, incidentService, reportService } from '@/config/setup';
 import { pushAppNotification } from '@/lib/pushAppNotification';
 import type { Order, Invoice } from '@/models/Order';
@@ -18,6 +19,7 @@ export function useSalesManager(isAdmin: boolean) {
   const [reports, setReports] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 250);
   const [searchInvoiceId, setSearchInvoiceId] = useState('');
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const [detailMovement, setDetailMovement] = useState<Movement | null>(null);
@@ -71,14 +73,15 @@ export function useSalesManager(isAdmin: boolean) {
   }, [loadData, salesSyncVersion]);
 
   const filteredOrders = useMemo(() => {
-    if (!search.trim()) return orders;
+    const q = debouncedSearch.trim();
+    if (!q) return orders;
     const fuse = new Fuse(orders, {
       keys: ['id_vent', 'metodopago_usu', 'estado', 'productos_resumen', 'montofinal_vent'],
       threshold: 0.4,
       minMatchCharLength: 1,
     });
-    return fuse.search(search.trim()).map(r => r.item);
-  }, [orders, search]);
+    return fuse.search(q).map(r => r.item);
+  }, [orders, debouncedSearch]);
 
   const handleExport = async (type: 'excel' | 'pdf') => {
     if (!isAdmin) {

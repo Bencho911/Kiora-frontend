@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { User } from '@/models/User';
 import type { Product } from '@/models/Product';
-import { authService } from '@/config/setup';
+import { authService, API_URL } from '@/config/setup';
 import { useInventoryStore } from '@/store/useInventoryStore';
 import { useAppStore } from '@/store/useAppStore';
+import { useSessionStore } from '@/store/useSessionStore';
 import { getInitials } from '@/utils/userUtils';
 import { useNotificationStore, type AppNotificationCategory } from '@/store/useNotificationStore';
 
@@ -24,6 +25,28 @@ const FILTER_LABELS: Record<'all' | AppNotificationCategory, string> = {
 };
 
 export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpenProfile, onOpenPOS }) => {
+  const [isDark, setIsDark] = React.useState(() => {
+    if (typeof document === 'undefined') return false;
+    return document.documentElement.classList.contains('dark');
+  });
+
+  const toggleDark = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('kiora_theme', next ? 'dark' : 'light');
+  };
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('kiora_theme');
+    if (saved === 'dark') {
+      document.documentElement.classList.add('dark');
+      setIsDark(true);
+    }
+  }, []);
+
+  const { currentSession, openSessionModal } = useSessionStore();
+
   const { lowStockItems, fetchLowStock } = useInventoryStore();
   const notifications = useNotificationStore((s) => s.notifications);
   const markAsRead = useNotificationStore((s) => s.markAsRead);
@@ -32,14 +55,17 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [alertFilter, setAlertFilter] = useState<'all' | AppNotificationCategory>('all');
+  const [hideStockAlerts, setHideStockAlerts] = useState(false);
   const notifPanelRef = useRef<HTMLDivElement>(null);
-  const isLoading = false;
+
+  useEffect(() => {
+    setHideStockAlerts(false);
+  }, [lowStockItems.length]);
 
   useEffect(() => {
     if (isNotificationsOpen) void fetchLowStock();
   }, [isNotificationsOpen, fetchLowStock]);
 
-  // Close notif panel on outside click
   useEffect(() => {
     if (!isNotificationsOpen) return;
     const handleClick = (e: MouseEvent) => {
@@ -53,92 +79,85 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
 
   type MergedRow =
     | {
-        key: string;
-        kind: 'stock';
-        category: 'stock';
-        title: string;
-        description: string;
-        type: 'warning';
+        key: string; kind: 'stock'; category: 'stock';
+        title: string; description: string; type: 'warning';
       }
     | {
-        key: string;
-        kind: 'app';
-        category: AppNotificationCategory;
-        title: string;
-        description: string;
-        type: 'info' | 'success' | 'warning' | 'error';
-        id: string;
-        read: boolean;
+        key: string; kind: 'app'; category: AppNotificationCategory;
+        title: string; description: string; type: 'info' | 'success' | 'warning' | 'error';
+        id: string; read: boolean;
       };
 
   const mergedAlerts = useMemo(() => {
-    const stockRows: MergedRow[] = lowStockItems.map((p: Product) => ({
-      key: `stock-${p.cod_prod}`,
-      kind: 'stock' as const,
-      category: 'stock' as const,
-      title: p.nom_prod,
-      description: `Stock bajo: ${p.stock_actual} uds (mín. ${p.stock_minimo ?? '—'})`,
-      type: 'warning' as const,
+    const stockRows: MergedRow[] = hideStockAlerts ? [] : lowStockItems.map((p: Product) => ({
+      key: `stock-${p.cod_prod}`, kind: 'stock' as const, category: 'stock' as const,
+      title: p.nom_prod, description: `Stock bajo: ${p.stock_actual} uds (mín. ${p.stock_minimo ?? '—'})`, type: 'warning' as const,
     }));
     const appRows: MergedRow[] = notifications.map((n) => ({
-      key: n.id,
-      kind: 'app' as const,
-      category: n.category,
-      title: n.title,
-      description: n.description,
-      type: n.type,
-      id: n.id,
-      read: n.read,
+      key: n.id, kind: 'app' as const, category: n.category, title: n.title, description: n.description, type: n.type, id: n.id, read: n.read,
     }));
     const all = [...stockRows, ...appRows];
     if (alertFilter === 'all') return all;
     return all.filter((r) => r.category === alertFilter);
   }, [lowStockItems, notifications, alertFilter]);
 
-  const badgeCount = lowStockItems.length + unreadApp;
+  const badgeCount = (hideStockAlerts ? 0 : lowStockItems.length) + unreadApp;
 
   return (
-    <header className="sticky top-0 z-40 bg-[#3E2723] shadow-lg border-b border-white/5 font-[Inter]">
-      <nav className="flex items-center justify-between px-4 py-3 sm:px-6">
+    <header className="sticky top-0 z-30 bg-surface border-b border-outline-variant/50 shadow-[0px_4px_12px_rgba(61,26,16,0.06)]">
+      <div className="flex items-center justify-between h-16 px-4 md:px-6 md:ml-56">
 
-        {/* ── Left: Logo ── */}
-        <div className="flex items-center gap-3 min-w-0">
-          <img
-            src="/img/logo-kiora-vectorizado-blanco.png"
-            alt="Kiora Logo"
-            className="h-7 w-auto sm:h-8 hover:opacity-90 transition-opacity cursor-pointer shrink-0"
-            onClick={() => window.location.reload()}
-          />
-          <span className="hidden md:block text-[10px] font-bold tracking-[0.3em] text-white/40 uppercase mt-0.5">
-            Admin System
-          </span>
+        {/* Left: mobile logo */}
+        <div className="md:hidden flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-sm">
+            <span className="text-xs font-bold text-on-primary">K</span>
+          </div>
         </div>
 
-        {/* ── Right: Actions ── */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        {/* Spacer on desktop */}
+        <div className="hidden md:block" />
 
-          {/* POS button — visible sm+ */}
+        {/* Right: actions */}
+        <div className="flex items-center gap-2">
+
           <button
             type="button"
-            onClick={onOpenPOS}
-            className="hidden sm:flex items-center gap-1.5 rounded-full bg-kiora-red px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-red-900/20 transition-all hover:scale-105 active:scale-95 md:px-4 md:py-2 md:text-[10px]"
+            onClick={() => useAppStore.getState().setIsChatOpen(!useAppStore.getState().isChatOpen)}
+            className="md:hidden flex items-center justify-center gap-1.5 px-3 h-[36px] rounded-full border border-outline-variant/30 bg-surface-container-low/50 hover:bg-surface-container-low transition-all active:scale-[0.97]"
+            aria-label="Kiora AI"
           >
-            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <span className="hidden md:inline">Punto de venta</span>
-            <span className="md:hidden">POS</span>
+            <span className="material-symbols-outlined text-primary" style={{ fontSize: '18px' }}>support_agent</span>
+            <span className="text-[11px] font-bold text-on-surface">AI</span>
           </button>
 
-          {/* POS icon button — mobile only */}
+          {/* Dark mode toggle */}
           <button
             type="button"
-            onClick={onOpenPOS}
-            className="sm:hidden relative p-2 text-white/80 transition-all hover:scale-110 hover:text-white rounded-full hover:bg-white/5 active:scale-95"
+            onClick={toggleDark}
+            className="relative p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all active:scale-[0.97]"
+            aria-label={isDark ? 'Modo claro' : 'Modo oscuro'}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+              {isDark ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
+
+          {/* Cash Session State */}
+          <button
+            type="button"
+            onClick={() => currentSession ? openSessionModal('CLOSE') : openSessionModal('OPEN')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-[0.97] ${
+              !currentSession 
+                ? 'bg-error-container text-on-error-container hover:bg-error-container/80'
+                : 'bg-primary text-on-primary hover:bg-primary/90'
+            }`}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+              {!currentSession ? 'lock' : 'point_of_sale'}
+            </span>
+            <span className="hidden sm:inline">
+              {!currentSession ? 'Caja Cerrada' : 'Cerrar Caja'}
+            </span>
           </button>
 
           {/* Notifications */}
@@ -146,56 +165,49 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
             <button
               type="button"
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="relative p-2 text-white/80 transition-all hover:scale-110 hover:text-white rounded-full hover:bg-white/5 active:scale-95"
+              className="relative p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all active:scale-[0.97]"
               aria-label="Notificaciones"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 sm:h-6 sm:w-6 transition-transform group-active:rotate-12"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
               </svg>
               {badgeCount > 0 && (
-                <>
-                  <div className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-kiora-red border-2 border-[#3E2723] animate-pulse" />
-                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-kiora-red text-[8px] font-black text-white ring-2 ring-[#3E2723]">
-                    {badgeCount > 9 ? '9+' : badgeCount}
-                  </span>
-                </>
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-error text-[8px] font-bold text-on-error ring-2 ring-surface">
+                  {badgeCount > 9 ? '9+' : badgeCount}
+                </span>
               )}
             </button>
 
+            {/* Notifications dropdown */}
             {isNotificationsOpen && (
-              <div className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-14 sm:top-full sm:mt-4 z-50 max-w-full sm:max-w-[22rem] origin-top overflow-hidden rounded-2xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.18)] ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 p-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-gray-900">Centro de alertas</h3>
+              <div className="fixed sm:absolute right-4 sm:right-0 top-[3.5rem] sm:top-full mt-2 w-[calc(100vw-2rem)] sm:w-[22rem] origin-top-right overflow-hidden rounded-xl bg-surface shadow-xl ring-1 ring-outline-variant/30 animate-in fade-in zoom-in-95 duration-200 z-[100]">
+                <div className="flex items-center justify-between border-b border-outline-variant/30 px-4 py-3 bg-surface-container-lowest">
+                  <h3 className="text-xs font-semibold text-on-surface">Centro de alertas</h3>
                   <button
                     type="button"
-                    onClick={() => clearAppNotifications()}
-                    className="text-[9px] font-black uppercase tracking-tighter text-slate-500 hover:text-kiora-red"
+                    onClick={() => {
+                      clearAppNotifications();
+                      setHideStockAlerts(true);
+                    }}
+                    className="text-[10px] font-semibold text-on-surface-variant hover:text-primary transition-colors"
                   >
                     Limpiar
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-1 border-b border-gray-100 bg-white px-2 py-2">
+                <div className="flex gap-2 border-b border-outline-variant/30 px-3 py-3 overflow-x-auto no-scrollbar scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {(Object.keys(FILTER_LABELS) as ('all' | AppNotificationCategory)[]).map((k) => (
                     <button
                       key={k}
                       type="button"
-                      onClick={() => setAlertFilter(k)}
-                      className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-tight transition-colors ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAlertFilter(k);
+                      }}
+                      className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-bold transition-all ${
                         alertFilter === k
-                          ? 'bg-kiora-red text-white'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? 'bg-primary text-on-primary shadow-sm'
+                          : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'
                       }`}
                     >
                       {FILTER_LABELS[k]}
@@ -204,11 +216,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
                 </div>
 
                 <div className="max-h-[60vh] overflow-y-auto">
-                  {isLoading ? (
-                    <div className="flex justify-center p-10">
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-100 border-t-kiora-red" />
-                    </div>
-                  ) : mergedAlerts.length > 0 ? (
+                  {mergedAlerts.length > 0 ? (
                     mergedAlerts.map((row) => (
                       <div
                         key={row.key}
@@ -227,31 +235,23 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
                           }
                           setIsNotificationsOpen(false);
                         }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') (e.target as HTMLElement).click();
-                        }}
-                        className={`cursor-pointer border-b border-gray-50 p-4 transition-colors last:border-0 hover:bg-slate-50 ${
-                          row.kind === 'app' && !row.read ? 'bg-red-50/30' : ''
+                        className={`border-b border-outline-variant/20 px-4 py-3 transition-colors last:border-0 hover:bg-surface-container-low cursor-pointer ${
+                          row.kind === 'app' && !row.read ? 'bg-error-container/10' : ''
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div
-                            className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${
-                              row.type === 'error'
-                                ? 'bg-red-100 text-red-600'
-                                : row.type === 'success'
-                                  ? 'bg-emerald-100 text-emerald-600'
-                                  : row.type === 'warning'
-                                    ? 'bg-amber-100 text-amber-700'
-                                    : 'bg-slate-100 text-slate-600'
-                            }`}
-                          >
-                            <span className="text-[9px] font-black uppercase">{row.category.slice(0, 2)}</span>
+                          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                            row.type === 'error' ? 'bg-error-container/30 text-error' :
+                            row.type === 'success' ? 'bg-tertiary-fixed/30 text-tertiary' :
+                            row.type === 'warning' ? 'bg-error-container/20 text-error' :
+                            'bg-surface-container-high text-on-surface-variant'
+                          }`}>
+                            <span className="text-[10px] font-bold uppercase">{row.category.slice(0, 2)}</span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-bold text-gray-900">{row.title}</p>
-                            <p className="mt-0.5 text-xs font-medium text-slate-600">{row.description}</p>
-                            <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                            <p className="text-sm font-semibold text-on-surface truncate">{row.title}</p>
+                            <p className="text-xs text-on-surface-variant">{row.description}</p>
+                            <p className="text-[10px] font-medium text-on-surface-variant/60 mt-0.5">
                               {FILTER_LABELS[row.category]}
                             </p>
                           </div>
@@ -259,14 +259,14 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
                       </div>
                     ))
                   ) : (
-                    <div className="flex flex-col items-center p-10 text-center">
-                      <div className="mb-3 rounded-full bg-emerald-50 p-3 text-emerald-600">
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                    <div className="flex flex-col items-center py-10 text-center">
+                      <div className="mb-3 rounded-full bg-surface-container-high p-3 text-on-surface-variant">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-sm font-bold text-gray-600">Sin alertas</p>
-                      <p className="text-xs font-medium text-gray-400">Pagos, stock e inventario aparecen aquí.</p>
+                      <p className="text-sm font-semibold text-on-surface-variant">Sin alertas</p>
+                      <p className="text-xs text-on-surface-variant/60 mt-1">Todo en orden.</p>
                     </div>
                   )}
                 </div>
@@ -277,7 +277,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
                     useAppStore.getState().setActiveTab('productos');
                     setIsNotificationsOpen(false);
                   }}
-                  className="w-full border-t border-gray-100 bg-gray-50 p-3 text-[10px] font-black uppercase tracking-widest text-gray-500 transition-colors hover:bg-gray-100"
+                  className="w-full border-t border-outline-variant/30 bg-surface-container-low py-3 text-xs font-semibold text-on-surface-variant hover:bg-surface-container transition-colors"
                 >
                   Ir a productos
                 </button>
@@ -285,32 +285,32 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ user, onLogout, onOpen
             )}
           </div>
 
-          {/* Profile avatar */}
+          {/* Profile */}
           <button
             type="button"
             onClick={onOpenProfile}
-            className="group flex items-center transition-all hover:opacity-90 active:scale-95"
-            aria-label="Perfil de usuario"
+            className="flex items-center p-1.5 rounded-full hover:bg-surface-container-high transition-all active:scale-[0.97]"
+            aria-label="Perfil"
           >
-            <div className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-kiora-red text-xs sm:text-sm font-bold text-white shadow-xl ring-2 ring-white/10">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-high text-sm font-semibold text-on-surface ring-1 ring-outline-variant/30">
               {getInitials(String(user.nom_usu))}
             </div>
           </button>
 
-          {/* Logout — text on md+, icon on mobile */}
+          {/* Logout */}
           <button
             type="button"
             onClick={onLogout || (() => { authService.logout(); window.location.href = '/'; })}
-            className="rounded-full bg-white/10 px-2.5 py-1.5 text-[10px] font-semibold text-white transition-all hover:bg-white/15 active:bg-white/20 sm:px-4 sm:text-xs"
+            className="rounded-lg px-3 py-2 text-xs font-medium text-on-surface-variant hover:bg-surface-container-high transition-all active:scale-[0.97]"
             aria-label="Cerrar sesión"
           >
             <span className="hidden sm:inline">Salir</span>
-            <svg className="sm:hidden w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            <svg className="sm:hidden w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
             </svg>
           </button>
         </div>
-      </nav>
+      </div>
     </header>
   );
 };

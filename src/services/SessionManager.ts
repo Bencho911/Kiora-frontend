@@ -6,17 +6,19 @@ import { type IAlertService } from '../core/ui/AlertService';
  */
 export class SessionManager {
   private inactivityTime = 0;
-  private maxInactivity = 15 * 60; // 15 minutes by default
-  private warningThreshold = 60; // Warning 1 minute before max
+  private maxInactivity = 8 * 60; // 8 minutes before warning
+  private gracePeriod = 60; // 60 seconds to click OK on the modal
   private warningShown = false;
   private intervalId: number | undefined;
+  private warningInProgress = false;
 
   private readonly onActivity = () => this.resetInactivity();
   private readonly touchStartOptions: AddEventListenerOptions = { passive: true };
 
   constructor(
     private authService: AuthService,
-    private alertService: IAlertService
+    private alertService: IAlertService,
+    private apiBase: string = 'http://20.110.129.152:3000/api',
   ) {}
 
   startMonitoring() {
@@ -47,6 +49,7 @@ export class SessionManager {
   private resetInactivity() {
     this.inactivityTime = 0;
     this.warningShown = false;
+    this.warningInProgress = false;
   }
 
   private decodeJWT(token: string) {
@@ -71,33 +74,48 @@ export class SessionManager {
 
     this.inactivityTime += 5;
 
-    // Warning before expiration
+    // ═══ Inactivity warning modal ═══
     if (
-      this.inactivityTime >= this.maxInactivity - this.warningThreshold &&
-      this.inactivityTime < this.maxInactivity &&
-      !this.warningShown
+      this.inactivityTime >= this.maxInactivity &&
+      !this.warningShown &&
+      !this.warningInProgress
     ) {
       this.warningShown = true;
-      this.alertService.showToast(
-        'info',
-        'Por favor realice una acción dentro del sistema para evitar que su sesión expire.',
-        10000
+      this.warningInProgress = true;
+
+      const confirmed = await this.alertService.showInactivityWarning(
+        '¿Sigues ahí?',
+        'Has estado inactivo por un tiempo. Haz clic en "OK, continuar" para mantener tu sesión activa. Si no respondes, cerraremos la sesión por seguridad.',
+        'OK, continuar',
+        this.gracePeriod
       );
+
+      this.warningInProgress = false;
+
+      if (confirmed) {
+        // User clicked OK — reset inactivity counter
+        this.resetInactivity();
+        return;
+      } else {
+        // Timer expired without confirmation — auto-logout
+        this.stopMonitoring();
+        this.authService.clearSession();
+        try {
+          await fetch(`${this.apiBase}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+          });
+        } catch { /* fire & forget */ }
+        await this.alertService.showExpiringSession(
+          'Sesión Finalizada por Inactividad',
+          'No hubo actividad ni respuesta a la advertencia. Vuelve a ingresar cuando quieras.'
+        );
+        window.location.href = '/login/';
+        return;
+      }
     }
 
-    // Terminate Session due to inactivity
-    if (this.inactivityTime >= this.maxInactivity) {
-      this.stopMonitoring();
-      this.authService.clearSession();
-      await this.alertService.showExpiringSession(
-        'Sesión Finalizada por Inactividad',
-        'Has estado mucho tiempo inactivo. Vuelve a ingresar.'
-      );
-      window.location.href = '/login/';
-      return;
-    }
-
-    // Token logic
+    // ═══ Token refresh logic ═══
     const token = this.authService.getToken();
     if (!token) return;
 
@@ -106,18 +124,18 @@ export class SessionManager {
       const currentTime = Math.floor(Date.now() / 1000);
       const timeToLive = decoded.exp - currentTime;
 
-      // Renew if less than 10s left and user is active
       if (timeToLive > 0 && timeToLive <= 10) {
         try {
           await this.authService.refreshToken();
         } catch (e) {
           console.error('Error renovando token session.', e);
         }
-      }
-      // Force logout if token expired
-      else if (timeToLive <= 0) {
+      } else if (timeToLive <= 0) {
         this.stopMonitoring();
         this.authService.clearSession();
+        try {
+          await fetch(`${this.apiBase}/auth/logout`, { method: 'POST', credentials: 'include' });
+        } catch { /* fire & forget */ }
         await this.alertService.showExpiringSession(
           'Sesión Expirada',
           'Tu sesión ha expirado por seguridad.'

@@ -6,25 +6,7 @@ import { ReportFilters } from './reports/ReportFilters';
 import { ReportTable } from './reports/ReportTable';
 import { SavedReportsList } from './reports/SavedReportsList';
 import { EmailPreviewModal } from './reports/EmailPreviewModal';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useInventoryStore } from '@/store/useInventoryStore';
-import {
-  BarChart3,
-  History,
-  Bell,
-  LifeBuoy,
-  Download,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  Mail,
-  FileSpreadsheet,
-  FileText
-} from 'lucide-react';
-
 import { useReportsManager } from '@/hooks/useReportsManager';
 
 export function ReportsSection() {
@@ -40,41 +22,47 @@ export function ReportsSection() {
     handleExportSingleIncident
   } = useReportsManager();
 
+  const tabs = [
+    { id: 'generar', label: 'Generar', icon: 'bar_chart' },
+    { id: 'guardados', label: 'Historial', icon: 'history' },
+    { id: 'alertas', label: 'Alertas', icon: 'notifications' },
+    { id: 'incidencias', label: 'Soporte', icon: 'support' },
+    { id: 'inventario', label: 'Inventario', icon: 'inventory_2' },
+  ];
+
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
-      <header className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between px-1 sm:px-2">
-        <div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900">
-            Reportes de <span className="text-kiora-red">Inteligencia</span>
-          </h1>
-          <p className="mt-2 sm:mt-3 text-sm sm:text-base text-slate-500 font-medium max-w-2xl leading-relaxed italic">
-            "Lo que no se mide, no se puede mejorar." Analiza el rendimiento de tu negocio con datos reales.
-          </p>
-        </div>
-      </header>
+    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+      {/* Header */}
+      <div>
+        <h2 className="headline-lg text-on-surface mb-1">
+          Reportes de <span className="text-primary">Inteligencia</span>
+        </h2>
+        <p className="body-md text-on-surface-variant max-w-2xl">
+          Analiza el rendimiento de tu negocio con datos reales.
+        </p>
+      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="px-1 sm:px-0">
-          <TabsList className="bg-slate-100/80 p-1 rounded-xl sm:rounded-2xl h-auto w-full flex items-center justify-between gap-0.5 sm:gap-1">
-            <TabsTrigger value="generar" className="flex-1 px-1 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-slate-900 text-slate-400 transition-all gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest overflow-hidden">
-              <BarChart3 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">Generar</span>
-            </TabsTrigger>
-            <TabsTrigger value="guardados" className="flex-1 px-1 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-slate-900 text-slate-400 transition-all gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest overflow-hidden">
-              <History className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">Hist.</span><span className="hidden sm:inline">orial</span>
-            </TabsTrigger>
-            <TabsTrigger value="alertas" className="flex-1 px-1 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-slate-900 text-slate-400 transition-all gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest overflow-hidden">
-              <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">Alertas</span>
-            </TabsTrigger>
-            <TabsTrigger value="incidencias" className="flex-1 px-1 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-slate-900 text-slate-400 transition-all gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest overflow-hidden">
-              <LifeBuoy className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">Soporte</span>
-            </TabsTrigger>
-            <TabsTrigger value="inventario" className="flex-1 px-1 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-slate-900 text-slate-400 transition-all gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest overflow-hidden">
-              <FileSpreadsheet className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">Inv.</span><span className="hidden sm:inline">entario</span>
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      {/* Tabs */}
+      <div className="bg-surface-container-high rounded-lg p-1 w-full flex overflow-x-auto">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`flex-1 whitespace-nowrap rounded-md px-3 py-2.5 label-sm transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === t.id
+                ? 'bg-surface text-on-surface shadow-sm'
+                : 'text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{t.icon}</span>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value="generar" className="space-y-6 mt-0 focus-visible:outline-none">
+      {/* GENERAR */}
+      {activeTab === 'generar' && (
+        <div className="space-y-6">
           <ReportFilters
             filters={filters}
             setFilters={setFilters}
@@ -82,7 +70,6 @@ export function ReportsSection() {
             onGenerate={generateReport}
             isLoading={isLoading}
           />
-
           <ReportTable
             data={reportData}
             filters={filters}
@@ -90,206 +77,203 @@ export function ReportsSection() {
             onExportExcel={handleExportExcel}
             onExportPdf={handleExportPdf}
           />
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="guardados" className="mt-0 focus-visible:outline-none">
-          <SavedReportsList
-            reports={savedReports}
-            onDelete={deleteSavedReport}
-            onLoad={loadSavedReport}
-          />
-        </TabsContent>
+      {/* HISTORIAL */}
+      {activeTab === 'guardados' && (
+        <SavedReportsList
+          reports={savedReports}
+          onDelete={deleteSavedReport}
+          onLoad={loadSavedReport}
+        />
+      )}
 
-        <TabsContent value="alertas" className="space-y-6 mt-0 focus-visible:outline-none">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {alerts.map((alert) => (
-              <Card key={`${alert.alertType}-${alert.cod_prod}`} className="border-none shadow-xl shadow-slate-100/50 rounded-[2rem] overflow-hidden bg-white hover:ring-2 hover:ring-kiora-red/20 transition-all group">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${alert.alertType === 'stock' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-500'}`}>
-                      <AlertTriangle className="w-3 h-3" />
-                      {alert.alertType === 'stock' ? 'Stock Bajo' : 'Caducado'}
-                    </div>
-                  </div>
-                  <CardTitle className="text-base font-black text-slate-900 line-clamp-2">{alert.nom_prod}</CardTitle>
-                  <CardDescription className="font-bold text-slate-400">
-                    {alert.alertType === 'stock'
-                      ? `Stock actual: ${alert.stock_actual} (Mín: ${alert.stock_minimo})`
-                      : `Venció el: ${alert.fechaven_prod ? new Date(alert.fechaven_prod).toLocaleDateString() : 'Desconocido'}`}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setPreviewData({ isOpen: true, type: alert.alertType, product: alert })}
-                    className="w-full rounded-2xl bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-kiora-red hover:text-white h-12 gap-2"
-                  >
-                    <Mail className="w-4 h-4" />
-                    Ver Notificación
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-            {alerts.length === 0 && !isLoading && (
-              <div className="col-span-full py-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-                <p className="text-sm font-bold text-slate-400">No hay alertas activas en este momento.</p>
-                <p className="text-xs text-slate-400 mt-1">El sistema notificará automáticamente cuando ocurra una incidencia.</p>
+      {/* ALERTAS */}
+      {activeTab === 'alertas' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {alerts.length > 0 ? (
+            alerts.map((alert) => (
+              <div key={`${alert.alertType}-${alert.cod_prod}`} className="bg-surface rounded-xl border border-outline-variant/30 p-5 hover:shadow-md hover:border-primary/20 transition-all group">
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-semibold flex items-center gap-1 ${
+                    alert.alertType === 'stock' ? 'bg-error-container/30 text-error' : 'bg-secondary-container/20 text-secondary-container'
+                  }`}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>warning</span>
+                    {alert.alertType === 'stock' ? 'Stock Bajo' : 'Caducado'}
+                  </span>
+                </div>
+                <h3 className="label-md text-on-surface break-words mb-1">{alert.nom_prod}</h3>
+                <p className="label-sm text-on-surface-variant mb-4">
+                  {alert.alertType === 'stock'
+                    ? `Stock actual: ${alert.stock_actual} (Mín: ${alert.stock_minimo})`
+                    : `Venció el: ${alert.fechaven_prod ? new Date(alert.fechaven_prod).toLocaleDateString() : 'Desconocido'}`}
+                </p>
+                <button
+                  onClick={() => setPreviewData({ isOpen: true, type: alert.alertType, product: alert })}
+                  className="w-full py-2.5 rounded-lg bg-surface-container-high text-on-surface-variant label-sm hover:bg-primary hover:text-on-primary transition-all flex items-center justify-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>mail</span>
+                  Ver Notificación
+                </button>
               </div>
-            )}
-          </div>
-        </TabsContent>
+            ))
+          ) : !isLoading ? (
+            <div className="col-span-full py-16 text-center bg-surface rounded-xl border border-dashed border-outline-variant/50">
+              <span className="material-symbols-outlined text-4xl text-outline-variant mb-3">notifications_off</span>
+              <p className="label-md text-on-surface-variant">No hay alertas activas</p>
+              <p className="body-md text-on-surface-variant/70 mt-1">El sistema notificará automáticamente cuando ocurra una incidencia.</p>
+            </div>
+          ) : null}
+        </div>
+      )}
 
-        <TabsContent value="incidencias" className="space-y-6 mt-0 focus-visible:outline-none">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest px-2">Reportes Técnicos</h3>
+      {/* INCIDENCIAS */}
+      {activeTab === 'incidencias' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="label-md text-on-surface-variant">Reportes Técnicos</h3>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
+              <button
                 onClick={() => handleExportIncidents('excel')}
-                className="rounded-xl bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all gap-2 text-[10px] font-black uppercase tracking-widest h-10 px-4"
+                className="flex items-center gap-1.5 rounded-lg bg-tertiary/10 px-3.5 py-2 label-sm text-tertiary border border-tertiary/20 hover:bg-tertiary/20 transition-all"
               >
-                <FileSpreadsheet className="w-4 h-4" /> Excel
-              </Button>
-              <Button
-                variant="outline"
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>table_chart</span>
+                Excel
+              </button>
+              <button
                 onClick={() => handleExportIncidents('pdf')}
-                className="rounded-xl bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white transition-all gap-2 text-[10px] font-black uppercase tracking-widest h-10 px-4"
+                className="flex items-center gap-1.5 rounded-lg bg-primary-fixed/30 px-3.5 py-2 label-sm text-primary-container border border-primary-fixed/50 hover:bg-primary-fixed/50 transition-all"
               >
-                <FileText className="w-4 h-4" /> PDF
-              </Button>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>picture_as_pdf</span>
+                PDF
+              </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {incidents.map((inc) => (
-              <Card key={inc.id_rep} className="border-none shadow-xl shadow-slate-100/50 rounded-[2.5rem] overflow-hidden bg-white hover:ring-2 hover:ring-kiora-red/10 transition-all">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {incidents.length > 0 ? (
+              incidents.map((inc) => (
+                <div key={inc.id_rep} className="bg-surface rounded-xl border border-outline-variant/30 p-5 hover:shadow-md transition-all">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 ${inc.prioridad === 'alta' ? 'bg-red-100 text-red-600' :
-                            inc.prioridad === 'media' ? 'bg-amber-100 text-amber-600' :
-                              'bg-blue-100 text-blue-600'
-                          }`}>
-                          <div className="w-1 h-1 rounded-full bg-current" /> {inc.prioridad}
-                        </div>
-                        <div className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 ${inc.estado === 'resuelto' ? 'bg-emerald-100 text-emerald-600' :
-                            inc.estado === 'en_proceso' ? 'bg-indigo-100 text-indigo-600' :
-                              'bg-slate-100 text-slate-600'
-                          }`}>
-                          {inc.estado === 'resuelto' ? <CheckCircle2 className="w-2 h-2" /> : <Clock className="w-2 h-2" />}
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-semibold flex items-center gap-1 ${
+                          inc.prioridad === 'alta' ? 'bg-error-container/30 text-error' :
+                          inc.prioridad === 'media' ? 'bg-secondary-container/20 text-secondary-container' :
+                          'bg-tertiary/10 text-tertiary'
+                        }`}>
+                          <span className="w-1 h-1 rounded-full bg-current" />
+                          {inc.prioridad}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-semibold flex items-center gap-1 ${
+                          inc.estado === 'resuelto' ? 'bg-tertiary/10 text-tertiary' :
+                          inc.estado === 'en_proceso' ? 'bg-surface-container-high text-on-surface-variant' :
+                          'bg-surface-container-high text-on-surface-variant'
+                        }`}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>
+                            {inc.estado === 'resuelto' ? 'check_circle' : 'schedule'}
+                          </span>
                           {inc.estado.replace('_', ' ')}
-                        </div>
+                        </span>
                       </div>
-                      <CardTitle className="text-lg font-black text-slate-900">{inc.titulo || 'Sin Título'}</CardTitle>
-                      <CardDescription className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <h3 className="label-md text-on-surface">{inc.titulo || 'Sin Título'}</h3>
+                      <p className="label-sm text-on-surface-variant">
                         Reportado el: {new Date(inc.fecha_rep).toLocaleString()}
-                      </CardDescription>
+                      </p>
                     </div>
-                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300">
-                      <LifeBuoy className="w-6 h-6" />
+                    <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface-variant/50 shrink-0">
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>support</span>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <p className="text-sm text-slate-600 leading-relaxed bg-slate-50/50 p-4 rounded-2xl italic border border-slate-50 min-h-[80px]">
-                    "{inc.descripcion}"
-                  </p>
 
-                  <div className="flex items-center gap-2 pt-4 border-t border-slate-50">
-                    <span className="text-[10px] font-black uppercase text-slate-400 mr-2">Acciones:</span>
+                  <div className="bg-surface-container rounded-lg border border-outline-variant/20 p-4 body-md text-on-surface-variant italic mb-4 min-h-[60px]">
+                    "{inc.descripcion}"
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-3 border-t border-outline-variant/30">
                     {inc.estado !== 'resuelto' && (
-                      <Button
-                        size="sm"
+                      <button
                         onClick={() => updateIncidentStatus(inc.id_rep, 'resuelto')}
-                        className="rounded-xl bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase hover:bg-emerald-600 hover:text-white h-9"
+                        className="rounded-lg bg-tertiary/10 text-tertiary label-sm px-3 py-1.5 hover:bg-tertiary hover:text-on-tertiary transition-all"
                       >
                         Resolver
-                      </Button>
+                      </button>
                     )}
                     {inc.estado === 'pendiente' && (
-                      <Button
-                        size="sm"
+                      <button
                         onClick={() => updateIncidentStatus(inc.id_rep, 'en_proceso')}
-                        className="rounded-xl bg-indigo-50 text-indigo-600 text-[9px] font-black uppercase hover:bg-indigo-600 hover:text-white h-9"
+                        className="rounded-lg bg-surface-container-high text-on-surface-variant label-sm px-3 py-1.5 hover:bg-primary hover:text-on-primary transition-all"
                       >
                         En Proceso
-                      </Button>
+                      </button>
                     )}
                     {inc.estado === 'resuelto' && (
-                      <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1 px-3">
-                        <CheckCircle2 className="w-4 h-4" />
+                      <span className="label-sm text-tertiary flex items-center gap-1 px-2">
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check_circle</span>
                         Caso Cerrado
                       </span>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
+                    <button
                       onClick={() => handleExportSingleIncident(inc)}
-                      className="ml-auto rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50"
+                      className="ml-auto p-1.5 rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary-fixed/30 transition-all"
                       title="Exportar esta incidencia"
                     >
-                      <Download className="w-4 h-4" />
-                    </Button>
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
+                    </button>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-            {incidents.length === 0 && !isLoading && (
-              <div className="col-span-full py-32 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-                <p className="text-lg font-black text-slate-300">No hay incidencias técnicas reportadas.</p>
-                <p className="text-xs text-slate-400 mt-2 font-medium">El canal de soporte interno está despejado.</p>
+                </div>
+              ))
+            ) : !isLoading ? (
+              <div className="col-span-full py-16 text-center bg-surface rounded-xl border border-dashed border-outline-variant/50">
+                <span className="material-symbols-outlined text-4xl text-outline-variant mb-3">support</span>
+                <p className="headline-sm text-on-surface mb-1">No hay incidencias técnicas reportadas</p>
+                <p className="body-md text-on-surface-variant">El canal de soporte interno está despejado.</p>
               </div>
-            )}
+            ) : null}
           </div>
-        </TabsContent>
-        <TabsContent value="inventario" className="space-y-6 sm:space-y-8 mt-0 focus-visible:outline-none">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-6">
-            <Card className="rounded-[1.5rem] sm:rounded-[2rem] border-none shadow-lg bg-white p-1">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] sm:tracking-widest text-slate-400 mb-1">Total Prod.</CardTitle>
-                <div className="text-2xl sm:text-4xl font-black text-slate-900 leading-none">{reportData.length || '---'}</div>
-              </CardHeader>
-            </Card>
-            <Card className="rounded-[1.5rem] sm:rounded-[2rem] border-none shadow-lg bg-white p-1">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] sm:tracking-widest text-red-400 mb-1">Bajo Stock</CardTitle>
-                <div className="text-2xl sm:text-4xl font-black text-red-600 leading-none">{alerts.filter(a => a.alertType === 'stock').length}</div>
-              </CardHeader>
-            </Card>
-            <Card className="rounded-[1.5rem] sm:rounded-[2rem] border-none shadow-lg bg-white p-1 col-span-2 sm:col-span-1">
-              <CardHeader className="p-4 sm:p-6 flex flex-row items-center justify-between sm:block">
-                <div>
-                   <CardTitle className="text-[9px] sm:text-xs font-black uppercase tracking-[0.1em] sm:tracking-widest text-amber-400 mb-1">Por Vencer</CardTitle>
-                   <div className="text-2xl sm:text-4xl font-black text-amber-600 leading-none">{alerts.filter(a => a.alertType === 'expired').length}</div>
-                </div>
-                <div className="sm:hidden w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
-                   <Bell className="w-5 h-5" />
-                </div>
-              </CardHeader>
-            </Card>
+        </div>
+      )}
+
+      {/* INVENTARIO */}
+      {activeTab === 'inventario' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="bg-surface rounded-xl border border-outline-variant/30 p-5">
+              <p className="label-sm text-on-surface-variant mb-1">Total Prod.</p>
+              <p className="headline-lg text-on-surface">{reportData.length || '---'}</p>
+            </div>
+            <div className="bg-surface rounded-xl border border-outline-variant/30 p-5">
+              <p className="label-sm text-error mb-1">Bajo Stock</p>
+              <p className="headline-lg text-error">{alerts.filter(a => a.alertType === 'stock').length}</p>
+            </div>
+            <div className="bg-surface rounded-xl border border-outline-variant/30 p-5 col-span-2 sm:col-span-1">
+              <p className="label-sm text-secondary-container mb-1">Por Vencer</p>
+              <p className="headline-lg text-secondary-container">{alerts.filter(a => a.alertType === 'expired').length}</p>
+            </div>
           </div>
 
-          <Card className="rounded-[2rem] sm:rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
-            <CardHeader className="border-b border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 sm:p-8">
+          <div className="bg-surface rounded-xl border border-outline-variant/30 overflow-hidden">
+            <div className="px-5 py-4 border-b border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-lg sm:text-xl font-black text-slate-900">Estado General del Inventario</CardTitle>
-                <CardDescription className="font-medium text-slate-500">Resumen de existencias y valorización estimada</CardDescription>
+                <h3 className="label-md text-on-surface">Estado General del Inventario</h3>
+                <p className="label-sm text-on-surface-variant">Resumen de existencias y valorización estimada</p>
               </div>
-              <Button onClick={() => useInventoryStore.getState().notifyStockChange()} size="sm" variant="outline" className="rounded-xl font-black text-[10px] uppercase tracking-widest h-10 w-full sm:w-auto">
+              <button
+                onClick={() => useInventoryStore.getState().notifyStockChange()}
+                className="rounded-lg border border-outline-variant/50 bg-surface px-3.5 py-2 label-sm text-on-surface-variant hover:bg-surface-container-low transition-all"
+              >
                 Actualizar Datos
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="p-8 text-center bg-slate-50/50">
-                <BarChart3 className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                <p className="text-slate-500 font-medium">Gráficos de rotación de inventario próximamente disponibles.</p>
-                <p className="text-xs text-slate-400 mt-1">Utiliza la pestaña "Generar" para obtener tablas detalladas de existencias.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </button>
+            </div>
+            <div className="p-8 text-center bg-surface-container-low">
+              <span className="material-symbols-outlined text-4xl text-outline-variant mb-3">bar_chart</span>
+              <p className="body-md text-on-surface-variant">Gráficos de rotación de inventario próximamente disponibles.</p>
+              <p className="label-sm text-on-surface-variant/70 mt-1">Utiliza la pestaña "Generar" para obtener tablas detalladas.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {previewData.isOpen && previewData.product !== null && (
         <EmailPreviewModal

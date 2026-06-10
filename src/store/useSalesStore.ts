@@ -16,6 +16,7 @@ interface StripeQR {
 const EMPTY_ORDER: CreateOrderDto = {
   metodopago_usu: 'efectivo',
   items: [],
+  descuento_global: 0,
 };
 
 interface SalesState {
@@ -91,7 +92,7 @@ export const useSalesStore = create<SalesState>()(
                 {
                   cod_prod: pId,
                   cantidad: 1,
-                  precio_unit: Number(p.precio_prod || 0),
+                  precio_unit: Number(p.precio_prod || 0) * (p.descuento ? (1 - p.descuento / 100) : 1),
                   nom_prod: p.nom_prod || 'Producto sin nombre',
                   url_imagen: p.imagen_prod,
                   stock_actual: stock,
@@ -177,7 +178,7 @@ export const useSalesStore = create<SalesState>()(
 
             const order = await orderService.createOrder(candidateOrder);
 
-            if (candidateOrder.metodopago_usu === 'tarjeta' && order.id_vent) {
+            if (candidateOrder.metodopago_usu === 'digital' && order.id_vent) {
               try {
                 const { checkoutUrl } = await orderService.createCheckoutSession(order.id_vent);
                 if (!checkoutUrl) throw new Error('No se recibió URL de checkout.');

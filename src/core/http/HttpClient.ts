@@ -97,11 +97,26 @@ export class FetchHttpClient implements IHttpClient {
       const responseData = isJson ? await response.json() : null;
 
       if (!response.ok) {
+        // ── Auto-logout on 401/403 (except known business-logic codes) ──
+        const isAuthError = response.status === 401
+          || (response.status === 403 && !responseData?.code?.startsWith?.('BUSINESS_'));
+        if (isAuthError && !endpoint.includes('/auth/login')) {
+          localStorage.removeItem('kiora_token');
+          localStorage.removeItem('kiora_user');
+          window.location.href = '/login/';
+          return {
+            data: null,
+            error: 'Sesión expirada. Redirigiendo al login...',
+            status: response.status,
+            ok: false,
+          };
+        }
+
         const errorMsg = errorMessageFromResponseBody(responseData, response.status);
-        this.logger?.error(`API Error: ${response.status} on ${endpoint}`, { 
-          status: response.status, 
-          endpoint, 
-          responseData 
+        this.logger?.error(`API Error: ${response.status} on ${endpoint}`, {
+          status: response.status,
+          endpoint,
+          responseData
         });
         return {
           data: null,

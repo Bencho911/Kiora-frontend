@@ -37,6 +37,7 @@ export function StripeQRModal({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const pollErrors = useRef(0);
+  const minDisplayTime = useRef(Date.now());
 
   const isPaidStatus = (status?: string) => {
     const normalized = String(status ?? '').toLowerCase();
@@ -58,13 +59,14 @@ export function StripeQRModal({
     setPaymentError(null);
     pollErrors.current = 0;
     setPolling(true);
+    minDisplayTime.current = Date.now() + 4000; // Mostrar QR mínimo 4 segundos
 
     const interval = setInterval(async () => {
       try {
         const order = await orderService.getOrderById(orderId);
         pollErrors.current = 0;
 
-        if (isPaidStatus(order.estado)) {
+        if (isPaidStatus(order.estado) && Date.now() >= minDisplayTime.current) {
           clearInterval(interval);
           setPolling(false);
           alertService.showToast('success', '¡Pago confirmado con éxito!');

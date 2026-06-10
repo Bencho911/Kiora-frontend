@@ -97,32 +97,115 @@ export class OrderService {
     try {
       const res = await this.getOrders(1, 1000);
       const orders = Array.isArray(res) ? res : (res.data || []);
+      const pageWidth = 210; // A4 mm
 
-      const doc = new jsPDF();
-      doc.setFontSize(20);
-      doc.setTextColor(236, 19, 30);
-      doc.text('KIORA - Reporte de Ventas', 14, 20);
+      const doc = new jsPDF('landscape');
 
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Fecha de generación: ${new Date().toLocaleString()}`, 14, 28);
+      // ── Header bar ──
+      doc.setFillColor(236, 19, 30);
+      doc.rect(0, 0, doc.internal.pageSize.getWidth(), 6, 'F');
 
+      // ── Title ──
+      doc.setFontSize(22);
+      doc.setTextColor(26, 26, 26);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Reporte de Ventas', 14, 22);
+
+      doc.setFontSize(8);
+      doc.setTextColor(107, 114, 128);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Kiora Micro-Market — Generado el: ${new Date().toLocaleString('es-CO')}`, 14, 30);
+
+      // Línea decorativa
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.5);
+      doc.line(14, 34, doc.internal.pageSize.getWidth() - 14, 34);
+
+      // ── Summary cards ──
+      const totalOrders = orders.length;
       const totalMonto = orders.reduce((sum, o) => sum + Number(o.montofinal_vent || 0), 0);
+      const avgTicket = totalOrders > 0 ? totalMonto / totalOrders : 0;
+      const paidOrders = orders.filter(o => ['pagado', 'pagada', 'completada'].includes((o.estado || '').toLowerCase())).length;
+
+      const summaryY = 42;
+      const cardW = 52;
+      const cardGap = 4;
+      const cardStartX = 14;
+
+      const summaryData = [
+        { label: 'Total Ventas', value: totalOrders.toString(), color: [59, 130, 246] },
+        { label: 'Ingresos', value: `$${totalMonto.toLocaleString('es-CO')}`, color: [16, 185, 129] },
+        { label: 'Ticket Promedio', value: `$${Math.round(avgTicket).toLocaleString('es-CO')}`, color: [245, 158, 11] },
+        { label: 'Completadas', value: paidOrders.toString(), color: [139, 92, 246] },
+      ];
+
+      summaryData.forEach((item, i) => {
+        const x = cardStartX + i * (cardW + cardGap);
+        doc.setFillColor(249, 250, 251);
+        doc.roundedRect(x, summaryY, cardW, 20, 3, 3, 'F');
+        doc.setFontSize(7);
+        doc.setTextColor(107, 114, 128);
+        doc.setFont('helvetica', 'normal');
+        doc.text(item.label, x + 4, summaryY + 6);
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(item.color[0], item.color[1], item.color[2]);
+        doc.text(item.value, x + 4, summaryY + 17);
+      });
+
+      // ── Table ──
       const tableData = orders.map(o => [
         `#${o.id_vent}`,
-        o.fecha_vent ? new Date(o.fecha_vent).toLocaleDateString() : '—',
+        o.fecha_vent ? new Date(o.fecha_vent).toLocaleDateString('es-CO') : '—',
         (o.metodopago_usu || 'Efectivo').toUpperCase(),
         (o.estado || 'Pendiente').toUpperCase(),
         `$${Number(o.montofinal_vent || 0).toLocaleString('es-CO')}`
       ]);
 
       autoTable(doc, {
-        startY: 35,
-        head: [['ID', 'Fecha', 'Método Pago', 'Estado', 'Monto']],
+        startY: 70,
+        head: [['ID', 'Fecha', 'Método de Pago', 'Estado', 'Monto']],
         body: tableData,
         foot: [['', '', '', 'TOTAL:', `$${totalMonto.toLocaleString('es-CO')}`]],
-        headStyles: { fillColor: [236, 19, 30] },
-        footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+        margin: { left: 14, right: 14, top: 30, bottom: 20 },
+        headStyles: {
+          fillColor: [236, 19, 30],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9,
+          halign: 'center',
+        },
+        bodyStyles: {
+          fontSize: 8,
+          textColor: [42, 42, 42],
+        },
+        alternateRowStyles: {
+          fillColor: [249, 250, 251],
+        },
+        footStyles: {
+          fillColor: [240, 240, 240],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          fontSize: 9,
+        },
+        columnStyles: {
+          0: { cellPadding: { left: 6, right: 6, top: 3, bottom: 3 } },
+          4: { halign: 'right' },
+        },
+        didDrawPage: (data) => {
+          const pageCount = doc.getNumberOfPages();
+          const pageNum = doc.getCurrentPageInfo().pageNumber;
+          doc.setFontSize(7);
+          doc.setTextColor(156, 163, 175);
+          doc.setFont('helvetica', 'normal');
+          doc.text(
+            `Página ${pageNum} de ${pageCount}`,
+            doc.internal.pageSize.getWidth() - 14,
+            doc.internal.pageSize.getHeight() - 10,
+            { align: 'right' }
+          );
+          doc.text('Kiora — Sistema de Venta Automatizada 24/7', 14, doc.internal.pageSize.getHeight() - 10);
+        },
       });
 
       doc.save(`kiora_ventas_${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -138,7 +221,22 @@ export class OrderService {
       const orders = Array.isArray(response.data) ? response.data : (response.data?.data || []);
 
       const totalMonto = orders.reduce((sum: number, o: any) => sum + Number(o.montofinal_vent || 0), 0);
+      const totalOrders = orders.length;
+      const paidOrders = orders.filter((o: any) => ['pagado', 'pagada', 'completada'].includes((o.estado || '').toLowerCase())).length;
+      const avgTicket = totalOrders > 0 ? totalMonto / totalOrders : 0;
+
+      // Fecha en que se generó
+      const now = new Date().toLocaleString('es-CO');
+
+      // Datos principales
       const data = [
+        { 'ID Venta': '', 'Fecha': '', 'Método Pago': '', 'Estado': '', 'Total ($)': '' },
+        { 'ID Venta': 'REPORTE DE VENTAS — Kiora Micro-Market', 'Fecha': '', 'Método Pago': '', 'Estado': '', 'Total ($)': '' },
+        { 'ID Venta': `Generado: ${now}`, 'Fecha': '', 'Método Pago': '', 'Estado': '', 'Total ($)': '' },
+        { 'ID Venta': '', 'Fecha': '', 'Método Pago': '', 'Estado': '', 'Total ($)': '' },
+        { 'ID Venta': 'Total Ventas', 'Fecha': String(totalOrders), 'Método Pago': 'Completadas', 'Estado': String(paidOrders), 'Total ($)': `Ticket Prom: $${Math.round(avgTicket).toLocaleString('es-CO')}` },
+        { 'ID Venta': '', 'Fecha': '', 'Método Pago': '', 'Estado': '', 'Total ($)': '' },
+        { 'ID Venta': 'ID Venta', 'Fecha': 'Fecha', 'Método Pago': 'Método Pago', 'Estado': 'Estado', 'Total ($)': 'Total ($)' },
         ...orders.map((o: any) => ({
           'ID Venta': o.id_vent,
           'Fecha': o.fecha_vent ? new Date(o.fecha_vent).toLocaleString('es-CO') : '—',
@@ -146,24 +244,34 @@ export class OrderService {
           'Estado': (o.estado || 'Pendiente').toUpperCase(),
           'Total ($)': Number(o.montofinal_vent || 0)
         })),
-        {
-          'ID Venta': '',
-          'Fecha': '',
-          'Método Pago': '',
-          'Estado': 'TOTAL:',
-          'Total ($)': totalMonto
-        }
+        { 'ID Venta': '', 'Fecha': '', 'Método Pago': '', 'Estado': '', 'Total ($)': '' },
+        { 'ID Venta': 'TOTAL', 'Fecha': '', 'Método Pago': '', 'Estado': '', 'Total ($)': totalMonto },
       ];
 
-      const worksheet = XLSX.utils.json_to_sheet(data);
+      const worksheet = XLSX.utils.json_to_sheet(data, { skipHeader: true });
+
+      // Anchos de columna
+      worksheet['!cols'] = [
+        { wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 14 }, { wch: 18 }
+      ];
+
+      // Congelar fila de encabezado (fila 7)
+      worksheet['!freeze'] = { x: 0, y: 7 };
+
+      // Auto-filtro en el encabezado
+      const lastRow = data.length;
+      worksheet['!autofilter'] = { ref: `A7:E${lastRow}` };
+
+      // Formato de moneda en columna E (desde fila 8 hasta la última)
+      for (let i = 8; i <= lastRow; i++) {
+        const cell = worksheet[XLSX.utils.encode_cell({ r: i - 1, c: 4 })];
+        if (cell && typeof cell.v === 'number') {
+          cell.z = '$#,##0';
+        }
+      }
+
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Ventas Kiora");
-
-      // Auto-ajustar anchos de columna básicos
-      const wscols = [
-        { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
-      ];
-      worksheet['!cols'] = wscols;
 
       XLSX.writeFile(workbook, `kiora_reporte_ventas_${new Date().toISOString().slice(0, 10)}.xlsx`);
     } catch (e) {
@@ -315,7 +423,18 @@ export class OrderService {
       const invoices = Array.isArray(response.data) ? response.data : (response.data || []);
 
       const totalMonto = invoices.reduce((sum, f) => sum + Number(f.total_fact || 0), 0);
+      const totalCount = invoices.length;
+
+      const now = new Date().toLocaleString('es-CO');
+
       const data = [
+        { 'ID Factura': '', 'Fecha': '', 'ID Venta': '', 'Cantidad Items': '', 'Monto Total ($)': '' },
+        { 'ID Factura': 'REPORTE DE FACTURAS — Kiora Micro-Market', 'Fecha': '', 'ID Venta': '', 'Cantidad Items': '', 'Monto Total ($)': '' },
+        { 'ID Factura': `Generado: ${now}`, 'Fecha': '', 'ID Venta': '', 'Cantidad Items': '', 'Monto Total ($)': '' },
+        { 'ID Factura': '', 'Fecha': '', 'ID Venta': '', 'Cantidad Items': '', 'Monto Total ($)': '' },
+        { 'ID Factura': `Total Facturas: ${totalCount}`, 'Fecha': '', 'ID Venta': '', 'Cantidad Items': '', 'Monto Total ($)': '' },
+        { 'ID Factura': '', 'Fecha': '', 'ID Venta': '', 'Cantidad Items': '', 'Monto Total ($)': '' },
+        { 'ID Factura': 'ID Factura', 'Fecha': 'Fecha', 'ID Venta': 'ID Venta', 'Cantidad Items': 'Cantidad', 'Monto Total ($)': 'Monto Total ($)' },
         ...invoices.map(f => ({
           'ID Factura': f.id_fact,
           'Fecha': f.fecha_fact ? new Date(f.fecha_fact).toLocaleString('es-CO') : '—',
@@ -323,23 +442,28 @@ export class OrderService {
           'Cantidad Items': f.cantidad_vent,
           'Monto Total ($)': Number(f.total_fact || 0)
         })),
-        {
-          'ID Factura': '',
-          'Fecha': '',
-          'ID Venta': '',
-          'Cantidad Items': 'TOTAL:',
-          'Monto Total ($)': totalMonto
-        }
+        { 'ID Factura': '', 'Fecha': '', 'ID Venta': '', 'Cantidad Items': '', 'Monto Total ($)': '' },
+        { 'ID Factura': 'TOTAL', 'Fecha': '', 'ID Venta': '', 'Cantidad Items': '', 'Monto Total ($)': totalMonto },
       ];
 
-      const worksheet = XLSX.utils.json_to_sheet(data);
+      const worksheet = XLSX.utils.json_to_sheet(data, { skipHeader: true });
+      worksheet['!cols'] = [
+        { wch: 14 }, { wch: 22 }, { wch: 12 }, { wch: 16 }, { wch: 18 }
+      ];
+      worksheet['!freeze'] = { x: 0, y: 7 };
+
+      const lastRow = data.length;
+      worksheet['!autofilter'] = { ref: `A7:E${lastRow}` };
+
+      for (let i = 8; i <= lastRow; i++) {
+        const cell = worksheet[XLSX.utils.encode_cell({ r: i - 1, c: 4 })];
+        if (cell && typeof cell.v === 'number') {
+          cell.z = '$#,##0';
+        }
+      }
+
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Facturas Kiora");
-
-      const wscols = [
-        { wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 18 }
-      ];
-      worksheet['!cols'] = wscols;
 
       XLSX.writeFile(workbook, `kiora_reporte_facturas_${new Date().toISOString().slice(0, 10)}.xlsx`);
     } catch (e) {

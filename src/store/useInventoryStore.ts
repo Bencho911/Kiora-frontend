@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { productService } from '@/config/setup';
 import { pushAppNotification } from '@/lib/pushAppNotification';
+import { getCache, setCache } from '@/lib/cache';
 
 let lastLowStockPush = 0;
 import type { Product, Category } from '@/models/Product';
@@ -31,9 +32,17 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
   fetchProducts: async () => {
     set({ isLoading: true });
+
+    // Cargar desde caché primero
+    const cached = getCache<Product[]>('products');
+    if (cached) {
+      const map: Record<string, string> = {};
+      cached.forEach((p) => { if (p.cod_prod) map[String(p.cod_prod)] = p.nom_prod; });
+      set({ products: cached, productMap: map, isLoading: false, lastUpdate: Date.now() });
+    }
+
     try {
-      console.log('[InventoryStore] Starting fetchProducts...');
-      const res = await productService.getProducts(); // Usamos valores por defecto (1, 20) como en useProductManager
+      const res = await productService.getProducts(1, 1000);
       const products = res.data || [];
       console.log('[InventoryStore] Products received:', products.length);
       
@@ -42,12 +51,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
         if (p.cod_prod) map[String(p.cod_prod)] = p.nom_prod; 
       });
       
-      set({ 
-        products, 
-        productMap: map, 
-        lastUpdate: Date.now(), 
-        isLoading: false 
+      set({
+        products,
+        productMap: map,
+        lastUpdate: Date.now(),
+        isLoading: false
       });
+      setCache('products', products);
     } catch (error) {
       console.error('[InventoryStore] Error fetching products:', error);
       set({ isLoading: false });
@@ -69,15 +79,6 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       const res = await productService.getLowStock();
       const lowStockItems = res && 'data' in res ? (res as any).data : (Array.isArray(res) ? res : []);
       set({ lowStockItems });
-      if (lowStockItems.length > 0 && Date.now() - lastLowStockPush > 90_000) {
-        lastLowStockPush = Date.now();
-        pushAppNotification(
-          'warning',
-          'Stock bajo',
-          `${lowStockItems.length} producto(s) por debajo del mínimo. Revisa inventario.`,
-          { category: 'stock', toast: false }
-        );
-      }
     } catch (error) {
       console.error('Error fetching low stock in store:', error);
       pushAppNotification('error', 'Inventario', 'No se pudieron cargar las alertas de stock bajo.', {

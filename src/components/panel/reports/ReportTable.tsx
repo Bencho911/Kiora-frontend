@@ -1,9 +1,6 @@
 import React, { useMemo } from 'react';
 import type { ReportFilters, DetailedSalesReport, ProductRankingReport } from '@/services/ReportService';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { FileDown, FileSpreadsheet, Bookmark, BarChart, Info } from 'lucide-react';
 import { ReportChart } from './ReportChart';
 
 interface ReportTableProps {
@@ -36,185 +33,176 @@ export const ReportTable: React.FC<ReportTableProps> = ({
 
   if (data.length === 0) {
     return (
-      <div className="py-24 sm:py-32 flex flex-col items-center justify-center text-center px-8 bg-gradient-to-b from-white to-slate-50 border border-slate-100 rounded-[2.5rem] shadow-sm animate-in fade-in duration-500">
-        <div className="relative mb-6">
-          <div className="absolute inset-0 bg-kiora-red/10 blur-xl rounded-full scale-150 animate-pulse"></div>
-          <div className="relative w-24 h-24 bg-white shadow-xl shadow-slate-200/50 rounded-[2rem] flex items-center justify-center text-kiora-red border border-red-50">
-            <BarChart className="w-12 h-12" />
-          </div>
+      <div className="py-20 flex flex-col items-center text-center bg-surface rounded-xl border border-dashed border-outline-variant/50 animate-in fade-in duration-500">
+        <div className="w-16 h-16 bg-surface-container-high rounded-xl flex items-center justify-center text-on-surface-variant/50 mb-4">
+          <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>bar_chart</span>
         </div>
-        <h4 className="text-slate-800 font-black text-xl mb-2">Análisis de Datos Pendiente</h4>
-        <p className="text-slate-500 text-sm font-medium max-w-sm leading-relaxed">
-          Configura los filtros en el panel superior y presiona <span className="font-bold text-slate-700">Generar Reporte</span> para descubrir insights valiosos sobre tu negocio.
+        <h4 className="headline-sm text-on-surface mb-1">Análisis de Datos Pendiente</h4>
+        <p className="body-md text-on-surface-variant max-w-sm">
+          Configura los filtros y presiona <span className="font-semibold text-on-surface">Generar Reporte</span> para descubrir insights.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <ReportChart data={data} type={filters.reportType} />
 
-      <Card className="border-none shadow-xl shadow-slate-100/50 rounded-[2.5rem] overflow-hidden bg-white">
-        <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-surface rounded-xl border border-outline-variant/30 overflow-hidden">
+        <div className="px-5 py-4 border-b border-outline-variant/30 bg-surface-container-low/50">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle className="font-black text-slate-900 text-lg uppercase tracking-tight">Análisis de Resultados</CardTitle>
-              <CardDescription className="text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Visualización de métricas y datos tabulados</CardDescription>
+              <h3 className="label-md text-on-surface">Análisis de Resultados</h3>
+              <p className="label-sm text-on-surface-variant">Visualización de métricas y datos tabulados</p>
             </div>
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={onSave} 
-                className="rounded-xl border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 h-11 w-11 shadow-sm"
+              <button
+                onClick={onSave}
+                className="rounded-lg bg-primary-fixed/30 text-primary-container p-2.5 border border-primary-fixed/50 hover:bg-primary-fixed/50 transition-all"
+                title="Guardar reporte"
               >
-                <Bookmark className="w-5 h-5" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={onExportExcel} 
-                className="rounded-xl border-emerald-100 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 h-11 w-11 shadow-sm"
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>bookmark</span>
+              </button>
+              <button
+                onClick={onExportExcel}
+                className="rounded-lg bg-tertiary/10 text-tertiary p-2.5 border border-tertiary/20 hover:bg-tertiary/20 transition-all"
+                title="Exportar a Excel"
               >
-                <FileSpreadsheet className="w-5 h-5" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={onExportPdf} 
-                className="rounded-xl border-red-100 bg-red-50 text-kiora-red hover:bg-red-100 hover:text-red-700 h-11 w-11 shadow-sm"
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>table_chart</span>
+              </button>
+              <button
+                onClick={onExportPdf}
+                className="rounded-lg bg-primary-fixed/30 text-primary-container p-2.5 border border-primary-fixed/50 hover:bg-primary-fixed/50 transition-all"
+                title="Exportar a PDF"
               >
-                <FileDown className="w-5 h-5" />
-              </Button>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>picture_as_pdf</span>
+              </button>
             </div>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="p-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-slate-100 border-b border-slate-100">
-            {filters.reportType === 'ventas_detalladas' && stats ? (
-              <>
-                <div className="p-8 bg-white">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Ingresos Totales
-                  </p>
-                  <p className="text-2xl font-black text-slate-900">$ {stats.totalSales?.toLocaleString('es-CO')}</p>
-                </div>
-                <div className="p-8 bg-white">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> 
-                    {filters.grouping === 'unidad' ? 'Total Unidades' : 'Total Pedidos'}
-                  </p>
-                  <p className="text-2xl font-black text-slate-900">{stats.totalOrders}</p>
-                </div>
-                <div className="p-8 bg-white">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-kiora-red" /> 
-                    {filters.grouping === 'unidad' ? 'Precio Promedio' : 'Ticket Promedio'}
-                  </p>
-                  <p className="text-2xl font-black text-kiora-red">$ {stats.avgTicket?.toLocaleString('es-CO')}</p>
-                </div>
-                <div className="p-8 bg-white">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-900" /> 
-                    Items / Periodos
-                  </p>
-                  <p className="text-2xl font-black text-slate-900">{data.length}</p>
-                </div>
-              </>
-            ) : stats && (
-              <>
-                <div className="p-8 bg-white">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Unidades
-                  </p>
-                  <p className="text-2xl font-black text-slate-900">{stats.totalQty}</p>
-                </div>
-                <div className="p-8 bg-white">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Facturación
-                  </p>
-                  <p className="text-2xl font-black text-slate-900">$ {stats.totalRev?.toLocaleString('es-CO')}</p>
-                </div>
-                <div className="p-8 bg-white col-span-1 sm:col-span-2">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-kiora-red" /> Máximo Impacto
-                  </p>
-                  <p className="text-xl font-black text-kiora-red truncate">{stats.topProduct}</p>
-                </div>
-              </>
-            )}
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-outline-variant/20">
+          {filters.reportType === 'ventas_detalladas' && stats ? (
+            <>
+              <div className="p-5">
+                <p className="label-sm text-on-surface-variant flex items-center gap-2 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Ingresos Totales
+                </p>
+                <p className="headline-md text-on-surface">${stats.totalSales?.toLocaleString('es-CO')}</p>
+              </div>
+              <div className="p-5">
+                <p className="label-sm text-on-surface-variant flex items-center gap-2 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-tertiary" /> {filters.grouping === 'unidad' ? 'Total Unidades' : 'Total Pedidos'}
+                </p>
+                <p className="headline-md text-on-surface">{stats.totalOrders}</p>
+              </div>
+              <div className="p-5">
+                <p className="label-sm text-on-surface-variant flex items-center gap-2 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full text-primary" /> {filters.grouping === 'unidad' ? 'Precio Promedio' : 'Ticket Promedio'}
+                </p>
+                <p className="headline-md text-primary">${stats.avgTicket?.toLocaleString('es-CO')}</p>
+              </div>
+              <div className="p-5">
+                <p className="label-sm text-on-surface-variant flex items-center gap-2 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-on-surface" /> Items / Periodos
+                </p>
+                <p className="headline-md text-on-surface">{data.length}</p>
+              </div>
+            </>
+          ) : stats && (
+            <>
+              <div className="p-5">
+                <p className="label-sm text-on-surface-variant flex items-center gap-2 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Unidades
+                </p>
+                <p className="headline-md text-on-surface">{stats.totalQty}</p>
+              </div>
+              <div className="p-5">
+                <p className="label-sm text-on-surface-variant flex items-center gap-2 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-tertiary" /> Facturación
+                </p>
+                <p className="headline-md text-on-surface">${stats.totalRev?.toLocaleString('es-CO')}</p>
+              </div>
+              <div className="p-5 col-span-1 sm:col-span-2">
+                <p className="label-sm text-on-surface-variant flex items-center gap-2 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full text-primary" /> Máximo Impacto
+                </p>
+                <p className="headline-sm text-primary truncate">{stats.topProduct}</p>
+              </div>
+            </>
+          )}
+        </div>
 
-          <div className="p-4">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-none hover:bg-transparent">
-                  {filters.reportType === 'ventas_detalladas' ? (
-                    <>
-                      <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-6 h-14">
-                        {filters.grouping === 'unidad' ? 'Producto / Pedido' : 'Periodo Temporal'}
-                      </TableHead>
-                      <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-6 h-14">
-                        {filters.grouping === 'unidad' ? 'Subtotal' : 'Ventas Netas'}
-                      </TableHead>
-                      <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-6 h-14">
-                        {filters.grouping === 'unidad' ? 'Unidades' : 'Volumen'}
-                      </TableHead>
-                      <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-6 h-14">
-                        {filters.grouping === 'unidad' ? 'Precio Unit.' : 'Ticket'}
-                      </TableHead>
-                    </>
-                  ) : (
-                    <>
-                      <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-6 h-14 w-20">Pos.</TableHead>
-                      <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-6 h-14">Producto</TableHead>
-                      <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-6 h-14">SKU</TableHead>
-                      <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-6 h-14">Rotación</TableHead>
-                      <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-6 h-14 text-right">Recaudación</TableHead>
-                    </>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+        <div className="p-4 border-t border-outline-variant/20">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-none hover:bg-transparent">
                 {filters.reportType === 'ventas_detalladas' ? (
-                  (data as DetailedSalesReport[]).map((row, idx) => (
-                    <TableRow key={idx} className="group hover:bg-slate-50/50 transition-colors border-slate-50">
-                      <TableCell className="px-6 py-5 text-sm font-black text-slate-900 uppercase">{row.period}</TableCell>
-                      <TableCell className="px-6 py-5 text-sm font-bold text-slate-600">$ {row.totalSales.toLocaleString('es-CO')}</TableCell>
-                      <TableCell className="px-6 py-5 text-sm font-bold text-slate-600">{row.orderCount} {filters.grouping === 'unidad' ? 'uds' : 'ops'}</TableCell>
-                      <TableCell className="px-6 py-5 text-sm font-black text-kiora-red">$ {row.averageTicket.toLocaleString('es-CO')}</TableCell>
-                    </TableRow>
-                  ))
+                  <>
+                    <TableHead className="label-sm text-on-surface-variant font-semibold px-4 h-12">
+                      {filters.grouping === 'unidad' ? 'Producto / Pedido' : 'Periodo'}
+                    </TableHead>
+                    <TableHead className="label-sm text-on-surface-variant font-semibold px-4 h-12">
+                      {filters.grouping === 'unidad' ? 'Subtotal' : 'Ventas Netas'}
+                    </TableHead>
+                    <TableHead className="label-sm text-on-surface-variant font-semibold px-4 h-12">
+                      {filters.grouping === 'unidad' ? 'Unidades' : 'Volumen'}
+                    </TableHead>
+                    <TableHead className="label-sm text-on-surface-variant font-semibold px-4 h-12">
+                      {filters.grouping === 'unidad' ? 'Precio Unit.' : 'Ticket'}
+                    </TableHead>
+                  </>
                 ) : (
-                  (data as ProductRankingReport[]).map((row, idx) => (
-                    <TableRow key={idx} className="group hover:bg-slate-50/50 transition-colors border-slate-50">
-                      <TableCell className="px-6 py-5">
-                        <span className={`w-8 h-8 flex items-center justify-center rounded-xl text-[10px] font-black ${idx < 3 ? 'bg-red-50 text-kiora-red shadow-sm ring-1 ring-red-100' : 'bg-slate-100 text-slate-400'}`}>
-                          {row.position}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-6 py-5 text-sm font-bold text-slate-900">{row.productName}</TableCell>
-                      <TableCell className="px-6 py-5 text-xs font-mono font-bold text-slate-400">#{row.productCode}</TableCell>
-                      <TableCell className="px-6 py-5 text-sm font-black text-slate-600">{row.quantitySold} uds</TableCell>
-                      <TableCell className="px-6 py-5 text-sm font-black text-slate-900 text-right">$ {row.totalRevenue.toLocaleString('es-CO')}</TableCell>
-                    </TableRow>
-                  ))
+                  <>
+                    <TableHead className="label-sm text-on-surface-variant font-semibold px-4 h-12 w-16">Pos.</TableHead>
+                    <TableHead className="label-sm text-on-surface-variant font-semibold px-4 h-12">Producto</TableHead>
+                    <TableHead className="label-sm text-on-surface-variant font-semibold px-4 h-12">SKU</TableHead>
+                    <TableHead className="label-sm text-on-surface-variant font-semibold px-4 h-12">Rotación</TableHead>
+                    <TableHead className="label-sm text-on-surface-variant font-semibold px-4 h-12 text-right">Recaudación</TableHead>
+                  </>
                 )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <div className="flex items-center gap-3 p-6 bg-slate-50 rounded-3xl border border-slate-100">
-        <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-50">
-          <Info className="w-5 h-5" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filters.reportType === 'ventas_detalladas' ? (
+                (data as DetailedSalesReport[]).map((row, idx) => (
+                  <TableRow key={idx} className="hover:bg-surface-container-low transition-colors">
+                    <TableCell className="px-4 py-4 label-md text-on-surface">{row.period}</TableCell>
+                    <TableCell className="px-4 py-4 body-md text-on-surface-variant">${row.totalSales.toLocaleString('es-CO')}</TableCell>
+                    <TableCell className="px-4 py-4 body-md text-on-surface-variant">{row.orderCount} {filters.grouping === 'unidad' ? 'uds' : 'ops'}</TableCell>
+                    <TableCell className="px-4 py-4 label-md text-primary">${row.averageTicket.toLocaleString('es-CO')}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                (data as ProductRankingReport[]).map((row, idx) => (
+                  <TableRow key={idx} className="hover:bg-surface-container-low transition-colors">
+                    <TableCell className="px-4 py-4">
+                      <span className={`w-7 h-7 flex items-center justify-center rounded-lg text-[10px] font-bold ${
+                        idx < 3 ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-on-surface-variant'
+                      }`}>
+                        {row.position}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-4 py-4 label-md text-on-surface">{row.productName}</TableCell>
+                    <TableCell className="px-4 py-4 label-sm text-on-surface-variant font-mono">#{row.productCode}</TableCell>
+                    <TableCell className="px-4 py-4 body-md text-on-surface-variant">{row.quantitySold} uds</TableCell>
+                    <TableCell className="px-4 py-4 label-md text-on-surface text-right">${row.totalRevenue.toLocaleString('es-CO')}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 p-4 bg-surface-container rounded-lg border border-outline-variant/20">
+        <div className="w-9 h-9 bg-surface rounded-lg flex items-center justify-center text-on-surface-variant/50 border border-outline-variant/30">
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>info</span>
         </div>
         <div>
-          <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Nota de Auditoría</p>
-          <p className="text-xs font-medium text-slate-500">Los datos presentados corresponden a transacciones liquidadas y conciliadas en el sistema hasta la fecha actual.</p>
+          <p className="label-sm text-on-surface-variant">Nota de Auditoría</p>
+          <p className="body-md text-on-surface-variant">Los datos presentados corresponden a transacciones liquidadas y conciliadas en el sistema.</p>
         </div>
       </div>
     </div>

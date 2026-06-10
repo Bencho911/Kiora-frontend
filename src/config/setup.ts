@@ -11,6 +11,7 @@ import { MaintenanceService } from "../services/MaintenanceService";
 import { NotificationService } from "../services/NotificationService";
 import { IncidentService } from "../services/IncidentService";
 import { ReportService } from "../services/ReportService";
+import { AiService } from "../services/AiService";
 
 // URL leída desde .env (prefijo PUBLIC_ requerido por Astro para exponerla al cliente)
 // Fallback: backend estable en Azure
@@ -22,8 +23,7 @@ export const API_URL: string =
   "http://20.110.129.152:3000/api";
 
 export const API_KEY: string =
-  (import.meta.env.PUBLIC_KIORA_API_KEY as string | undefined) ??
-  "kiosk_secret_key_2024";
+  (import.meta.env.PUBLIC_KIORA_API_KEY as string | undefined) ?? "";
 
 // Base para imágenes: misma raíz que la API sin el path /api o /api/v1
 export const IMG_BASE: string = API_URL.replace(/\/api(\/v1)?\/?$/, "");
@@ -55,6 +55,7 @@ export const orderService = new OrderService(httpClient, authService);
 export const maintenanceService = new MaintenanceService(httpClient, authService);
 export const incidentService = new IncidentService(httpClient, authService);
 export const reportService = new ReportService(httpClient, authService, productService);
+export const aiService = new AiService(httpClient);
 export const notificationService = new NotificationService();
 
 // AlertService requiere NotificationService para integraciones

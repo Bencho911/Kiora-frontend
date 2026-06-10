@@ -81,8 +81,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── Estrategia: Cache-First para assets estáticos ──
-  const isStaticAsset = /\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|eot|css|js)(\?.*)?$/.test(url.pathname);
+  // ── Estrategia: Cache-First para imágenes y fuentes (excluye CSS/JS por problemas en dev) ──
+  const isStaticAsset = /\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|eot)(\?.*)?$/.test(url.pathname);
   if (isStaticAsset) {
     event.respondWith(
       caches.match(event.request).then((cached) => {

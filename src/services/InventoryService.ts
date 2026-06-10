@@ -87,6 +87,13 @@ export class InventoryService {
     return response.data;
   }
 
+  async getSuministraByProduct(cod_prod: number): Promise<Suministra | null> {
+    const response = await this.httpClient.get<Suministra>(`/inventory/suministra/product/${cod_prod}`, this.getAuthHeaders());
+    if (response.status === 404) return null;
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error al obtener suministra por producto');
+    return response.data;
+  }
+
   // ── Reservations (Redis Based) ───────────────────────────────────────────
   
   async reserveInventory(orderId: number, items: { cod_prod: number; cantidad: number }[]): Promise<void> {
@@ -98,4 +105,19 @@ export class InventoryService {
     const response = await this.httpClient.post('/inventory/reserve/commit', { orderId }, { headers: this.getAuthHeaders() });
     if (!response.ok) throw new Error(response.error || 'Error al confirmar la reserva de inventario');
   }
+
+  // ── Kardex & Alerts ──────────────────────────────────────────────────────
+  
+  async getAlerts(): Promise<any> {
+    const response = await this.httpClient.get<any>('/inventory/alerts', this.getAuthHeaders());
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving inventory alerts');
+    return response.data;
+  }
+
+  async getProductKardex(cod_prod: number): Promise<any> {
+    const response = await this.httpClient.get<any>(`/inventory/products/${cod_prod}/kardex`, this.getAuthHeaders());
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving product kardex');
+    return response.data;
+  }
 }
+

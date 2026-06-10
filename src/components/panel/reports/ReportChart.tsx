@@ -6,7 +6,6 @@ import {
   LineChart,
   Pie,
   PieChart,
-  ResponsiveContainer,
   XAxis,
   YAxis,
   Tooltip,
@@ -15,6 +14,8 @@ import {
   Legend
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ChartContainer } from '@/components/ui/chart';
+import type { ChartConfig } from '@/components/ui/chart';
 
 interface ReportChartProps {
   data: any[];
@@ -34,6 +35,16 @@ export function ReportChart({ data, type }: ReportChartProps) {
       TicketPromedio: d.averageTicket
     }));
 
+    const lineConfig: ChartConfig = {
+      Ventas: { label: 'Ingresos', color: '#ec131e' },
+    };
+    const barConfig: ChartConfig = {
+      Pedidos: { label: 'Pedidos', color: '#0f172a' },
+    };
+    const ticketConfig: ChartConfig = {
+      TicketPromedio: { label: 'Ticket Promedio', color: '#cbd5e1' },
+    };
+
     return (
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
         {/* Gráfico de Líneas - Tendencia de Ventas */}
@@ -44,8 +55,8 @@ export function ReportChart({ data, type }: ReportChartProps) {
               Tendencia lineal del monto de ventas
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-8 pt-6 h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="p-8 pt-6">
+            <ChartContainer config={lineConfig} className="h-[350px]" initialDimension={{ width: 320, height: 350 }}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
@@ -53,7 +64,7 @@ export function ReportChart({ data, type }: ReportChartProps) {
                 <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`$${value.toLocaleString('es-CO')}`, 'Ingresos']} />
                 <Line yAxisId="left" type="monotone" dataKey="Ventas" stroke="#ec131e" strokeWidth={4} dot={{ r: 4, fill: '#ec131e', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
               </LineChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
 
@@ -65,8 +76,8 @@ export function ReportChart({ data, type }: ReportChartProps) {
               Cantidad de transacciones por periodo
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-8 pt-6 h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="p-8 pt-6">
+            <ChartContainer config={barConfig} className="h-[350px]" initialDimension={{ width: 320, height: 350 }}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
@@ -74,7 +85,7 @@ export function ReportChart({ data, type }: ReportChartProps) {
                 <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`${value} pedidos`, 'Pedidos']} />
                 <Bar dataKey="Pedidos" radius={[6, 6, 0, 0]} fill="#0f172a" maxBarSize={50} />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
 
@@ -86,8 +97,8 @@ export function ReportChart({ data, type }: ReportChartProps) {
               Valor promedio por venta
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-8 pt-6 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="p-8 pt-6">
+            <ChartContainer config={ticketConfig} className="h-[300px]" initialDimension={{ width: 320, height: 300 }}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
@@ -95,7 +106,7 @@ export function ReportChart({ data, type }: ReportChartProps) {
                 <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`$${value.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`, 'Ticket Promedio']} />
                 <Bar dataKey="TicketPromedio" radius={[6, 6, 0, 0]} fill="#cbd5e1" maxBarSize={50} />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
@@ -108,6 +119,13 @@ export function ReportChart({ data, type }: ReportChartProps) {
       Cantidad: d.quantitySold
     }));
 
+    const ingresosConfig: ChartConfig = {
+      Ingresos: { label: 'Ingresos' },
+    };
+    const cantidadConfig: ChartConfig = {
+      Cantidad: { label: 'Unidades' },
+    };
+
     return (
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
         {/* Gráfico de Barras Horizontal - Ingresos por Producto */}
@@ -118,8 +136,8 @@ export function ReportChart({ data, type }: ReportChartProps) {
               Comparativa de facturación (Top {chartData.length})
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-8 pt-6 h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="p-8 pt-6">
+            <ChartContainer config={ingresosConfig} className="h-[350px]" initialDimension={{ width: 320, height: 350 }}>
               <BarChart data={chartData} layout="vertical" margin={{ left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`} />
@@ -131,7 +149,7 @@ export function ReportChart({ data, type }: ReportChartProps) {
                   ))}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
 
@@ -143,19 +161,19 @@ export function ReportChart({ data, type }: ReportChartProps) {
               Participación por cantidad vendida
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-8 pt-6 h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="p-8 pt-6">
+            <ChartContainer config={cantidadConfig} className="h-[350px]" initialDimension={{ width: 320, height: 350 }}>
               <PieChart>
-                <Pie 
-                  data={chartData} 
-                  dataKey="Cantidad" 
-                  nameKey="name" 
-                  cx="50%" 
-                  cy="45%" 
-                  outerRadius={100} 
+                <Pie
+                  data={chartData}
+                  dataKey="Cantidad"
+                  nameKey="name"
+                  cx="50%"
+                  cy="45%"
+                  outerRadius={100}
                   innerRadius={60}
                   paddingAngle={5}
-                  labelLine={false} 
+                  labelLine={false}
                   label={({ percent }) => (percent ?? 0) > 0.05 ? `${((percent ?? 0) * 100).toFixed(0)}%` : ''}
                 >
                   {chartData.map((entry, index) => (
@@ -165,7 +183,7 @@ export function ReportChart({ data, type }: ReportChartProps) {
                 <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`${value} unidades`, 'Cantidad']} />
                 <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 700, color: '#64748b', paddingBottom: '20px' }} />
               </PieChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>

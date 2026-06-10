@@ -7,8 +7,9 @@ export interface IAlertService {
   showInfo(title: string, text?: string): void;
   showWarning(title: string, text?: string): void;
   showToast(icon: 'success'|'error'|'warning'|'info', title: string, timer?: number): void;
-  showConfirm(title: string, text: string, confirmText: string, cancelText: string): Promise<boolean>;
+  showConfirm(title: string, text: string, confirmText: string, cancelText: string, confirmColor?: string): Promise<boolean>;
   showExpiringSession(title: string, text: string): Promise<void>;
+  showInactivityWarning(title: string, text: string, confirmText: string, timerSeconds: number): Promise<boolean>;
 }
 
 import Swal from 'sweetalert2';
@@ -77,14 +78,14 @@ export class SweetAlertService implements IAlertService {
     });
   }
 
-  async showConfirm(title: string, text: string, confirmText: string, cancelText: string): Promise<boolean> {
+  async showConfirm(title: string, text: string, confirmText: string, cancelText: string, confirmColor?: string): Promise<boolean> {
     const result = await Swal.fire({
       title,
       text,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: COLORS.primary,
-      cancelButtonColor: COLORS.text.muted,
+      confirmButtonColor: confirmColor || COLORS.primary,
+      cancelButtonColor: COLORS.onSurfaceVariant,
       confirmButtonText: confirmText,
       cancelButtonText: cancelText,
     });
@@ -99,5 +100,22 @@ export class SweetAlertService implements IAlertService {
       confirmButtonColor: '#ec131e',
       allowOutsideClick: false,
     });
+  }
+
+  async showInactivityWarning(title: string, text: string, confirmText: string, timerSeconds: number): Promise<boolean> {
+    const result = await Swal.fire({
+      icon: 'warning',
+      title,
+      text,
+      confirmButtonText: confirmText,
+      confirmButtonColor: COLORS.primary,
+      showCancelButton: false,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      timer: timerSeconds * 1000,
+      timerProgressBar: true,
+      didOpen: () => Swal.getConfirmButton()?.focus(),
+    });
+    return result.isConfirmed;
   }
 }

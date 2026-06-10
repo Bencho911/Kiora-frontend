@@ -5,46 +5,54 @@ import MainLayout from "@/layouts/mainlayout.astro";
 ---
 
 <MainLayout title="Iniciar Sesión - Kiora">
-  <div
-    class="flex flex-col items-center justify-center min-h-screen w-full relative z-10 px-4"
+  <script is:inline data-astro-rerun>
+    function checkAuthLogin() {
+      try {
+        if (localStorage.getItem("kiora_token")) {
+          window.location.replace("/panel/");
+        }
+      } catch (e) {}
+    }
+    checkAuthLogin();
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted) checkAuthLogin();
+    });
+    document.addEventListener('astro:page-load', checkAuthLogin);
+  </script>
+
+  <div class="flex flex-col items-center justify-center min-h-screen w-full relative z-10 px-4"
+    style="background: var(--md-background, #fff8f6);"
   >
-    <!-- Ambient Background Elements -->
+    <!-- Warm gradient ambient -->
     <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-      <div class="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-red-500/5 blur-[120px] animate-pulse"></div>
-      <div class="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-slate-400/5 blur-[120px]"></div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0)_0%,rgba(248,250,252,1)_100%)]"></div>
+      <div class="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full"
+        style="background: radial-gradient(circle, rgba(236,19,30,0.04) 0%, transparent 70%);"
+      />
+      <div class="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full"
+        style="background: radial-gradient(circle, rgba(61,26,16,0.05) 0%, transparent 70%);"
+      />
     </div>
 
-    <!-- App Logo -->
-    <div class="relative z-10 mb-2 transform hover:scale-105 transition-transform duration-500">
+    <!-- Logo -->
+    <div class="relative z-10 mb-8 transition-transform duration-500 hover:scale-105">
       <img
         src="/img/logo-kiora-vectorizado.svg"
-        alt="Kiora Logo"
+        alt="Kiora"
         class="w-40 h-auto object-contain drop-shadow-sm"
       />
     </div>
 
     <LoginForm client:load />
 
-    <!-- Legal & Help Links Footer -->
-    <footer class="mt-12 mb-8 flex flex-col items-center gap-6 z-50 px-6 w-full max-w-md">
-      <div class="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
-      
+    <!-- Footer -->
+    <footer class="mt-10 mb-8 flex flex-col items-center gap-5 z-50 px-6 w-full max-w-md">
+      <div class="h-px w-full" style="background: linear-gradient(to right, transparent, var(--md-outline-variant, #d6c2bd), transparent);" />
       <div class="flex flex-wrap justify-center items-center gap-x-6 gap-y-3 text-center">
-        <a href="/ayuda" class="text-[10px] sm:text-xs text-slate-400 font-black uppercase tracking-widest hover:text-[#ec131e] transition-all">
-          Ayuda
-        </a>
-        <a href="/terminos" class="text-[10px] sm:text-xs text-slate-400 font-black uppercase tracking-widest hover:text-slate-900 transition-all">
-          Términos
-        </a>
-        <a href="/privacidad" class="text-[10px] sm:text-xs text-slate-400 font-black uppercase tracking-widest hover:text-slate-900 transition-all">
-          Privacidad
-        </a>
+        <a href="/ayuda" class="label-sm text-on-surface-variant hover:text-primary transition-colors">Ayuda</a>
+        <a href="/terminos" class="label-sm text-on-surface-variant hover:text-primary transition-colors">Términos</a>
+        <a href="/privacidad" class="label-sm text-on-surface-variant hover:text-primary transition-colors">Privacidad</a>
       </div>
-      
-      <p class="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em]">
-        &copy; {new Date().getFullYear()} Kiora &bull; Smart Kiosk System
-      </p>
+      <p class="text-[10px] font-medium text-on-surface-variant/50 uppercase tracking-wider">&copy; {new Date().getFullYear()} Kiora &bull; Smart Kiosk System</p>
     </footer>
   </div>
   <GlobalControls client:load />

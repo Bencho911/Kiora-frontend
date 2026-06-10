@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kiora · Explorador de Paletas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Geist', sans-serif;
+      background: #f5f2ef;
+      color: #1a1412;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Palette previews ─── */
+    .palette-card {
+      transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+      min-height: 600px;
+    }
+    .palette-card:hover {
+      transform: translateY(-6px);
+    }
+    .palette-card.preview { min-height: 0; }
+    .palette-card.full {
+      min-height: 0;
+      transform: none !important;
+    }
+
+    /* ─── Mini dashboard skeleton ─── */
+    .mini-sidebar { width: 48px; }
+    .mini-sidebar a {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 10px;
+      transition: all 0.2s;
+    }
+    .mini-kpi {
+      border-radius: 10px; padding: 10px 12px;
+    }
+    .mini-chart-bar {
+      border-radius: 4px; width: 100%;
+      transition: height 0.4s;
+    }
+
+    /* ─── Typography tokens ─── */
+    .label-sm { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .headline-sm { font-size: 18px; font-weight: 700; }
+    .headline-xs { font-size: 14px; font-weight: 600; }
+
+    /* ─── Tab switching ─── */
+    .tab-btn {
+      font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
+      padding: 8px 18px; border-radius: 9999px;
+      transition: all 0.3s;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #88807c;
+    }
+    .tab-btn:hover { color: #1a1412; }
+    .tab-btn.active {
+      background: #1a1412;
+      color: #fff;
+    }
+
+    /* ─── Color dot row ─── */
+    .swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.06); flex-shrink: 0; }
+
+    /* ─── Animations ─── */
+    .fade-in { animation: fadeIn 0.6s ease both; }
+    .fade-up { animation: fadeUp 0.5s ease both; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+    .stagger-1 { animation-delay: 0.05s; }
+    .stagger-2 { animation-delay: 0.10s; }
+    .stagger-3 { animation-delay: 0.15s; }
+    .stagger-4 { animation-delay: 0.20s; }
+    .stagger-5 { animation-delay: 0.25s; }
+
+    .slide-left { animation: slideLeft 0.4s ease both; }
+    @keyframes slideLeft { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* ─── Scroll ─── */
+    .scroll-x { overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+    .scroll-x > * { scroll-snap-align: start; }
+    .scroll-x::-webkit-scrollbar { height: 4px; }
+    .scroll-x::-webkit-scrollbar-track { background: transparent; }
+    .scroll-x::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <!-- ──────── HERO ──────── -->
+  <header class="max-w-6xl mx-auto px-6 pt-12 pb-6">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-3 h-3 rounded-full" style="background: #ec131e;"></div>
+      <span class="text-xs font-semibold uppercase tracking-[0.15em]" style="color: #88807c;">Explorador visual</span>
+    </div>
+    <h1 class="text-[clamp(2rem,6vw,3.5rem)] font-extrabold tracking-tight leading-[1.05] mb-2" style="color: #1a1412;">
+      Elige la paleta de <span style="color: #ec131e;">Kiora</span>
+    </h1>
+    <p class="text-base max-w-xl" style="color: #6b5f5a;">
+      Tres direcciones cromáticas para el rediseño del panel admin. Cada una usa la misma estructura MD3 con una personalidad distinta.
+    </p>
+  </header>
+
+  <!-- ──────── TABS ──────── -->
+  <div class="max-w-6xl mx-auto px-6 mb-8 flex gap-2 flex-wrap">
+    <button class="tab-btn active" data-tab="cards">Vista comparativa</button>
+    <button class="tab-btn" data-tab="kiora-red">Kiora Red</button>
+    <button class="tab-btn" data-tab="terracota">Terracota</button>
+    <button class="tab-btn" data-tab="mixta">Mixta</button>
+  </div>
+
+  <!-- ──────── VIEW: CARDS ──────── -->
+  <div id="view-cards" class="tab-content max-w-6xl mx-auto px-6 pb-20">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- ═══ Kiora Red ═══ -->
+      <div class="palette-card rounded-3xl overflow-hidden border" style="background: #fffcf9; border-color: #ece2dd; box-shadow: 0 8px 30px rgba(0,0,0,0.04);">
+        <!-- Swatch bar -->
+        <div class="flex gap-2 px-6 pt-6 pb-4">
+          <div class="swatch" style="background: #ec131e;"></div>
+          <div class="swatch" style="background: #fff0ed;"></div>
+          <div class="swatch" style="background: #1a1412;"></div>
+          <div class="swatch" style="background: #f5f2ef;"></div>
+          <div class="swatch" style="background: #c4b5ae;"></div>
+        </div>
+        <div class="px-6 mb-4">
+          <h2 class="text-lg font-bold tracking-tight" style="color: #1a1412;">Kiora Red</h2>
+          <p class="text-xs" style="color: #88807c;">Rojo fuerte + neutros claros</p>
+        </div>
+        <!-- Mini dashboard -->
+        <div class="px-6 pb-6">
+          <div class="flex gap-3 mb-4">
+            <div class="mini-sidebar flex flex-col gap-2 pt-2">
+              <a style="background: #ec131e; color: #fff;"><span class="material-symbols-outlined" style="font-size:18px;">grid_view</span></a>
+              <a style="color: #99908b;"><span class="material-symbols-outlined" style="font-size:18px;">sell</span></a>
+              <a style="color: #99908b;"><span class="material-symbols-outlined" style="font-size:18px;">inventory_2</span></a>
+            </div>
+            <div class="flex-1">
+              <div class="flex gap-2 mb-2">
+                <div class="mini-kpi flex-1" style="background: #fff; border: 1px solid #ece2dd;">
+                  <p class="label-sm" style="color: #99908b;">Ventas</p>
+                  <p class="text-base font-bold" style="color: #1a1412;">$2.45M</p>
+                </div>
+                <div class="mini-kpi flex-1" style="background: #fff; border: 1px solid #ece2dd;">
+                  <p class="label-sm" style="color: #99908b;">Órdenes</p>
+                  <p class="text-base font-bold" style="color: #1a1412;">42</p>
+                </div>
+              </div>
+              <div class="mini-kpi" style="background: #fff5f3; border: 1px solid #ec131e20;">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="material-symbols-outlined" style="font-size:14px; color:#ec131e;">monitoring</span>
+                  <span class="headline-xs" style="color: #1a1412;">Tendencia</span>
+                </div>
+                <div class="flex items-end gap-[3px] h-12">
+                  <div class="mini-chart-bar" style="height:30%; background:#ec131e30;"></div>
+                  <div class="mini-chart-bar" style="height:45%; background:#ec131e40;"></div>
+                  <div class="mini-chart-bar" style="height:55%; background:#ec131e50;"></div>
+                  <div class="mini-chart-bar" style="height:70%; background:#ec131e60;"></div>
+                  <div class="mini-chart-bar" style="height:85%; background:#ec131e80;"></div>
+                  <div class="mini-chart-bar" style="height:100%; background:#ec131e;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 pb-4 border-b border-outline-variant/30 mx-6">
+          <p class="text-[9px] font-semibold uppercase tracking-wider mb-2" style="color: #88807c;">Tokens clave</p>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#ec131e;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">primary</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#ec131e</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#1f1a19;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">on-surface</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#1f1a19</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#fffcf9;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">surface</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#fffcf9</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#fcf1ef;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">surface-low</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#fcf1ef</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#f6ece9;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">surface-cont</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#f6ece9</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#d6c2bd;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">outline-var</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#d6c2bd</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#514440;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">on-surf-var</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#514440</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#0f766e;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">tertiary</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#0f766e</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Terracota ═══ -->
+      <div class="palette-card rounded-3xl overflow-hidden border" style="background: #fffcf9; border-color: #ece2dd; box-shadow: 0 8px 30px rgba(0,0,0,0.04);">
+        <div class="flex gap-2 px-6 pt-6 pb-4">
+          <div class="swatch" style="background: #3d1a10;"></div>
+          <div class="swatch" style="background: #ffdbd1;"></div>
+          <div class="swatch" style="background: #ebe0de;"></div>
+          <div class="swatch" style="background: #fff8f6;"></div>
+          <div class="swatch" style="background: #a9ccd8;"></div>
+        </div>
+        <div class="px-6 mb-4">
+          <h2 class="text-lg font-bold tracking-tight" style="color: #1a1412;">Terracota</h2>
+          <p class="text-xs" style="color: #88807c;">La paleta MD3 del diseño propuesto</p>
+        </div>
+        <div class="px-6 pb-6">
+          <div class="flex gap-3 mb-4">
+            <div class="mini-sidebar flex flex-col gap-2 pt-2">
+              <a style="background: #3d1a10; color: #ffdbd1;"><span class="material-symbols-outlined" style="font-size:18px;">grid_view</span></a>
+              <a style="color: #99908b;"><span class="material-symbols-outlined" style="font-size:18px;">sell</span></a>
+              <a style="color: #99908b;"><span class="material-symbols-outlined" style="font-size:18px;">inventory_2</span></a>
+            </div>
+            <div class="flex-1">
+              <div class="flex gap-2 mb-2">
+                <div class="mini-kpi flex-1" style="background: #fff; border: 1px solid #ece2dd;">
+                  <p class="label-sm" style="color: #99908b;">Ventas</p>
+                  <p class="text-base font-bold" style="color: #3d1a10;">$2.45M</p>
+                </div>
+                <div class="mini-kpi flex-1" style="background: #fff; border: 1px solid #ece2dd;">
+                  <p class="label-sm" style="color: #99908b;">Órdenes</p>
+                  <p class="text-base font-bold" style="color: #3d1a10;">42</p>
+                </div>
+              </div>
+              <div class="mini-kpi" style="background: #ffdbd120; border: 1px solid #3d1a1020;">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="material-symbols-outlined" style="font-size:14px; color:#3d1a10;">monitoring</span>
+                  <span class="headline-xs" style="color: #3d1a10;">Tendencia</span>
+                </div>
+                <div class="flex items-end gap-[3px] h-12">
+                  <div class="mini-chart-bar" style="height:30%; background:#3d1a1030;"></div>
+                  <div class="mini-chart-bar" style="height:45%; background:#3d1a1040;"></div>
+                  <div class="mini-chart-bar" style="height:55%; background:#3d1a1050;"></div>
+                  <div class="mini-chart-bar" style="height:70%; background:#3d1a1060;"></div>
+                  <div class="mini-chart-bar" style="height:85%; background:#3d1a1080;"></div>
+                  <div class="mini-chart-bar" style="height:100%; background:#3d1a10;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 pb-4 border-t border-outline-variant/30 mx-6 pt-3">
+          <p class="text-[9px] font-semibold uppercase tracking-wider mb-2" style="color: #88807c;">Tokens clave</p>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#3d1a10;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">primary</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#3d1a10</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#1f1a19;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">on-surface</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#1f1a19</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#fffcf9;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">surface</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#fffcf9</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#ffdbd1;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">primary-fixed</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#ffdbd1</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#ebe0de;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">surface-variant</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#ebe0de</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#a9ccd8;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">tertiary-dim</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#a9ccd8</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Mixta ═══ -->
+      <div class="palette-card rounded-3xl overflow-hidden border" style="background: #fffcf9; border-color: #ece2dd; box-shadow: 0 8px 30px rgba(0,0,0,0.04);">
+        <div class="flex gap-2 px-6 pt-6 pb-4">
+          <div class="swatch" style="background: #0f0f0f;"></div>
+          <div class="swatch" style="background: #ec131e;"></div>
+          <div class="swatch" style="background: #f5f2ef;"></div>
+          <div class="swatch" style="background: #ffffff;"></div>
+          <div class="swatch" style="background: #e5e0dc;"></div>
+        </div>
+        <div class="px-6 mb-4">
+          <h2 class="text-lg font-bold tracking-tight" style="color: #1a1412;">Mixta</h2>
+          <p class="text-xs" style="color: #88807c;">Neutral oscuro + rojo acento</p>
+        </div>
+        <div class="px-6 pb-6">
+          <div class="flex gap-3 mb-4">
+            <div class="mini-sidebar flex flex-col gap-2 pt-2">
+              <a style="background: #0f0f0f; color: #ec131e;"><span class="material-symbols-outlined" style="font-size:18px;">grid_view</span></a>
+              <a style="color: #99908b;"><span class="material-symbols-outlined" style="font-size:18px;">sell</span></a>
+              <a style="color: #99908b;"><span class="material-symbols-outlined" style="font-size:18px;">inventory_2</span></a>
+            </div>
+            <div class="flex-1">
+              <div class="flex gap-2 mb-2">
+                <div class="mini-kpi flex-1" style="background: #fff; border: 1px solid #e5e0dc;">
+                  <p class="label-sm" style="color: #99908b;">Ventas</p>
+                  <p class="text-base font-bold" style="color: #0f0f0f;">$2.45M</p>
+                </div>
+                <div class="mini-kpi flex-1" style="background: #fff; border: 1px solid #e5e0dc;">
+                  <p class="label-sm" style="color: #99908b;">Órdenes</p>
+                  <p class="text-base font-bold" style="color: #0f0f0f;">42</p>
+                </div>
+              </div>
+              <div class="mini-kpi" style="background: #f5f2ef; border: 1px solid #e5e0dc;">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="material-symbols-outlined" style="font-size:14px; color:#ec131e;">monitoring</span>
+                  <span class="headline-xs" style="color: #0f0f0f;">Tendencia</span>
+                </div>
+                <div class="flex items-end gap-[3px] h-12">
+                  <div class="mini-chart-bar" style="height:30%; background:#ec131e30;"></div>
+                  <div class="mini-chart-bar" style="height:45%; background:#ec131e40;"></div>
+                  <div class="mini-chart-bar" style="height:55%; background:#0f0f0f40;"></div>
+                  <div class="mini-chart-bar" style="height:70%; background:#0f0f0f50;"></div>
+                  <div class="mini-chart-bar" style="height:85%; background:#ec131e80;"></div>
+                  <div class="mini-chart-bar" style="height:100%; background:#0f0f0f;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 pb-4 border-t border-outline-variant/30 mx-6 pt-3">
+          <p class="text-[9px] font-semibold uppercase tracking-wider mb-2" style="color: #88807c;">Tokens clave</p>
+          <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#0f0f0f;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">primary</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#0f0f0f</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#ec131e;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">accent</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#ec131e</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#ffffff;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">surface</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#ffffff</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#f8f6f5;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">bg / low</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#f8f6f5</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#f0eeed;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">surface-cont</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#f0eeed</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-sm shrink-0" style="background:#e5e0dc;"></div>
+              <span class="text-[9px] font-mono" style="color:#6b5f5a;">outline-var</span>
+              <span class="text-[9px] font-mono font-semibold ml-auto" style="color:#1a1412;">#e5e0dc</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ──────── VIEW: FULL DASHBOARD ──────── -->
+  <div id="view-kiora-red" class="tab-content hidden pb-20">
+    <div class="max-w-6xl mx-auto px-6" id="full-red"></div>
+  </div>
+  <div id="view-terracota" class="tab-content hidden pb-20">
+    <div class="max-w-6xl mx-auto px-6" id="full-terracota"></div>
+  </div>
+  <div id="view-mixta" class="tab-content hidden pb-20">
+    <div class="max-w-6xl mx-auto px-6" id="full-mixta"></div>
+  </div>
+
+  <script>
+    // ─── Tab switching ───
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById('view-' + btn.dataset.tab).classList.remove('hidden');
+      });
+    });
+
+    // ─── Palettes ───
+    const palettes = {
+      'kiora-red': {
+        name: 'Kiora Red',
+        desc: 'Rojo vibrante como identidad principal. Neutros cálidos y superficies limpias.',
+        tokens: {
+          primary: '#ec131e',
+          'primary-container': '#ec131e',
+          'on-primary': '#ffffff',
+          'on-primary-container': '#ffffff',
+          'primary-fixed-dim': '#f5b8a8',
+          'primary-fixed': '#ffdbd1',
+          'secondary-container': '#dc312c',
+          'secondary': '#b81217',
+          'tertiary': '#294b55',
+          'tertiary-fixed-dim': '#a9ccd8',
+          'tertiary-fixed': '#c5e8f4',
+          error: '#ba1a1a',
+          'error-container': '#ffdad6',
+          surface: '#fffcf9',
+          'surface-container-low': '#fcf1ef',
+          'surface-container': '#f6ece9',
+          'surface-container-high': '#f1e6e3',
+          'surface-container-highest': '#ebe0de',
+          'surface-bright': '#fff8f6',
+          'surface-dim': '#e2d8d5',
+          background: '#fff8f6',
+          'on-background': '#1f1a19',
+          'on-surface': '#1f1a19',
+          'on-surface-variant': '#514440',
+          'outline-variant': '#d6c2bd',
+          'outline': '#84746f',
+          'inverse-surface': '#352f2e',
+          'inverse-on-surface': '#f9eeec',
+          'inverse-primary': '#f5b8a8',
+        }
+      },
+      terracota: {
+        name: 'Terracota',
+        desc: 'Tonos tierra profundos inspirados en barro cocido y arcilla.',
+        tokens: {
+          primary: '#3d1a10',
+          'primary-container': '#3d1a10',
+          'on-primary': '#ffffff',
+          'on-primary-container': '#ffdbd1',
+          'primary-fixed-dim': '#f5b8a8',
+          'primary-fixed': '#ffdbd1',
+          'secondary-container': '#dc312c',
+          'secondary': '#b81217',
+          'tertiary': '#294b55',
+          'tertiary-fixed-dim': '#a9ccd8',
+          'tertiary-fixed': '#c5e8f4',
+          error: '#ba1a1a',
+          'error-container': '#ffdad6',
+          surface: '#fffcf9',
+          'surface-container-low': '#fcf1ef',
+          'surface-container': '#f6ece9',
+          'surface-container-high': '#f1e6e3',
+          'surface-container-highest': '#ebe0de',
+          'surface-bright': '#fff8f6',
+          'surface-dim': '#e2d8d5',
+          background: '#fff8f6',
+          'on-background': '#1f1a19',
+          'on-surface': '#1f1a19',
+          'on-surface-variant': '#514440',
+          'outline-variant': '#d6c2bd',
+          'outline': '#84746f',
+          'inverse-surface': '#352f2e',
+          'inverse-on-surface': '#f9eeec',
+          'inverse-primary': '#f5b8a8',
+        }
+      },
+      mixta: {
+        name: 'Mixta',
+        desc: 'Neutral casi negro + rojo acento. Minimalista y moderno.',
+        tokens: {
+          primary: '#0f0f0f',
+          'primary-container': '#0f0f0f',
+          'on-primary': '#ffffff',
+          'on-primary-container': '#ffffff',
+          'primary-fixed-dim': '#ec131e',
+          'primary-fixed': '#ec131e',
+          'secondary-container': '#ec131e',
+          'secondary': '#b81217',
+          'tertiary': '#555555',
+          'tertiary-fixed-dim': '#cccccc',
+          'tertiary-fixed': '#e5e0dc',
+          error: '#ba1a1a',
+          'error-container': '#ffdad6',
+          surface: '#ffffff',
+          'surface-container-low': '#f8f6f5',
+          'surface-container': '#f0eeed',
+          'surface-container-high': '#e8e6e5',
+          'surface-container-highest': '#e0dddc',
+          'surface-bright': '#ffffff',
+          'surface-dim': '#d8d5d4',
+          background: '#f8f6f5',
+          'on-background': '#0f0f0f',
+          'on-surface': '#0f0f0f',
+          'on-surface-variant': '#555555',
+          'outline-variant': '#d6d3d0',
+          'outline': '#8a8784',
+          'inverse-surface': '#2a2a2a',
+          'inverse-on-surface': '#f5f2ef',
+          'inverse-primary': '#ec131e',
+        }
+      }
+    };
+
+    // ─── Full dashboard render ───
+    function renderDashboard(containerId, paletteKey) {
+      const p = palettes[paletteKey];
+      const t = p.tokens;
+      const container = document.getElementById(containerId);
+      container.innerHTML = `
+        <div class="fade-up">
+          <div class="flex items-center gap-3 mb-6">
+            <h2 class="text-2xl font-bold tracking-tight" style="color:${t['on-background']};">${p.name}</h2>
+            <span class="px-3 py-1 rounded-full text-[10px] font-semibold" style="background:${t['surface-container']}; color:${t['on-surface-variant']};">${Object.keys(t).length} tokens</span>
+          </div>
+          <p class="text-sm mb-8" style="color:${t['on-surface-variant']};">${p.desc}</p>
+
+          <!-- Swatch wall with hex codes -->
+          <div class="flex flex-wrap gap-2 mb-10">
+            ${Object.entries(t).map(([name, color]) => `
+              <div class="flex flex-col items-center gap-1 group relative">
+                <div class="w-10 h-10 rounded-xl border transition-transform hover:scale-110" style="background:${color}; border-color:${t['outline-variant']}; box-shadow: 0 2px 6px rgba(0,0,0,0.04);"></div>
+                <span class="text-[8px] font-medium" style="color:${t['on-surface-variant']};">${name}</span>
+                <span class="text-[7px] font-mono font-semibold opacity-0 group-hover:opacity-100 transition-opacity absolute -bottom-4" style="color:${t['on-surface-variant']};">${color}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- Flat hex list for copying -->
+          <details class="mb-6">
+            <summary class="text-xs font-semibold cursor-pointer hover:opacity-70 transition-opacity" style="color:${t['on-surface-variant']};">📋 Ver todos los códigos hex</summary>
+            <div class="mt-3 p-4 rounded-xl border font-mono text-[10px] leading-relaxed grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1" style="background:${t['surface-container']}; border-color:${t['outline-variant']}; color:${t['on-surface']};">
+              ${Object.entries(t).map(([name, color]) =>
+                `<span><span class="font-semibold">${name}:</span> ${color}</span>`
+              ).join('\n')}
+            </div>
+          </details>
+
+          <!-- Color usage guide -->
+          <div class="mb-10 rounded-2xl border overflow-hidden" style="background:${t.surface}; border-color:${t['outline-variant']};">
+            <div class="px-5 py-3 border-b" style="background:${t['surface-container']}; border-color:${t['outline-variant']};">
+              <h3 class="text-sm font-bold" style="color:${t['on-surface']};">🎨 Guía de uso</h3>
+              <p class="text-[10px]" style="color:${t['on-surface-variant']};">Para qué se usa cada color en la interfaz</p>
+            </div>
+            <div class="divide-y" style="border-color:${t['outline-variant']};">
+              ${[
+                { token: 'primary', color: t.primary, usage: 'Botones principales, nav activo, acentos clave' },
+                { token: 'on-primary', color: t['on-primary'], usage: 'Texto e íconos sobre primary' },
+                { token: 'primary-container', color: t['primary-container'], usage: 'Fondo de elementos destacados suaves, badges' },
+                { token: 'on-primary-container', color: t['on-primary-container'], usage: 'Texto sobre primary-container' },
+                { token: 'secondary', color: t.secondary, usage: 'Botones secundarios, chips, filtros' },
+                { token: 'surface', color: t.surface, usage: 'Fondo de cards, paneles, contenedores' },
+                { token: 'on-surface', color: t['on-surface'], usage: 'Texto principal del sistema' },
+                { token: 'on-surface-variant', color: t['on-surface-variant'], usage: 'Texto secundario, metadatos, etiquetas' },
+                { token: 'background', color: t.background, usage: 'Fondo general de la aplicación' },
+                { token: 'outline', color: t.outline, usage: 'Bordes visibles, separadores' },
+                { token: 'outline-variant', color: t['outline-variant'], usage: 'Bordes sutiles, divisores de tabla' },
+                { token: 'error', color: t.error, usage: 'Errores, alertas críticas, stock bajo' },
+                { token: 'error-container', color: t['error-container'], usage: 'Fondo de alertas de error' },
+                { token: 'tertiary', color: t.tertiary || '#0f766e', usage: 'Verde para positivo, tendencias, éxito' },
+                { token: 'tertiary-container', color: t['tertiary-container'] || '#ccfbf1', usage: 'Fondo de indicadores de éxito' },
+              ].map(({ token, color, usage }) => `
+                <div class="flex items-center gap-4 px-5 py-3 hover:opacity-80 transition-opacity">
+                  <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="w-8 h-8 rounded-lg shrink-0 border shadow-sm" style="background:${color}; border-color:${t['outline-variant']};"></div>
+                    <div class="min-w-0">
+                      <p class="text-xs font-semibold font-mono" style="color:${t['on-surface']};">${token}</p>
+                      <p class="text-[9px] font-mono font-medium" style="color:${t['on-surface-variant']};">${color}</p>
+                    </div>
+                  </div>
+                  <p class="text-[10px] text-right max-w-[40%]" style="color:${t['on-surface-variant']};">${usage}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Full dashboard preview -->
+          <div class="rounded-3xl overflow-hidden border" style="background:${t.background}; border-color:${t['outline-variant']};">
+            <style>
+              .dp-${paletteKey} { --dp-primary: ${t.primary}; --dp-on-primary: ${t['on-primary']}; --dp-surface: ${t.surface}; --dp-surface-container: ${t['surface-container']}; --dp-on-surface: ${t['on-surface']}; --dp-on-surface-variant: ${t['on-surface-variant']}; --dp-outline-variant: ${t['outline-variant']}; --dp-error: ${t.error}; --dp-error-container: ${t['error-container']}; --dp-primary-container: ${t['primary-container']}; --dp-on-primary-container: ${t['on-primary-container']}; --dp-tertiary-fixed: ${t['tertiary-fixed']}; --dp-tertiary-fixed-dim: ${t['tertiary-fixed-dim']}; --dp-secondary-fixed: ${t['secondary-fixed'] || '#ffdad6'}; --dp-secondary-fixed-dim: ${t['secondary-fixed-dim'] || '#ffb4ab'}; --dp-surface-container-low: ${t['surface-container-low']}; --dp-surface-container-highest: ${t['surface-container-highest']}; --dp-surface-bright: ${t['surface-bright']}; --dp-primary-fixed: ${t['primary-fixed']}; }
+            </style>
+            <div class="dp-${paletteKey} flex min-h-[500px]">
+              <!-- Sidebar -->
+              <div class="hidden md:flex flex-col py-6 px-3 gap-1 border-r" style="background: var(--dp-surface); border-color: var(--dp-outline-variant); width:200px;">
+                <div class="px-3 mb-6">
+                  <p class="font-bold text-lg" style="color: var(--dp-primary);">Kiora</p>
+                  <p class="text-[10px] font-medium" style="color: var(--dp-on-surface-variant);">Retail Admin</p>
+                </div>
+                ${[
+                  { icon: 'dashboard', label: 'Dashboard', active: true },
+                  { icon: 'point_of_sale', label: 'POS' },
+                  { icon: 'inventory_2', label: 'Productos' },
+                  { icon: 'receipt_long', label: 'Ventas' },
+                  { icon: 'group', label: 'Usuarios' },
+                  { icon: 'analytics', label: 'Reportes' },
+                  { icon: 'settings', label: 'Ajustes' },
+                ].map(item => `
+                  <a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all" style="${item.active ? `background: var(--dp-primary); color: var(--dp-on-primary);` : `color: var(--dp-on-surface-variant);`}">
+                    <span class="material-symbols-outlined" style="font-size:20px;">${item.icon}</span>
+                    <span>${item.label}</span>
+                  </a>
+                `).join('')}
+              </div>
+              <!-- Main -->
+              <div class="flex-1 p-6" style="background: var(--dp-surface-bright);">
+                <!-- KPIs -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                  ${[
+                    { label: 'Ventas hoy', value: '$2.450.000', icon: 'payments', trend: '+12%' },
+                    { label: 'Órdenes', value: '42', icon: 'receipt_long', sub: 'Última hace 5 min' },
+                    { label: 'Ticket prom.', value: '$58.300', icon: 'sell', trend: '+3%' },
+                    { label: 'Alertas stock', value: '5', icon: 'warning', alert: true },
+                  ].map(kpi => `
+                    <div class="relative overflow-hidden rounded-xl p-4 border" style="background: var(--dp-surface); border-color: ${kpi.alert ? 'var(--dp-error)' : 'var(--dp-outline-variant)'}; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                      <div class="absolute top-2 right-2 opacity-[0.08]">
+                        <span class="material-symbols-outlined" style="font-size:36px; ${kpi.alert ? `color: var(--dp-error);` : ''}">${kpi.icon}</span>
+                      </div>
+                      <p class="text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: ${kpi.alert ? 'var(--dp-error)' : 'var(--dp-on-surface-variant)'};">${kpi.label}</p>
+                      <p class="text-xl font-bold tracking-tight" style="color: ${kpi.alert ? 'var(--dp-error)' : 'var(--dp-on-surface)'};">${kpi.value}</p>
+                      ${kpi.trend ? `<div class="flex items-center gap-1 mt-1"><span class="material-symbols-outlined" style="font-size:14px; color:#006A60;">trending_up</span><span class="text-[11px] font-medium" style="color:#006A60;">${kpi.trend}</span></div>` : ''}
+                      ${kpi.sub ? `<p class="text-[11px] mt-1" style="color: var(--dp-on-surface-variant);">${kpi.sub}</p>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+                <!-- Content grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div class="lg:col-span-2 rounded-xl border p-5" style="background: var(--dp-surface); border-color: var(--dp-outline-variant);">
+                    <div class="flex justify-between items-center mb-4">
+                      <h3 class="font-semibold" style="color: var(--dp-on-surface);">Ventas Recientes</h3>
+                      <a style="color: var(--dp-primary); font-size:13px; font-weight:600;">Ver todas →</a>
+                    </div>
+                    <div class="space-y-2">
+                      ${[
+                        { id: '#K-1042', time: '14:32', total: '$125.000', status: 'Completada', statusStyle: `background: var(--dp-tertiary-fixed); color: var(--dp-on-surface);` },
+                        { id: '#K-1041', time: '14:15', total: '$45.500', status: 'Completada', statusStyle: `background: var(--dp-tertiary-fixed); color: var(--dp-on-surface);` },
+                        { id: '#K-1040', time: '13:58', total: '$210.000', status: 'Pendiente', statusStyle: `background: var(--dp-secondary-fixed); color: var(--dp-secondary-fixed-dim);` },
+                      ].map(row => `
+                        <div class="flex items-center justify-between py-2.5 px-3 rounded-xl transition-colors" style="border-bottom: 1px solid var(--dp-outline-variant);">
+                          <div class="flex items-center gap-6">
+                            <span class="text-sm font-semibold" style="color: var(--dp-on-surface);">${row.id}</span>
+                            <span class="text-sm" style="color: var(--dp-on-surface-variant);">${row.time}</span>
+                          </div>
+                          <div class="flex items-center gap-4">
+                            <span class="text-sm font-bold" style="color: var(--dp-on-surface);">${row.total}</span>
+                            <span class="text-[11px] font-medium px-2.5 py-1 rounded-full" style="${row.statusStyle}">${row.status}</span>
+                          </div>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                  <!-- Donut -->
+                  <div class="rounded-xl border p-5" style="background: var(--dp-surface); border-color: var(--dp-outline-variant);">
+                    <h3 class="font-semibold mb-4" style="color: var(--dp-on-surface);">Métodos de Pago</h3>
+                    <div class="w-36 h-36 mx-auto rounded-full mb-4 flex items-center justify-center" style="background: conic-gradient(var(--dp-primary) 0% 65%, var(--dp-tertiary-fixed-dim) 65% 100%);">
+                      <div class="w-20 h-20 rounded-full flex flex-col items-center justify-center" style="background: var(--dp-surface);">
+                        <span class="font-bold text-lg" style="color: var(--dp-primary);">42</span>
+                        <span class="text-[9px] font-medium" style="color: var(--dp-on-surface-variant);">Transacc.</span>
+                      </div>
+                    </div>
+                    <div class="space-y-2">
+                      <div class="flex justify-between items-center p-2.5 rounded-lg" style="background: var(--dp-surface-container-low);">
+                        <div class="flex items-center gap-2">
+                          <div class="w-3 h-3 rounded-full" style="background: var(--dp-primary);"></div>
+                          <span class="text-sm" style="color: var(--dp-on-surface);">Tarjeta</span>
+                        </div>
+                        <span class="text-sm font-semibold" style="color: var(--dp-on-surface);">65%</span>
+                      </div>
+                      <div class="flex justify-between items-center p-2.5 rounded-lg" style="background: var(--dp-surface-container-low);">
+                        <div class="flex items-center gap-2">
+                          <div class="w-3 h-3 rounded-full" style="background: var(--dp-tertiary-fixed-dim);"></div>
+                          <span class="text-sm" style="color: var(--dp-on-surface);">Efectivo</span>
+                        </div>
+                        <span class="text-sm font-semibold" style="color: var(--dp-on-surface);">35%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    renderDashboard('full-red', 'kiora-red');
+    renderDashboard('full-terracota', 'terracota');
+    renderDashboard('full-mixta', 'mixta');
+  </script>
+</body>
+</html>

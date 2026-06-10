@@ -2,7 +2,15 @@ import React from 'react';
 
 export const HELP_TOPICS: { title: string; icon: React.ReactNode }[] = [
   {
-    title: 'Inicio de sesión y cuenta',
+    title: 'Kiora AI (Asistente)',
+    icon: (
+      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Inicio y Usuarios',
     icon: (
       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
@@ -10,15 +18,7 @@ export const HELP_TOPICS: { title: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    title: 'Gestión de productos y stock',
-    icon: (
-      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M10 2L3 7v11h14V7l-7-5zm0 2.236L15 8v9H5V8l5-3.764z" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Ventas y facturación',
+    title: 'Ventas y POS',
     icon: (
       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
         <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
@@ -26,26 +26,26 @@ export const HELP_TOPICS: { title: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    title: 'Usuarios y roles (Admin)',
+    title: 'Productos y Categorías',
     icon: (
       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+        <path d="M10 2L3 7v11h14V7l-7-5zm0 2.236L15 8v9H5V8l5-3.764z" />
       </svg>
     ),
   },
   {
-    title: 'Inventario y proveedores',
-    icon: (
-      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Reportes y mantenimiento',
+    title: 'Dashboard y Reportes',
     icon: (
       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
         <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Inventario y Proveedores',
+    icon: (
+      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
       </svg>
     ),
   },
@@ -54,88 +54,122 @@ export const HELP_TOPICS: { title: string; icon: React.ReactNode }[] = [
 export const HELP_FAQS = [
   // ── INICIO DE SESIÓN Y CUENTA ──
   {
-    question: '¿Cómo inicio sesión por primera vez en Kiora?',
+    question: '¿Cómo inicio sesión en el sistema?',
     answer:
-      'Para ingresar, utiliza el correo electrónico y la contraseña que te fueron proporcionados por el administrador de tu tienda. Si eres el dueño o administrador principal, usa las credenciales enviadas a tu correo de registro. Si el sistema te rechaza, verifica que no haya espacios en blanco al final de tu correo.',
+      'Para ingresar, utiliza el correo electrónico y la contraseña que te fueron asignados. Ingresa esos datos en la pantalla de "Iniciar Sesión" y presiona "Ingresar". Asegúrate de no tener espacios en blanco al final de tu correo.',
   },
   {
-    question: 'No recuerdo mi contraseña, ¿cómo la recupero?',
+    question: 'Olvidé mi contraseña, ¿cómo la recupero?',
     answer:
-      'En la pantalla principal de "Iniciar Sesión", haz clic en el enlace inferior "¿Olvidaste tu contraseña?". Se te pedirá ingresar tu correo electrónico registrado. En minutos recibirás un código de verificación de 6 dígitos para validar tu identidad y poder crear una nueva contraseña segura.',
+      'En la pantalla principal de "Iniciar Sesión", haz clic en "¿Olvidaste tu contraseña?". Se te pedirá tu correo registrado. Kiora te enviará un código de verificación de 6 dígitos. Ingrésalo en la aplicación para crear una nueva contraseña segura.',
   },
   {
-    question: 'Error Común: "Credenciales inválidas" o "Usuario bloqueado"',
+    question: '¿Por qué dice "Usuario Bloqueado"?',
     answer:
-      'Si ves este error, asegúrate de estar ingresando la contraseña respetando mayúsculas y minúsculas. Si después de varios intentos el sistema bloquea tu cuenta por seguridad, deberás contactar a un Administrador para que ingrese a la pestaña "Usuarios" y haga clic en "Desbloquear" junto a tu nombre.',
-  },
-
-  // ── GESTIÓN DE PRODUCTOS Y STOCK ──
-  {
-    question: '¿Cómo agrego un nuevo producto al inventario?',
-    answer:
-      '1. Dirígete al módulo de "Productos" desde el menú inferior (icono de caja).\n2. Haz clic en el botón rojo "+ Nuevo Producto".\n3. Llena la información básica: Nombre, Código de Barras (opcional), Categoría y Precio.\n4. Establece el "Stock Actual" (cuántas unidades tienes) y el "Stock Mínimo" (el límite para que el sistema te alerte que se está agotando).\n5. (Opcional) Sube una fotografía del producto para que sea más fácil identificarlo en el Punto de Venta.\n6. Haz clic en Guardar.',
-  },
-  {
-    question: '¿Cómo funcionan las Alertas de Stock Mínimo?',
-    answer:
-      'Cuando vendes un producto, Kiora descuenta automáticamente las unidades del inventario. Si la cantidad llega al número que configuraste como "Stock Mínimo" (o menor), el producto aparecerá marcado en rojo en el catálogo y generará una alerta en la pestaña "Alertas de Stock" dentro del módulo de Proveedores.',
-  },
-  {
-    question: 'Error Común: "El archivo de imagen es muy pesado"',
-    answer:
-      'Al subir una foto para un producto, asegúrate de que el formato sea JPG, PNG o WebP, y que su tamaño no supere los 5MB. Si la imagen es muy grande, recórtala o usa una herramienta web para comprimirla antes de intentarlo nuevamente.',
+      'Si el sistema bloqueó tu cuenta (por seguridad tras múltiples intentos fallidos o por decisión de la empresa), debes contactar a un Administrador. El administrador podrá ir al módulo de "Usuarios" y reactivar tu acceso.',
   },
 
-  // ── PUNTO DE VENTA (CARRITO) Y FACTURACIÓN ──
+  // ── USUARIOS Y SEGURIDAD (ADMIN) ──
   {
-    question: '¿Cómo registro una venta rápida (POS)?',
+    question: '¿Cómo ver todos los usuarios registrados?',
     answer:
-      '1. Ve a "Ventas & Historial" y haz clic en "+ Nueva Venta", o toca el botón rojo con el símbolo de dinero en el centro del menú móvil.\n2. En el catálogo superior, toca los productos que el cliente desea llevar.\n3. En el carrito (parte inferior), ajusta las cantidades si lleva más de un mismo artículo con los botones (+) y (-).\n4. Selecciona el método de pago (Efectivo, Tarjeta, o Digital/QR).\n5. Haz clic en "REALIZAR COBRO". La venta quedará registrada inmediatamente en el historial.',
+      'Si eres Administrador, ve al módulo "Usuarios" (icono de múltiples personas). Allí verás una lista completa de todos los empleados y administradores, con una barra de búsqueda para encontrarlos rápidamente.',
   },
   {
-    question: '¿Cómo funciona el pago "Digital" con Stripe / Código QR?',
+    question: '¿Cómo añadir un nuevo usuario o empleado?',
     answer:
-      'Si seleccionas el método "Digital" y Kiora está configurado con Stripe (para kioscos o cobros digitales), el sistema generará una sesión de pago remota o un código QR. El cliente lo escanea con su celular, paga con su tarjeta de crédito/débito o Apple/Google Pay, y Kiora detectará automáticamente cuando el pago sea exitoso, cambiando la orden de "Pendiente" a "Completada".',
+      'En el módulo de "Usuarios", presiona el botón principal "+ Nuevo Usuario". Completa sus datos (Nombre, Correo), asígnale una contraseña temporal y define su Rol (Admin o Empleado). Al finalizar, presiona "Guardar".',
   },
   {
-    question: 'Error Común: "Producto Agotado" al intentar vender',
+    question: '¿Cómo bloquear a un empleado que ya no trabaja aquí?',
     answer:
-      'Si un producto aparece en gris con la etiqueta "Agotado", el sistema no te permitirá agregarlo al carrito para evitar descuadres de inventario. Debes ir al módulo de Productos, buscar el ítem y actualizar su "Stock Actual" tras recibir nueva mercancía.',
+      'En el listado de "Usuarios", busca al ex-empleado y haz clic en el icono del "Candado rojo". Esto bloqueará su acceso de inmediato, impidiendo que inicie sesión, pero mantendrá su historial de ventas intacto en los reportes.',
+  },
+  {
+    question: '¿Cómo cambiar la contraseña de un empleado?',
+    answer:
+      'Si un empleado olvidó su contraseña, búscalo en el listado de "Usuarios" y haz clic en el icono de la "Llave". El sistema te permitirá establecer una nueva contraseña directamente sin necesidad de usar el correo.',
+  },
+
+  // ── KIORA AI (INTELIGENCIA ARTIFICIAL) ──
+  {
+    question: '¿Cómo utilizar la IA de Kiora?',
+    answer:
+      'Kiora AI es tu asistente virtual. Para abrirlo:\n- En móviles: Toca el icono "AI" (un agente con auriculares) en la barra superior derecha.\n- En computadoras: Haz clic en la tarjeta "Kiora AI" en la parte inferior del menú lateral izquierdo.\n\nUna vez abierto, puedes escribirle preguntas u órdenes en el chat, como: "Sugiéreme qué productos reabastecer hoy" o "Analiza mis ventas de la semana".',
+  },
+
+  // ── VENTAS Y PUNTO DE VENTA (POS) ──
+  {
+    question: '¿Cómo registrar una nueva venta?',
+    answer:
+      '1. Ve al módulo "Ventas" y presiona "+ Nueva Venta" (o usa el atajo en el menú móvil).\n2. Toca los productos del catálogo para añadirlos al carrito.\n3. Selecciona la forma de pago (Efectivo, Tarjeta, Digital).\n4. Haz clic en "Realizar Cobro".',
+  },
+  {
+    question: '¿Cómo usar los botones del carrito (Aumentar, Disminuir, Eliminar)?',
+    answer:
+      'Dentro de la ventana del carrito de compras:\n- Botón [+]: Suma una unidad de ese producto.\n- Botón [-]: Resta una unidad.\n- Icono de Basurero: Elimina ese producto del carrito por completo.',
+  },
+  {
+    question: '¿Cómo ver y descargar recibos de ventas pasadas?',
+    answer:
+      'En el módulo "Ventas", verás la tabla con el historial. Haz clic en el icono del "Ojo" (Ver Detalle) en cualquier venta. Se abrirá una ventana donde encontrarás los botones de "Descargar PDF" o "Imprimir Recibo".',
+  },
+
+  // ── PRODUCTOS Y CATEGORÍAS ──
+  {
+    question: '¿Cómo crear o añadir un nuevo producto?',
+    answer:
+      'Ve al módulo "Productos" y haz clic en el botón rojo "+ Nuevo Producto". Llena el nombre, código de barras, categoría y precio. También debes poner la cantidad actual que tienes en inventario. Al terminar, dale a "Guardar".',
+  },
+  {
+    question: '¿Cómo editar el precio o eliminar un producto?',
+    answer:
+      'En el listado de "Productos", busca el ítem que quieres modificar. \n- Lápiz (Editar): Cambia su precio, foto o nombre.\n- Basurero (Eliminar): Bórralo del sistema (solo se permite si no tiene ventas asociadas para no dañar reportes).',
+  },
+  {
+    question: '¿Cómo crear y usar las Categorías?',
+    answer:
+      'Las categorías agrupan los productos (ej. "Bebidas", "Postres"). Ve a "Categorías", presiona "+ Nueva Categoría", elige un icono y ponle nombre. Luego, al crear un producto, podrás asignarlo a esta nueva categoría.',
   },
 
   // ── INVENTARIO Y PROVEEDORES ──
   {
-    question: '¿Para qué sirve el módulo de Proveedores?',
+    question: '¿Cómo funcionan las alertas de stock?',
     answer:
-      'Sirve como tu directorio comercial. Aquí puedes guardar el nombre de la empresa, el NIT/ID Fiscal, y los datos de contacto (teléfono, email) de las personas que te surten mercancía. Es vital para tener todo centralizado cuando las "Alertas de Stock" te avisen que debes hacer un re-pedido.',
+      'Cuando vendes, el stock baja automáticamente. Si llega al "Stock Mínimo" que le configuraste al producto, el sistema lanzará una alerta roja. Puedes ver todos los productos agotados en la pestaña "Inventario / Proveedores".',
   },
   {
-    question: '¿Cómo agrupo mis productos? (Uso de Categorías)',
+    question: '¿Cómo añadir un nuevo Proveedor?',
     answer:
-      'Ve al menú de "Productos" y haz clic en la pestaña "Categorías". Allí puedes crear grupos como "Bebidas", "Lácteos", o "Aseo". Al asignar tus productos a estas categorías, el Punto de Venta generará botones automáticos de filtrado, haciendo que cobrar sea muchísimo más rápido.',
-  },
-
-  // ── REPORTES Y MANTENIMIENTO ──
-  {
-    question: '¿Cómo genero y descargo un reporte de ganancias?',
-    answer:
-      '1. Entra al módulo de "Reportes" (icono de gráfica de barras).\n2. Selecciona qué datos quieres analizar (Ventas, Productos más vendidos, etc.) y elige un rango de fechas (Hoy, Esta semana, Este mes).\n3. Revisa la gráfica interactiva para entender tus picos de venta.\n4. Para descargarlo, usa los botones superiores "Exportar Excel" o "Exportar PDF" para enviar el balance a tu contador.',
-  },
-  {
-    question: '¿Puedo enviar un reporte por correo directamente desde Kiora?',
-    answer:
-      'Sí. En el módulo de Reportes, haz clic en el botón "Enviar Email". Ingresa el correo de destino (por ejemplo, el de tu socio o contador) y Kiora adjuntará un resumen detallado de las métricas en un correo electrónico con formato profesional.',
+      'Ve al módulo "Proveedores" (Inventario), presiona "+ Nuevo Proveedor". Completa el nombre de la empresa, su teléfono y correo. Así tendrás un directorio a la mano cuando las alertas de stock te indiquen que debes comprar más.',
   },
 
-  // ── USUARIOS Y ROLES (SOLO ADMINISTRADORES) ──
+  // ── DASHBOARD Y REPORTES ──
   {
-    question: '¿Cómo creo una cuenta para un nuevo empleado?',
+    question: '¿Cómo leer el Dashboard principal?',
     answer:
-      'Entra al módulo de "Ajustes/Usuarios" (icono de tuerca o múltiples personas). Haz clic en "Nuevo Usuario". Asigna un nombre, un correo institucional, una contraseña temporal y define su ROL. \n\n- ROL EMPLEADO: Solo puede vender y ver el inventario.\n- ROL ADMIN: Puede ver reportes financieros, borrar registros y gestionar usuarios.',
+      'El Dashboard (pantalla de inicio) te muestra un resumen de tu dinero. \nUsa los botones superiores "Hoy", "Esta Semana", "Este Mes" para filtrar las ganancias de ese periodo exacto. Las gráficas te mostrarán a qué horas vendiste más.',
   },
   {
-    question: '¿Cómo le quito el acceso a un ex-empleado?',
+    question: '¿Cómo exportar mis datos a Excel o PDF?',
     answer:
-      'No necesitas eliminar su cuenta y perder su historial de ventas. En el listado de usuarios, busca a la persona y haz clic en el icono del candado rojo ("Bloquear"). Inmediatamente se cerrará su sesión y no podrá volver a entrar a la aplicación.',
+      'Si eres Administrador, entra al módulo "Reportes". Selecciona el rango de fechas en el calendario. Luego presiona el botón verde "Exportar Excel" para tener una tabla, o el botón rojo "Exportar PDF" para un informe gráfico.',
+  },
+  {
+    question: '¿Cómo enviar un reporte por correo?',
+    answer:
+      'En "Reportes", presiona el botón "Enviar Email". Escribe la dirección de correo (ej. la de tu contador) y el sistema enviará los datos financieros automáticamente de forma segura.',
+  },
+
+  // ── AJUSTES Y PERFIL ──
+  {
+    question: '¿Cómo activar el Modo Oscuro?',
+    answer:
+      'En la barra superior (junto a la campana de notificaciones), verás un icono de Sol o Luna. Al hacer clic ahí, cambiarás la interfaz entre modo claro (blanco) y modo oscuro (negro) de inmediato.',
+  },
+  {
+    question: '¿Cómo cambiar el idioma de Kiora?',
+    answer:
+      'Ve al menú "Ajustes", selecciona "Idioma" y esto activará el selector en pantalla para que elijas entre Español, Inglés, etc.',
   }
 ];

@@ -62,4 +62,5 @@ export interface Paginated<T> {
 export interface CreateOrderDto {
   metodopago_usu: string;
   items: OrderItem[];
+  descuento_global?: number;
 }

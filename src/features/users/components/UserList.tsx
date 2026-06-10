@@ -12,6 +12,7 @@ interface UserListProps {
   onEditUser: (user: User) => void;
   onToggleBlock: (user: User) => void;
   onResetPassword: (user: User) => void;
+  onDeleteUser: (user: User) => void;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -33,201 +34,178 @@ export const UserList: React.FC<UserListProps> = ({
   onEditUser,
   onToggleBlock,
   onResetPassword,
+  onDeleteUser,
   currentPage,
   totalPages,
   onPageChange
 }) => {
-  const pageItems = getPaginationPages(
-    currentPage,
-    totalPages
-  );
+  const pageItems = getPaginationPages(currentPage, totalPages);
 
-
-  const avatarRing = (u: User & { isBlocked: boolean }) => {
+  const avatarStyle = (u: User & { isBlocked: boolean }) => {
     const k = roleKey(u.rol_usu);
-    if (k === 'admin') return 'bg-sky-50 text-sky-700 ring-sky-100';
-    if (k === 'cliente') return 'bg-amber-50 text-amber-800 ring-amber-100';
-    return 'bg-emerald-50 text-emerald-800 ring-emerald-100';
+    if (k === 'admin') return 'bg-primary-fixed/30 text-primary-container';
+    if (k === 'cliente') return 'bg-secondary-container/20 text-secondary-container';
+    return 'bg-tertiary/10 text-tertiary';
   };
 
   return (
-    <section className="mb-10">
-      <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[var(--panel-shadow)] ring-1 ring-slate-900/[0.04]">
-        {/* Barra superior del card */}
-        <div className="flex flex-col gap-6 border-b border-slate-100 bg-[#3E2723]/[0.02] px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-4 rounded-full bg-kiora-red"></div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Cuentas Registradas</p>
-            </div>
-            <p className="mt-1 text-sm text-slate-500 font-medium">Listado detallado de miembros del equipo</p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:max-w-2xl">
-            <button 
-              onClick={onAddUser}
-              className="w-full sm:w-auto rounded-xl bg-kiora-red px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-kiora-red/20 transition-all hover:bg-kiora-red-hover active:scale-95"
-            >
-              + Nuevo Usuario
-            </button>
-            <div className="relative flex-1 w-full">
-              <input
-                id="user-search"
-                type="search"
-                placeholder="Buscar por nombre o correo…"
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                aria-describedby="userlist-search-hint"
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:border-kiora-red/40 focus:outline-none focus:ring-2 focus:ring-kiora-red/10 transition-all"
-              />
-              <svg
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <p id="userlist-search-hint" className="mt-1.5 text-[11px] leading-snug text-slate-400">
-              Solo aplica a los usuarios visibles en esta página.
-            </p>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 className="headline-lg text-on-surface mb-1">Usuarios</h2>
+          <p className="body-md text-on-surface-variant">Listado detallado de miembros del equipo.</p>
+        </div>
+        <div className="flex gap-3 w-full sm:w-auto">
+          <button
+            onClick={onAddUser}
+            className="flex-1 sm:flex-none bg-primary text-on-primary label-sm px-4 py-2.5 rounded-lg flex items-center justify-center gap-1.5 shadow-sm hover:opacity-90 transition-all active:scale-[0.98]"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
+            Nuevo Usuario
+          </button>
+          <div className="relative flex-1 sm:w-60">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 pointer-events-none" style={{ fontSize: '18px' }}>search</span>
+            <input
+              id="user-search"
+              type="search"
+              placeholder="Buscar por nombre o correo…"
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-full rounded-lg border border-outline-variant/50 bg-surface py-2.5 pl-9 pr-3 label-md text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+            />
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-16">
-              <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-100 border-t-kiora-red" />
-              <span className="text-sm font-medium text-slate-500">Sincronizando cuentas…</span>
-            </div>
-          ) : users.length === 0 ? (
-            <div className="px-6 py-14 text-center">
-              <p className="text-sm font-medium text-slate-600">
-                {searchTerm ? 'No hay coincidencias en esta página' : 'No hay usuarios registrados'}
-              </p>
-              <p className="mt-1 text-xs text-slate-400">Prueba otro término o cambia de página.</p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {(Array.isArray(users) ? users : []).map((u, i) => (
-                <li key={u.id_usu || `user-${i}`}>
-                  <div className="flex flex-col gap-3 px-4 py-4 transition-colors hover:bg-slate-50/90 sm:flex-row sm:items-center sm:gap-4 sm:px-6 sm:py-3.5">
-                    <div className="flex min-w-0 flex-1 items-center gap-3.5">
-                      <div
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-bold ring-2 ${avatarRing(u)}`}
-                      >
-                        {getInitials(String(u.nom_usu))}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold text-slate-900">{String(u.nom_usu || 'Sin nombre')}</p>
-                        <p className="truncate text-sm text-slate-500">{u.correo_usu}</p>
-                        <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-slate-600">
-                          {u.rol_usu === 'cliente' ? 'operario' : (u.rol_usu || 'Usuario')}
-                        </span>
-                      </div>
+      {/* User list card */}
+      <div className="bg-surface rounded-xl border border-outline-variant/30 overflow-hidden">
+        {isLoading ? (
+          <div className="flex flex-col items-center gap-3 py-16">
+            <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <span className="body-md text-on-surface-variant">Sincronizando cuentas…</span>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="px-6 py-14 text-center">
+            <p className="label-md text-on-surface-variant">
+              {searchTerm ? 'No hay coincidencias en esta página' : 'No hay usuarios registrados'}
+            </p>
+            <p className="body-md text-on-surface-variant mt-1">Prueba otro término o cambia de página.</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-outline-variant/20">
+            {(Array.isArray(users) ? users : []).map((u, i) => (
+              <li key={u.id_usu || `user-${i}`}>
+                <div className="flex flex-col gap-3 px-4 py-4 transition-colors hover:bg-surface-container-low sm:flex-row sm:items-center sm:gap-4 sm:px-5 sm:py-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${avatarStyle(u)}`}>
+                      {getInitials(String(u.nom_usu))}
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="label-md text-on-surface break-words">{String(u.nom_usu || 'Sin nombre')}</p>
+                      <p className="body-md text-on-surface-variant break-words">{u.correo_usu}</p>
+                      <span className="mt-1 inline-flex rounded-md bg-surface-container-high px-2 py-0.5 label-sm text-on-surface-variant capitalize">
+                        {u.rol_usu === 'cliente' ? 'operario' : (u.rol_usu || 'Usuario')}
+                      </span>
+                    </div>
+                  </div>
 
-                    <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-                      {u.isBlocked ? (
-                        <div className="flex flex-col items-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => onToggleBlock(u)}
-                            className="rounded-full bg-red-100 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-red-700 ring-1 ring-red-200 transition-colors hover:bg-red-200 animate-pulse"
-                          >
-                            Bloqueado
-                          </button>
-                          <span className="text-[9px] text-red-400 font-bold uppercase">Click para liberar</span>
-                        </div>
-                      ) : (
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {u.isBlocked ? (
+                      <div className="flex flex-col items-end gap-1">
                         <button
                           type="button"
                           onClick={() => onToggleBlock(u)}
-                          className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200/80 hover:bg-emerald-100 transition-colors"
+                          className="rounded-lg bg-error-container/30 px-3 py-1 label-sm text-error border border-error/20 hover:bg-error-container/50 transition-all"
                         >
-                          Activo
+                          Bloqueado
                         </button>
-                      )}
-
-
-                      <div className="flex items-center gap-0.5 rounded-xl bg-slate-100/80 p-0.5 ring-1 ring-slate-200/80">
-                        <button
-                          type="button"
-                          onClick={() => onResetPassword(u)}
-                          className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-amber-600"
-                          title="Cambiar Contraseña"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                          </svg>
-                        </button>
-                         <button
-                          type="button"
-                          onClick={() => onEditUser(u)}
-                          className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-white hover:text-sky-600"
-                          title="Editar"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
+                        <span className="label-sm text-error/60">Click para liberar</span>
                       </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onToggleBlock(u)}
+                        className="rounded-lg bg-tertiary/10 px-3 py-1 label-sm text-tertiary border border-tertiary/20 hover:bg-tertiary/20 transition-all"
+                      >
+                        Activo
+                      </button>
+                    )}
+
+                    <div className="flex items-center gap-0.5 rounded-lg bg-surface-container-high p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => onResetPassword(u)}
+                        className="rounded-md p-1.5 text-on-surface-variant hover:bg-surface hover:text-secondary-container transition-all"
+                        title="Cambiar Contraseña"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>lock_reset</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onEditUser(u)}
+                        className="rounded-md p-1.5 text-on-surface-variant hover:bg-surface hover:text-primary transition-all"
+                        title="Editar"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteUser(u)}
+                        className="rounded-md p-1.5 text-on-surface-variant hover:bg-surface hover:text-error transition-all"
+                        title="Eliminar"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                      </button>
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
 
-          {totalPages > 1 && !isLoading && (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:px-6">
-               <button
-                type="button"
-                disabled={currentPage <= 1}
-                onClick={() => onPageChange(currentPage - 1)}
-                className="text-xs font-semibold text-slate-600 transition-colors hover:text-[#ec131e] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                ← Anterior
-              </button>
-              <div className="flex flex-wrap justify-center gap-1">
-                {(Array.isArray(pageItems) ? pageItems : []).map((item, idx) =>
-                  item === 'ellipsis' ? (
-                    <span
-                      key={`ellipsis-${idx}`}
-                      className="flex h-7 w-7 items-center justify-center text-xs text-slate-400"
-                      aria-hidden
-                    >
-                      …
-                    </span>
-                  ) : (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => onPageChange(item)}
-                      className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-lg text-xs font-bold transition-all ${
-                        currentPage === item
-                          ? 'bg-kiora-red text-white shadow-lg shadow-kiora-red/20'
-                          : 'text-slate-600 hover:bg-white hover:ring-1 hover:ring-slate-200'
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  )
-                )}
-              </div>
-              <button
-                type="button"
-                disabled={currentPage >= totalPages}
-                onClick={() => onPageChange(currentPage + 1)}
-                className="text-xs font-semibold text-slate-600 transition-colors hover:text-[#ec131e] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Siguiente →
-              </button>
+        {totalPages > 1 && !isLoading && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-outline-variant/30 bg-surface-container-low/50 px-4 py-3 sm:px-5">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => onPageChange(currentPage - 1)}
+              className="label-sm text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ← Anterior
+            </button>
+            <div className="flex flex-wrap justify-center gap-1">
+              {(Array.isArray(pageItems) ? pageItems : []).map((item, idx) =>
+                item === 'ellipsis' ? (
+                  <span key={`ellipsis-${idx}`} className="flex h-7 w-7 items-center justify-center label-sm text-on-surface-variant/40" aria-hidden>…</span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => onPageChange(item)}
+                    className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-md text-xs font-semibold transition-all ${
+                      currentPage === item
+                        ? 'bg-primary text-on-primary'
+                        : 'text-on-surface-variant hover:bg-surface-container-high'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
             </div>
-          )}
-        </div>
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => onPageChange(currentPage + 1)}
+              className="label-sm text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Siguiente →
+            </button>
+          </div>
+        )}
       </div>
-    </section>
+    </div>
   );
 };

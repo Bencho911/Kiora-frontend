@@ -4,8 +4,8 @@ import MainLayout from "@/layouts/mainlayout.astro";
 ---
 
 <MainLayout title="Panel Principal - Kiora">
-  <script is:inline>
-    (function () {
+  <script is:inline data-astro-rerun>
+    function checkAuth() {
       try {
         if (!localStorage.getItem("kiora_token")) {
           window.location.replace("/login/");
@@ -13,7 +13,12 @@ import MainLayout from "@/layouts/mainlayout.astro";
       } catch (e) {
         window.location.replace("/login/");
       }
-    })();
+    }
+    checkAuth();
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted) checkAuth();
+    });
+    document.addEventListener('astro:page-load', checkAuth);
   </script>
   <PanelApp client:only="react" />
 </MainLayout>

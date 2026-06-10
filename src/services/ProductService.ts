@@ -10,10 +10,13 @@ export interface CreateProductDto {
   stock_actual?: number;
   stock_minimo?: number;
   fk_cod_cats?: number[];
+  fk_cod_prov?: number;
   imagen?: File;
   alerta_stock_critico?: boolean;
   /** Fecha de vencimiento del producto (ISO yyyy-mm-dd o completo). */
   fechaven_prod?: string | null;
+  descuento?: number;
+  codigo_barras?: string;
 }
 
 export class ProductService {
@@ -132,6 +135,8 @@ export class ProductService {
     // Campos con nombres exactos que espera el schema Joi del backend
     fd.append('nom_prod', dto.nom_prod);
     fd.append('precio_unitario', String(dto.precio_prod));   // backend: precio_unitario
+    if (dto.descuento !== undefined) fd.append('descuento', String(dto.descuento));
+    if (dto.codigo_barras) fd.append('codigo_barras', dto.codigo_barras);
 
     if (dto.desc_prod) fd.append('descrip_prod', dto.desc_prod); // backend: descrip_prod
     if (dto.stock_actual !== undefined) fd.append('stock_actual', String(dto.stock_actual));
@@ -171,6 +176,19 @@ export class ProductService {
     const list = Array.isArray(res) ? res : res.data;
     const today = new Date();
     return list.filter(p => p.fechaven_prod && new Date(p.fechaven_prod) < today);
+  }
+
+  async getExpiringProducts(days: number = 15): Promise<Product[]> {
+    const res = await this.getProducts(1, 1000);
+    const list = Array.isArray(res) ? res : res.data;
+    const today = new Date();
+    const limit = new Date();
+    limit.setDate(limit.getDate() + days);
+    return list.filter(p => {
+      if (!p.fechaven_prod) return false;
+      const d = new Date(p.fechaven_prod);
+      return d >= today && d <= limit;
+    });
   }
 
   // Categories

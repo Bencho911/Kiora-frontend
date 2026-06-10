@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { authService, alertService, incidentService } from '@/config/setup';
 import type { Incident, CreateIncidentDto } from '@/models/Incident';
 import { getErrorMessage } from '@/utils/getErrorMessage';
+import { pushAppNotification } from '@/lib/pushAppNotification';
 import { IncidentForm } from './maintenance/IncidentForm';
 import { IncidentList } from './maintenance/IncidentList';
 
@@ -10,7 +11,7 @@ export function MaintenanceSection() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const user = authService.getUser();
   const isAdmin = authService.isAdmin();
 
@@ -31,7 +32,7 @@ export function MaintenanceSection() {
 
   const handleSaveIncident = async (dto: CreateIncidentDto) => {
     if (!user?.id_usu) return alertService.showToast('error', 'Sesión inválida');
-    
+
     setIsSaving(true);
     try {
       await incidentService.create({
@@ -39,6 +40,7 @@ export function MaintenanceSection() {
         fk_id_usu: Number(user.id_usu)
       });
       alertService.showToast('success', 'Reporte enviado correctamente');
+      pushAppNotification('success', 'Nuevo Ticket', `Se ha generado un nuevo reporte de incidencia.`, { category: 'system', toast: false });
       setShowForm(false);
       void loadIncidents();
     } catch (e) {
@@ -52,47 +54,67 @@ export function MaintenanceSection() {
     try {
       await incidentService.updateStatus(id, status);
       alertService.showToast('success', 'Estado actualizado');
+      pushAppNotification('info', 'Estado Actualizado', `El estado de la incidencia #${id} ha cambiado a ${status}.`, { category: 'system', toast: false });
       void loadIncidents();
     } catch (e) {
       alertService.showToast('error', 'No se pudo actualizar el estado');
     }
   };
 
+  const deleteIncident = async (id: number) => {
+    try {
+      const confirmed = await alertService.showConfirm(
+        '¿Eliminar Incidencia?',
+        'Esta acción no se puede deshacer',
+        'Eliminar',
+        'Cancelar',
+        '#ec131e'
+      );
+      if (!confirmed) return;
+      await incidentService.delete(id);
+      alertService.showToast('success', 'Incidencia eliminada correctamente');
+      pushAppNotification('warning', 'Incidencia Eliminada', `El reporte #${id} ha sido borrado del sistema.`, { category: 'system', toast: false });
+      void loadIncidents();
+    } catch (e) {
+      alertService.showToast('error', getErrorMessage(e, 'No se pudo eliminar la incidencia'));
+    }
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-20 px-4 sm:px-0">
-      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between border-b border-slate-100 pb-8">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-[#ec131e] animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#ec131e] bg-red-50 px-3 py-1 rounded-lg">Módulo de Infraestructura</span>
-          </div>
-          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">Mantenimiento <span className="text-kiora-red">&</span> Soporte</h2>
-          <p className="mt-1 text-slate-500 font-medium max-w-xl">Central de reportes técnicos y asistencia operativa para la plataforma.</p>
+          <h2 className="headline-lg text-on-surface mb-1">
+            Mantenimiento <span className="text-primary">&</span> Soporte
+          </h2>
+          <p className="body-md text-on-surface-variant max-w-xl">Central de reportes técnicos y asistencia operativa.</p>
         </div>
         {!showForm && (
-          <button 
+          <button
             onClick={() => setShowForm(true)}
-            className="bg-[#ec131e] text-white px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#ec131e]/20 hover:shadow-[#ec131e]/30 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-2 w-full lg:w-auto justify-center"
+            className="bg-primary text-on-primary label-sm px-4 py-2.5 rounded-lg flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all active:scale-[0.98] w-full sm:w-auto justify-center"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
             Nuevo Ticket
           </button>
         )}
-      </header>
+      </div>
 
       {showForm && (
-        <IncidentForm 
+        <IncidentForm
           onSave={handleSaveIncident}
           isSaving={isSaving}
           onCancel={() => setShowForm(false)}
         />
       )}
 
-      <IncidentList 
+      <IncidentList
         incidents={incidents}
         isLoading={isLoading}
         isAdmin={isAdmin}
         onUpdateStatus={updateStatus}
+        onDeleteIncident={deleteIncident}
       />
     </div>
   );

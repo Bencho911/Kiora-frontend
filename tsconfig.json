@@ -22,6 +22,8 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "types": ["node"],
+    "module": "esnext",
+    "noEmit": true,
     "skipLibCheck": true
   }
 }
