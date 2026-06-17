@@ -53,6 +53,22 @@ class SessionService {
     if (!res.ok) throw new Error(data.error || 'Error al cerrar caja');
     return data.sesion;
   }
+
+  async getSessionsHistory(limit: number = 20, offset: number = 0): Promise<SessionData[]> {
+    const res = await fetch(`${API_URL}/orders/sessions/history?limit=${limit}&offset=${offset}`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error('Error al obtener historial de sesiones');
+    return res.json();
+  }
+
+  async getSessionReport(id: number): Promise<any> {
+    const res = await fetch(`${API_URL}/orders/sessions/${id}/report`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error('Error al obtener reporte de sesión');
+    return res.json();
+  }
 }
 
 export const sessionService = new SessionService();

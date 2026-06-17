@@ -61,7 +61,7 @@ export function ReportChart({ data, type }: ReportChartProps) {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
                 <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`$${value.toLocaleString('es-CO')}`, 'Ingresos']} />
+                <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`$${Number(value || 0).toLocaleString('es-CO')}`, 'Ingresos']} />
                 <Line yAxisId="left" type="monotone" dataKey="Ventas" stroke="#ec131e" strokeWidth={4} dot={{ r: 4, fill: '#ec131e', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
               </LineChart>
             </ChartContainer>
@@ -82,7 +82,7 @@ export function ReportChart({ data, type }: ReportChartProps) {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
-                <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`${value} pedidos`, 'Pedidos']} />
+                <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`${value || 0} pedidos`, 'Pedidos']} />
                 <Bar dataKey="Pedidos" radius={[6, 6, 0, 0]} fill="#0f172a" maxBarSize={50} />
               </BarChart>
             </ChartContainer>
@@ -103,7 +103,7 @@ export function ReportChart({ data, type }: ReportChartProps) {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`$${value.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`, 'Ticket Promedio']} />
+                <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`$${Number(value || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 })}`, 'Ticket Promedio']} />
                 <Bar dataKey="TicketPromedio" radius={[6, 6, 0, 0]} fill="#cbd5e1" maxBarSize={50} />
               </BarChart>
             </ChartContainer>
@@ -141,8 +141,8 @@ export function ReportChart({ data, type }: ReportChartProps) {
               <BarChart data={chartData} layout="vertical" margin={{ left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} width={90} />
-                <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`$${value.toLocaleString('es-CO')}`, 'Ingresos']} />
+                <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} width={110} tickFormatter={(val) => val && val.length > 15 ? val.substring(0, 15) + '...' : val} />
+                <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`$${Number(value || 0).toLocaleString('es-CO')}`, 'Ingresos']} />
                 <Bar dataKey="Ingresos" radius={[0, 6, 6, 0]} maxBarSize={30}>
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -181,7 +181,7 @@ export function ReportChart({ data, type }: ReportChartProps) {
                   ))}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} formatter={(value: any) => [`${value} unidades`, 'Cantidad']} />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 700, color: '#64748b', paddingBottom: '20px' }} />
+                <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 700, color: '#64748b', paddingTop: '10px' }} />
               </PieChart>
             </ChartContainer>
           </CardContent>

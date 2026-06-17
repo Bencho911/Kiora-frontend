@@ -11,6 +11,7 @@ import { useSalesStore } from '@/store/useSalesStore';
 import { useInventoryStore } from '@/store/useInventoryStore';
 import { useUserManagement } from '@/features/users/hooks/useUserManagement';
 import { useRealTimeUpdates } from '@/hooks/useRealTimeUpdates';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 import { AdminNavbar } from './AdminNavbar';
 import { AdminSubNav } from './AdminSubNav';
@@ -111,6 +112,24 @@ export default function PanelApp() {
 
   usePanelUrlSync(activeTab, setActiveTab, setOpenOrderFromUrl, openPOS);
   useRealTimeUpdates();
+
+  useKeyboardShortcuts({
+    onEscape: () => {
+      if (isOrderDrawerOpen) setIsOrderDrawerOpen(false);
+      else if (isProfileOpen) setIsProfileOpen(false);
+      else if (userMgmt.isDrawerOpen) userMgmt.setIsDrawerOpen(false);
+    },
+    onNewSale: () => openPOS(),
+    onSearch: () => {
+      // Focus a generic search input if it exists, or just open POS for barcode scanning
+      const searchInput = document.querySelector('input[type="text"][placeholder*="Buscar"]') as HTMLInputElement;
+      if (searchInput) searchInput.focus();
+      else openPOS();
+    },
+    onExport: () => {
+      // Future hook-in to trigger export action
+    }
+  });
 
   // Persistir carrito por usuario
   const cartKey = user?.id_usu ? `kiora_cart_${user.id_usu}` : null;

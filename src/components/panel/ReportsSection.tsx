@@ -1,10 +1,11 @@
 import React from 'react';
+import { ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line } from 'recharts';
 import type { ReportFilters as Filters, DetailedSalesReport, ProductRankingReport } from '@/services/ReportService';
 import type { Category } from '@/models/Product';
 import type { Incident } from '@/models/Incident';
 import { ReportFilters } from './reports/ReportFilters';
 import { ReportTable } from './reports/ReportTable';
-import { SavedReportsList } from './reports/SavedReportsList';
+import { SessionHistoryTab } from './reports/SessionHistoryTab';
 import { EmailPreviewModal } from './reports/EmailPreviewModal';
 import { useInventoryStore } from '@/store/useInventoryStore';
 import { useReportsManager } from '@/hooks/useReportsManager';
@@ -15,6 +16,7 @@ export function ReportsSection() {
     isLoading, reportData, savedReports,
     activeTab, setActiveTab, alerts,
     incidents, previewData, setPreviewData,
+    inventoryChartData, totalProductsCount,
     updateIncidentStatus, handleSaveReport,
     deleteSavedReport, loadSavedReport,
     generateReport, handleExportExcel,
@@ -24,7 +26,7 @@ export function ReportsSection() {
 
   const tabs = [
     { id: 'generar', label: 'Generar', icon: 'bar_chart' },
-    { id: 'guardados', label: 'Historial', icon: 'history' },
+    { id: 'turnos', label: 'Cajas/Turnos', icon: 'point_of_sale' },
     { id: 'alertas', label: 'Alertas', icon: 'notifications' },
     { id: 'incidencias', label: 'Soporte', icon: 'support' },
     { id: 'inventario', label: 'Inventario', icon: 'inventory_2' },
@@ -80,13 +82,9 @@ export function ReportsSection() {
         </div>
       )}
 
-      {/* HISTORIAL */}
-      {activeTab === 'guardados' && (
-        <SavedReportsList
-          reports={savedReports}
-          onDelete={deleteSavedReport}
-          onLoad={loadSavedReport}
-        />
+      {/* HISTORIAL DE TURNOS */}
+      {activeTab === 'turnos' && (
+        <SessionHistoryTab />
       )}
 
       {/* ALERTAS */}
@@ -241,7 +239,7 @@ export function ReportsSection() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="bg-surface rounded-xl border border-outline-variant/30 p-5">
               <p className="label-sm text-on-surface-variant mb-1">Total Prod.</p>
-              <p className="headline-lg text-on-surface">{reportData.length || '---'}</p>
+              <p className="headline-lg text-on-surface">{totalProductsCount || '---'}</p>
             </div>
             <div className="bg-surface rounded-xl border border-outline-variant/30 p-5">
               <p className="label-sm text-error mb-1">Bajo Stock</p>
@@ -266,10 +264,41 @@ export function ReportsSection() {
                 Actualizar Datos
               </button>
             </div>
-            <div className="p-8 text-center bg-surface-container-low">
-              <span className="material-symbols-outlined text-4xl text-outline-variant mb-3">bar_chart</span>
-              <p className="body-md text-on-surface-variant">Gráficos de rotación de inventario próximamente disponibles.</p>
-              <p className="label-sm text-on-surface-variant/70 mt-1">Utiliza la pestaña "Generar" para obtener tablas detalladas.</p>
+            <div className="p-6 bg-surface-container-low overflow-x-auto">
+              {inventoryChartData.length > 0 ? (
+                <div style={{ minWidth: '600px', height: '350px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={inventoryChartData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(150, 150, 150, 0.2)" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'var(--md-sys-color-on-surface-variant)' }} axisLine={false} tickLine={false} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 12, fill: 'var(--md-sys-color-on-surface-variant)' }} axisLine={false} tickLine={false} />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: 'var(--md-sys-color-on-surface-variant)' }} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val / 1000}k`} />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-surface border border-outline-variant/30 p-3 rounded-lg shadow-md">
+                                <p className="label-md text-on-surface mb-2">{label}</p>
+                                <p className="body-sm text-primary">Existencias: {payload[0].value} uds</p>
+                                <p className="body-sm text-tertiary">Valorización: ${(payload[1].value as number).toLocaleString('es-CO')}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: '12px' }} />
+                      <Bar yAxisId="left" dataKey="stock" name="Existencias (uds)" fill="var(--md-sys-color-primary)" radius={[4, 4, 0, 0]} barSize={30} />
+                      <Line yAxisId="right" type="monotone" dataKey="valorizacion" name="Valorización ($)" stroke="var(--md-sys-color-tertiary)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="py-10 text-center">
+                  <span className="material-symbols-outlined text-4xl text-outline-variant mb-3 animate-spin">sync</span>
+                  <p className="body-md text-on-surface-variant">Cargando datos de inventario...</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

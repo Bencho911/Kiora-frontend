@@ -5,7 +5,6 @@ interface SystemSettings {
   id: number;
   cierre_caja_automatico: boolean;
   hora_cierre_automatico: string;
-  abrir_siguiente_automatico: boolean;
   metodo_descuento_lote: 'FEFO' | 'FIFO';
   dias_alerta_vencimiento: number;
 }
@@ -110,22 +109,6 @@ export const SystemSettingsForm: React.FC = () => {
                 onChange={(e) => setSettings({ ...settings, hora_cierre_automatico: e.target.value })}
                 className="w-full bg-surface-container border border-outline-variant/50 rounded-lg px-3 py-2 text-on-surface outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed"
               />
-            </div>
-
-            <div className="flex items-start justify-between p-4 rounded-xl border border-outline-variant/40 bg-surface-container-lowest md:col-span-2">
-              <div>
-                <p className="label-md font-semibold text-on-surface">Apertura Automática (Día Siguiente)</p>
-                <p className="body-sm text-on-surface-variant mt-1">Al cerrar la caja, ¿abrir automáticamente la del día siguiente con balance en $0?</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer mt-1">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={settings.abrir_siguiente_automatico}
-                  onChange={(e) => setSettings({ ...settings, abrir_siguiente_automatico: e.target.checked })}
-                />
-                <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              </label>
             </div>
           </div>
         </section>

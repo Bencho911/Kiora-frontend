@@ -75,7 +75,7 @@ export class FetchHttpClient implements IHttpClient {
     this.apiKey = apiKey;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit): Promise<HttpResponse<T>> {
+  private async request<T>(endpoint: string, options: RequestInit, retries = 3): Promise<HttpResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
     // Inject API Key if present
@@ -97,6 +97,15 @@ export class FetchHttpClient implements IHttpClient {
       const responseData = isJson ? await response.json() : null;
 
       if (!response.ok) {
+        // ── Auto-retry para cold starts o servicios temporalmente no disponibles ──
+        const method = options.method || 'GET';
+        if ([502, 503, 504].includes(response.status) && retries > 0 && method === 'GET') {
+          const delay = (4 - retries) * 1500; // 1.5s, 3.0s, 4.5s
+          this.logger?.warn(`API no disponible (${response.status}) en ${endpoint}. Reintentando en ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.request<T>(endpoint, options, retries - 1);
+        }
+
         // ── Auto-logout on 401/403 (except known business-logic codes) ──
         const isAuthError = response.status === 401
           || (response.status === 403 && !responseData?.code?.startsWith?.('BUSINESS_'));
@@ -134,6 +143,15 @@ export class FetchHttpClient implements IHttpClient {
       };
     } catch (error: unknown) {
       const err = error as Error;
+
+      const method = options.method || 'GET';
+      if (retries > 0 && method === 'GET') {
+        const delay = (4 - retries) * 1500;
+        this.logger?.warn(`Error de red en ${endpoint} (${err.message}). Reintentando en ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.request<T>(endpoint, options, retries - 1);
+      }
+
       this.logger?.error(`Network Error on ${endpoint}`, { 
         endpoint, 
         message: err.message,

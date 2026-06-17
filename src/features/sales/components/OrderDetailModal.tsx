@@ -1,6 +1,7 @@
 import type { Order } from '@/models/Order';
 import React, { useState } from 'react';
 import { ReceiptModal } from './ReceiptModal';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 
 interface OrderDetailModalProps {
   detailOrder: Order;
@@ -50,7 +51,14 @@ export function OrderDetailModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between mx-2 mb-6 border-b border-slate-100 pb-4">
-          <div>
+          <div className="flex-1">
+            <Breadcrumbs
+              items={[
+                { label: 'Ventas e Historial', onClick: onClose },
+                { label: `Venta #${detailOrder.id_vent}` }
+              ]}
+              className="mb-3"
+            />
             <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
               Venta <span className="text-[#ec131e]">#{detailOrder.id_vent}</span>
             </h3>
@@ -60,7 +68,7 @@ export function OrderDetailModal({
           </div>
           <button 
             onClick={onClose} 
-            className="rounded-full bg-slate-50 p-2 text-slate-500 hover:bg-[#ec131e]/10 hover:text-[#ec131e] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ec131e]/20"
+            className="rounded-full bg-slate-50 p-2 text-slate-500 hover:bg-[#ec131e]/10 hover:text-[#ec131e] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ec131e]/20 self-start"
             aria-label="Cerrar detalle"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -7,6 +7,7 @@ import { useInventoryStore } from '@/store/useInventoryStore';
 import { useDebounce } from '@/hooks/useDebounce';
 import Fuse from 'fuse.js';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { SaleSuccessOverlay } from './SaleSuccessOverlay';
 
 export function OrderDrawer() {
   const {
@@ -23,7 +24,9 @@ export function OrderDrawer() {
     updateQuantity,
     resetCart,
     handleCreateOrder,
-    isSavingOrder: saving
+    isSavingOrder: saving,
+    saleSuccessData,
+    setSaleSuccessData
   } = useSalesStore();
 
   const [rfidState, setRfidState] = useState<'idle' | 'waiting' | 'approved' | 'error'>('idle');
@@ -99,6 +102,17 @@ export function OrderDrawer() {
   return (
     <div className="fixed inset-0 z-[100] flex animate-in fade-in duration-300">
       <div className="absolute inset-0 bg-inverse-surface/50 backdrop-blur-sm" onClick={onClose} aria-label="Cerrar nueva venta" />
+
+      <SaleSuccessOverlay
+        isVisible={!!saleSuccessData}
+        total={saleSuccessData?.total || 0}
+        paymentMethod={saleSuccessData?.method || ''}
+        onDismiss={() => {
+          resetCart();
+          setIsOrderDrawerOpen(false);
+          setSaleSuccessData(null);
+        }}
+      />
 
       <div className="relative ml-auto h-full w-full max-w-5xl bg-surface shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
 

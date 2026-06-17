@@ -1,6 +1,8 @@
 import { type AuthService } from './AuthService';
 import { type IAlertService } from '../core/ui/AlertService';
 
+import { API_URL } from '../config/setup';
+
 /**
  * Service to manage the user's session state and inactivity timeouts (SRP).
  */
@@ -18,7 +20,7 @@ export class SessionManager {
   constructor(
     private authService: AuthService,
     private alertService: IAlertService,
-    private apiBase: string = 'http://20.110.129.152:3000/api',
+    private apiBase: string = API_URL,
   ) {}
 
   startMonitoring() {

@@ -54,8 +54,8 @@ export const SupplierDrawer: React.FC<SupplierDrawerProps> = ({
       }
       onSuccess();
       onClose();
-    } catch (error) {
-      alertService.showToast('error', 'Error al guardar el proveedor');
+    } catch (error: any) {
+      alertService.showToast('error', error.message || 'Error al guardar el proveedor');
     } finally {
       setIsSaving(false);
     }

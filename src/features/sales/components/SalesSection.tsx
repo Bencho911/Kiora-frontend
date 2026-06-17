@@ -7,13 +7,13 @@ import { OrderDetailModal } from './OrderDetailModal';
 import { MovementDetailModal } from '@/features/inventory/components/MovementDetailModal';
 import { useScrollLock } from '@/hooks/useScrollLock';
 
-type SalesSubTab = 'ventas' | 'facturas' | 'movimientos' | 'incidencias';
+type SalesSubTab = 'ventas' | 'facturas' | 'movimientos';
 
 const ESTADO_COLORS: Record<string, string> = {
-  completada: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  pendiente: 'bg-amber-100 text-amber-700 border-amber-200',
-  cancelada: 'bg-red-100 text-red-700 border-red-200',
-  reembolsada: 'bg-purple-100 text-purple-700 border-purple-200',
+  completada: 'bg-tertiary-container/50 text-on-tertiary-container border-tertiary/20',
+  pendiente: 'bg-secondary-container/50 text-on-secondary-container border-secondary/20',
+  cancelada: 'bg-error-container text-error border-error/20',
+  reembolsada: 'bg-surface-container-high text-on-surface border-outline-variant',
 };
 
 import { useInventoryStore } from '@/store/useInventoryStore';
@@ -102,7 +102,6 @@ export function SalesSection({
     { id: 'facturas', label: 'Facturas' },
     { id: 'movimientos', label: 'Movimientos' },
   ];
-  if (isAdmin) tabs.push({ id: 'incidencias', label: 'Incidencias' });
 
   const todayOrders = filteredOrders.filter(o => {
     const d = o.fecha_vent ? new Date(o.fecha_vent) : new Date();
@@ -139,11 +138,11 @@ export function SalesSection({
             <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>picture_as_pdf</span>
           </button>
           <button
-            onClick={subTab === 'incidencias' ? () => setIsIncidentOpen(true) : onOpenPOS}
+            onClick={onOpenPOS}
             className="inline-flex items-center gap-1.5 bg-primary text-on-primary label-sm px-4 py-2.5 rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-[0.98]"
           >
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
-            {subTab === 'incidencias' ? 'Incidencia' : 'Nueva Venta'}
+            Nueva Venta
           </button>
         </div>
       </div>
@@ -336,12 +335,11 @@ export function SalesSection({
                     <th className="px-5 py-4 text-left label-sm text-on-surface-variant font-semibold">
                       {subTab === 'facturas' ? 'Fecha Emisión' : 'Ref'}
                     </th>
-                    {subTab === 'incidencias' && isAdmin && <th className="px-5 py-4 text-left label-sm text-on-surface-variant font-semibold">Prioridad</th>}
                     <th className="px-5 py-4 text-right label-sm text-on-surface-variant font-semibold">
                       {subTab === 'facturas' ? 'Total' : 'Importe'}
                     </th>
                     {subTab !== 'facturas' && <th className="px-5 py-4 text-center label-sm text-on-surface-variant font-semibold">Estado</th>}
-                    <th className="px-5 py-4 text-center label-sm text-on-surface-variant font-semibold">Acciones</th>
+                    <th className="px-5 py-4 text-left label-sm text-on-surface-variant font-semibold w-16">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/20">
@@ -366,7 +364,11 @@ export function SalesSection({
                               <select
                                 value={o.estado || 'pendiente'}
                                 disabled={o.estado === 'cancelada' || isPaidStatus(o.estado)}
-                                onChange={(e) => handleStatusChange(o.id_vent!, e.target.value)}
+                                onChange={(e) => {
+                                  const newStatus = e.target.value;
+                                  e.target.value = o.estado || 'pendiente';
+                                  handleStatusChange(o.id_vent!, newStatus);
+                                }}
                                 className={`rounded-full px-3 py-1 text-[10px] font-semibold border outline-none cursor-pointer transition-all disabled:opacity-70 disabled:cursor-not-allowed ${ESTADO_COLORS[o.estado ?? 'pendiente']}`}
                               >
                                 <option value="pendiente">Pendiente</option>
@@ -452,63 +454,7 @@ export function SalesSection({
                     )
                   )}
 
-                  {subTab === 'incidencias' && (
-                    reports.length === 0 ? (
-                      <tr><td colSpan={isAdmin ? 7 : 6} className="py-10 text-center body-md text-on-surface-variant">No hay incidencias reportadas</td></tr>
-                    ) : (
-                      reports.map(r => (
-                        <tr key={r.id_rep} className="hover:bg-surface-container-low">
-                          <td className="px-5 py-4 label-md text-on-surface-variant">#{r.id_rep}</td>
-                          <td className="px-5 py-4 label-md text-on-surface">{r.fecha_rep ? new Date(r.fecha_rep).toLocaleDateString() : '—'}</td>
-                          <td className="px-5 py-4 label-md truncate max-w-[150px]">
-                            <div className="flex flex-col">
-                              <span>{r.titulo || r.observaciones_tecnicas || 'Sin título'}</span>
-                              {r.cod_prod && (
-                                <span className="label-sm text-on-surface-variant">
-                                  Prod: <span className="text-primary">[{r.cod_prod}]</span> {productMap[String(r.cod_prod)] || ''}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          {isAdmin && (
-                            <td className="px-5 py-4">
-                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${r.prioridad === 'alta' ? 'bg-error-container/30 text-error' :
-                                r.prioridad === 'media' ? 'bg-secondary-container/20 text-secondary-container' : 'bg-tertiary/10 text-tertiary'
-                                }`}>
-                                {r.prioridad}
-                              </span>
-                            </td>
-                          )}
-                          <td className="px-5 py-4 text-right body-md text-on-surface-variant max-w-[200px] truncate">
-                            {isAdmin ? (r.descripcion || '—') : '*** Restringido ***'}
-                          </td>
-                          <td className="px-5 py-4 text-center">
-                            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-semibold border ${ESTADO_COLORS[r.estado ?? 'pendiente']}`}>
-                              {r.estado.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => setManagingIncident(r)}
-                                className="label-sm text-primary hover:underline disabled:opacity-30"
-                                disabled={!isAdmin}
-                              >
-                                Gestionar
-                              </button>
-                              <button
-                                onClick={() => handleExportSingleIncident(r)}
-                                className="p-1.5 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-primary hover:bg-primary-fixed/30 transition-all"
-                                title="Exportar PDF"
-                              >
-                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )
-                  )}
+
                 </tbody>
               </table>
             </div>
@@ -716,56 +662,63 @@ export function SalesSection({
             onClick={() => { setReasonModal(prev => ({ ...prev, isOpen: false })); }}
           />
           <div className="relative w-full max-w-sm bg-surface rounded-xl shadow-lg border border-outline-variant/30 p-6 animate-in zoom-in-95 duration-300">
-            <div className={`mx-auto w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${reasonModal.type === 'refund' ? 'bg-primary-fixed/30 text-primary-container' : 'bg-error-container/30 text-error'
+            <div className={`mx-auto w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${reasonModal.type === 'refund' ? 'bg-primary-fixed/30 text-primary-container' : reasonModal.type === 'complete' ? 'bg-tertiary-container/30 text-tertiary' : 'bg-error-container/30 text-error'
               }`}>
               <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
-                {reasonModal.type === 'refund' ? 'currency_exchange' : 'block'}
+                {reasonModal.type === 'refund' ? 'currency_exchange' : reasonModal.type === 'complete' ? 'check_circle' : 'block'}
               </span>
             </div>
 
             <h2 className="headline-sm text-on-surface text-center mb-1">
-              {reasonModal.type === 'refund' ? 'Procesar Reembolso' : 'Anular Venta'}
+              {reasonModal.type === 'refund' ? 'Procesar Reembolso' : reasonModal.type === 'complete' ? 'Completar Venta' : 'Anular Venta'}
             </h2>
             <p className="label-sm text-on-surface-variant text-center mb-5">
-              Venta <span className="font-semibold text-on-surface">#{reasonModal.orderId}</span> · El stock se devolverá
+              Venta <span className="font-semibold text-on-surface">#{reasonModal.orderId}</span>
+              {reasonModal.type !== 'complete' && ' · El stock se devolverá'}
             </p>
 
-            <div className="space-y-1.5 mb-4">
-              <label className="label-sm text-on-surface-variant flex items-center gap-1">
-                Motivo <span className="text-error">*</span>
-              </label>
-              <textarea
-                autoFocus
-                rows={3}
-                placeholder={reasonModal.type === 'refund'
-                  ? 'Ej: Producto defectuoso, cliente insatisfecho...'
-                  : 'Ej: Error en el pedido, solicitud del cliente...'}
-                value={reasonModal.reason}
-                onChange={e => setReasonModal(prev => ({ ...prev, reason: e.target.value }))}
-                className="w-full rounded-lg border border-outline-variant/50 bg-surface py-2.5 px-4 label-md text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
-              />
-              {!reasonModal.reason.trim() && (
-                <p className="label-sm text-secondary-container flex items-center gap-1">
-                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>info</span>
-                  Debes escribir un motivo
-                </p>
-              )}
-            </div>
+            {reasonModal.type !== 'complete' && (
+              <div className="space-y-1.5 mb-4">
+                <label className="label-sm text-on-surface-variant flex items-center gap-1">
+                  Motivo <span className="text-error">*</span>
+                </label>
+                <textarea
+                  autoFocus
+                  rows={3}
+                  placeholder={reasonModal.type === 'refund'
+                    ? 'Ej: Producto defectuoso, cliente insatisfecho...'
+                    : 'Ej: Error en el pedido, solicitud del cliente...'}
+                  value={reasonModal.reason}
+                  onChange={e => setReasonModal(prev => ({ ...prev, reason: e.target.value }))}
+                  className="w-full rounded-lg border border-outline-variant/50 bg-surface py-2.5 px-4 label-md text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
+                />
+                {!reasonModal.reason.trim() && (
+                  <p className="label-sm text-secondary-container flex items-center gap-1">
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>info</span>
+                    Debes escribir un motivo
+                  </p>
+                )}
+              </div>
+            )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
-                onClick={() => { setReasonModal(prev => ({ ...prev, isOpen: false })); }}
-                className="flex-1 rounded-lg border border-outline-variant/50 py-2.5 label-sm text-on-surface-variant hover:bg-surface-container-low transition-all"
+                onClick={() => setReasonModal(prev => ({ ...prev, isOpen: false }))}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant/50 text-on-surface-variant label-md hover:bg-surface-container transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => void handleConfirmReason()}
-                disabled={!reasonModal.reason.trim()}
-                className={`flex-1 rounded-lg py-2.5 label-sm text-on-primary shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${reasonModal.type === 'refund' ? 'bg-primary-container' : 'bg-error'
+                disabled={reasonModal.type !== 'complete' && !reasonModal.reason.trim()}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-white label-md transition-colors ${reasonModal.type === 'refund'
+                  ? 'bg-primary hover:bg-primary/90 disabled:opacity-50'
+                  : reasonModal.type === 'complete'
+                  ? 'bg-tertiary hover:bg-tertiary/90'
+                  : 'bg-error hover:bg-error/90 disabled:opacity-50'
                   }`}
               >
-                {reasonModal.type === 'refund' ? 'Confirmar Reembolso' : 'Sí, Anular'}
+                Confirmar
               </button>
             </div>
           </div>

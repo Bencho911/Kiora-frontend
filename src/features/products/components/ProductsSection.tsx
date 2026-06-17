@@ -34,6 +34,7 @@ export function ProductsSection() {
   const outOfStockCount = filteredProducts.filter(p => p.stock_actual <= 0).length;
   const lowStockCount = filteredProducts.filter(p => p.stock_actual > 0 && p.stock_actual <= 5).length;
   const visibleProducts = filteredProducts.slice(0, visibleCount);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     setVisibleCount(15);
@@ -123,9 +124,9 @@ export function ProductsSection() {
 
           {/* Filters Toolbar */}
           <div className="p-4 border-b border-outline-variant/30 bg-surface-container-lowest flex flex-col gap-4">
-            {/* Row 1: Search + Category */}
+            {/* Row 1: Search + Toggle button */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-              <div className="relative w-full lg:w-96">
+              <div className="relative w-full lg:flex-1 max-w-xl">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: '20px' }}>search</span>
                 </div>
@@ -134,101 +135,125 @@ export function ProductsSection() {
                   value={pendingFilters.search}
                   onChange={e => setPendingFilters(p => ({ ...p, search: e.target.value }))}
                   onKeyDown={e => { if (e.key === 'Enter') handleApplyFilters(); }}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-outline-variant/50 rounded-lg leading-5 bg-surface-container-lowest placeholder-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary sm:text-sm transition-colors text-on-surface"
+                  className="block w-full pl-10 pr-3 py-2.5 border border-outline-variant/50 rounded-lg leading-5 bg-surface placeholder-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary sm:text-sm transition-colors text-on-surface"
                   placeholder="Buscar por nombre, SKU o código..."
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: '20px' }}>filter_list</span>
-                  <span className="label-md text-on-surface hidden sm:inline">Categoría:</span>
-                </div>
-                <select
-                  className="bg-surface-container-low border border-outline-variant/50 rounded-lg label-md text-on-surface focus:ring-primary/30 py-2 pl-3 pr-8"
-                  value={pendingFilters.categories[0] ?? ''}
-                  onChange={e => {
-                    const val = e.target.value;
-                    setPendingFilters(p => ({ ...p, categories: val ? [Number(val)] : [] }));
-                  }}
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full lg:w-auto">
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className={`flex flex-1 sm:flex-none justify-center items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors label-sm font-medium ${showAdvancedFilters ? 'bg-primary-container text-on-primary-container border-primary/20' : 'bg-surface text-on-surface border-outline-variant/50 hover:bg-surface-container-low'}`}
                 >
-                  <option value="">Todas</option>
-                  {categories.map(c => (
-                    <option key={c.cod_cat} value={c.cod_cat}>{c.nom_cat}</option>
-                  ))}
-                </select>
-                <button onClick={handleApplyFilters} className="bg-primary text-on-primary label-sm px-4 py-2.5 rounded-lg hover:opacity-90 transition-opacity active:scale-[0.98] whitespace-nowrap">
-                  Aplicar
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>tune</span>
+                  <span className="hidden sm:inline">Filtros Avanzados</span>
+                  <span className="sm:hidden">Filtros</span>
+                  <span className="material-symbols-outlined transition-transform duration-200" style={{ fontSize: '18px', transform: showAdvancedFilters ? 'rotate(180deg)' : 'none' }}>expand_more</span>
                 </button>
-                <button onClick={handleClearFilters} className="text-on-surface-variant hover:text-primary transition-colors label-sm px-2">
-                  Limpiar
+                <button onClick={handleApplyFilters} className="flex-1 sm:flex-none justify-center bg-primary text-on-primary label-sm px-6 py-2.5 rounded-lg hover:opacity-90 transition-opacity active:scale-[0.98] whitespace-nowrap">
+                  Buscar
                 </button>
               </div>
             </div>
 
-            {/* Row 2: Price range + Stock status */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Price range */}
-              <div className="flex items-center gap-2">
-                <span className="label-sm text-on-surface-variant whitespace-nowrap">Precio:</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-on-surface-variant">$</span>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Mín"
-                    value={pendingFilters.minPrice}
-                    onChange={e => setPendingFilters(p => ({ ...p, minPrice: e.target.value }))}
-                    className="w-24 pl-6 pr-2 py-1.5 border border-outline-variant/50 rounded-lg text-sm bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                  />
-                </div>
-                <span className="text-on-surface-variant text-xs">—</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-on-surface-variant">$</span>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Máx"
-                    value={pendingFilters.maxPrice}
-                    onChange={e => setPendingFilters(p => ({ ...p, maxPrice: e.target.value }))}
-                    className="w-24 pl-6 pr-2 py-1.5 border border-outline-variant/50 rounded-lg text-sm bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                  />
+            {/* Advanced Filters (Collapsible) */}
+            {showAdvancedFilters && (
+              <div className="animate-in slide-in-from-top-2 fade-in duration-200 flex flex-col gap-4 pt-4 border-t border-outline-variant/30 mt-2">
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* Category */}
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <span className="label-sm text-on-surface-variant whitespace-nowrap">Categoría:</span>
+                    <select
+                      className="flex-1 sm:flex-none bg-surface border border-outline-variant/50 rounded-lg label-sm text-on-surface focus:ring-primary/30 py-2 pl-3 pr-8"
+                      value={pendingFilters.categories[0] ?? ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setPendingFilters(p => ({ ...p, categories: val ? [Number(val)] : [] }));
+                      }}
+                    >
+                      <option value="">Todas</option>
+                      {categories.map(c => (
+                        <option key={c.cod_cat} value={c.cod_cat}>{c.nom_cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="hidden sm:block h-6 w-px bg-outline-variant/40" />
+
+                  {/* Price range */}
+                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+                    <span className="label-sm text-on-surface-variant whitespace-nowrap">Precio:</span>
+                    <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                      <div className="relative flex-1 sm:flex-none">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-on-surface-variant">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Mín"
+                          value={pendingFilters.minPrice}
+                          onChange={e => setPendingFilters(p => ({ ...p, minPrice: e.target.value }))}
+                          className="w-full sm:w-24 pl-6 pr-2 py-1.5 border border-outline-variant/50 rounded-lg text-sm bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                        />
+                      </div>
+                      <span className="text-on-surface-variant text-xs">—</span>
+                      <div className="relative flex-1 sm:flex-none">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-on-surface-variant">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Máx"
+                          value={pendingFilters.maxPrice}
+                          onChange={e => setPendingFilters(p => ({ ...p, maxPrice: e.target.value }))}
+                          className="w-full sm:w-24 pl-6 pr-2 py-1.5 border border-outline-variant/50 rounded-lg text-sm bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="hidden sm:block h-6 w-px bg-outline-variant/40" />
+
+                  {/* Stock status pills */}
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <span className="label-sm text-on-surface-variant whitespace-nowrap">Stock:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        { value: 'all',       label: 'Todos' },
+                        { value: 'available', label: 'Disponible' },
+                        { value: 'low',       label: 'Bajo' },
+                        { value: 'out',       label: 'Agotado' },
+                      ] as const).map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setPendingFilters(p => ({ ...p, stock: opt.value }))}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+                            pendingFilters.stock === opt.value
+                              ? opt.value === 'available'
+                                ? 'bg-tertiary-container/50 text-on-tertiary-container border-tertiary/30'
+                                : opt.value === 'low'
+                                ? 'bg-secondary-container/50 text-on-secondary-container border-secondary/30'
+                                : opt.value === 'out'
+                                ? 'bg-error-container/60 text-error border-error/30'
+                                : 'bg-primary text-on-primary border-primary'
+                              : 'bg-surface border-outline-variant/40 text-on-surface-variant hover:border-outline-variant'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="w-full flex justify-end mt-2 sm:mt-0 sm:ml-auto">
+                    <button onClick={handleClearFilters} className="text-on-surface-variant hover:text-primary transition-colors label-sm px-2">
+                      Limpiar Filtros
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {/* Divider */}
-              <div className="h-6 w-px bg-outline-variant/40" />
-
-              {/* Stock status pills */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="label-sm text-on-surface-variant whitespace-nowrap">Stock:</span>
-                {([
-                  { value: 'all',       label: 'Todos' },
-                  { value: 'available', label: 'Disponible' },
-                  { value: 'low',       label: 'Bajo' },
-                  { value: 'out',       label: 'Agotado' },
-                ] as const).map(opt => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setPendingFilters(p => ({ ...p, stock: opt.value }))}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
-                      pendingFilters.stock === opt.value
-                        ? opt.value === 'available'
-                          ? 'bg-teal-100 text-teal-700 border-teal-300'
-                          : opt.value === 'low'
-                          ? 'bg-amber-100 text-amber-700 border-amber-300'
-                          : opt.value === 'out'
-                          ? 'bg-error-container/60 text-error border-error/30'
-                          : 'bg-primary text-on-primary border-primary'
-                        : 'bg-surface border-outline-variant/40 text-on-surface-variant hover:border-outline-variant'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Mobile Data List (Cards) */}
@@ -302,7 +327,7 @@ export function ProductsSection() {
                       </div>
                       <div className="flex flex-col items-end">
                         <span className="text-[10px] uppercase font-bold text-on-surface-variant mb-0.5">Estado</span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${isOutOfStock ? 'bg-surface-container-highest text-on-surface-variant border-outline-variant/50' : isLowStock ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-teal-100 text-teal-700 border-teal-200'}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${isOutOfStock ? 'bg-surface-container-highest text-on-surface-variant border-outline-variant' : isLowStock ? 'bg-secondary-container/50 text-on-secondary-container border-secondary/20' : 'bg-tertiary-container/50 text-on-tertiary-container border-tertiary/20'}`}>
                           {isOutOfStock ? 'Agotado' : isLowStock ? 'Bajo' : 'Activo'}
                         </span>
                       </div>
@@ -332,16 +357,16 @@ export function ProductsSection() {
                 <button onClick={handleClearFilters} className="label-md text-primary hover:underline">Resetear filtros</button>
               </div>
             ) : (
-              <table className="w-full text-left border-collapse whitespace-nowrap">
+              <table className="w-full text-left border-collapse table-fixed">
                 <thead>
                   <tr className="bg-surface-container-low/50 border-b border-outline-variant/30 text-on-surface-variant label-sm">
-                    <th className="px-6 py-4 font-semibold">Producto</th>
-                    <th className="px-6 py-4 font-semibold">Código / SKU</th>
-                    <th className="px-6 py-4 font-semibold">Categoría</th>
-                    <th className="px-6 py-4 font-semibold text-right">Precio Venta</th>
-                    <th className="px-6 py-4 font-semibold">Stock</th>
-                    <th className="px-6 py-4 font-semibold text-center">Estado</th>
-                    <th className="px-6 py-4 font-semibold text-right">Acciones</th>
+                    <th className="px-4 py-4 font-semibold w-[32%]">Producto</th>
+                    <th className="px-4 py-4 font-semibold w-[10%] truncate">Código / SKU</th>
+                    <th className="px-4 py-4 font-semibold w-[14%] truncate">Categoría</th>
+                    <th className="px-4 py-4 font-semibold text-right w-[12%] truncate">Precio Venta</th>
+                    <th className="px-4 py-4 font-semibold w-[10%] truncate">Stock</th>
+                    <th className="px-4 py-4 font-semibold text-center w-[10%] truncate">Estado</th>
+                    <th className="px-4 py-4 font-semibold text-right w-[12%] truncate">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/20">
@@ -354,26 +379,26 @@ export function ProductsSection() {
 
                     return (
                       <tr key={p.cod_prod} className={`hover:bg-surface-container-lowest transition-colors group ${isOutOfStock ? 'bg-surface-container-high/40 opacity-70 grayscale' : ''}`}>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4 align-middle">
                           <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-md flex items-center justify-center border ${isOutOfStock ? 'bg-surface-container-highest border-outline-variant/30 text-on-surface-variant' : 'bg-surface-container border-outline-variant/30 text-on-surface-variant/50'}`}>
+                            <div className={`w-10 h-10 xl:w-12 xl:h-12 shrink-0 rounded-md flex items-center justify-center border ${isOutOfStock ? 'bg-surface-container-highest border-outline-variant/30 text-on-surface-variant' : 'bg-surface-container border-outline-variant/30 text-on-surface-variant/50'}`}>
                               {p.imagen_prod ? (
                                 <img src={getImageUrl(p.imagen_prod)} alt={p.nom_prod} className="w-full h-full object-cover rounded-md p-1 mix-blend-multiply" />
                               ) : (
                                 <span className="material-symbols-outlined opacity-70">{isOutOfStock ? 'image_not_supported' : 'image'}</span>
                               )}
                             </div>
-                            <div>
-                              <p className={`label-md font-semibold transition-colors ${isOutOfStock ? 'text-on-surface-variant' : 'text-on-surface group-hover:text-primary'}`}>{p.nom_prod}</p>
-                              <p className="label-sm text-on-surface-variant truncate max-w-[180px]" title={p.desc_prod}>{p.desc_prod || 'Sin descripción'}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className={`label-md font-semibold transition-colors truncate ${isOutOfStock ? 'text-on-surface-variant' : 'text-on-surface group-hover:text-primary'}`} title={p.nom_prod}>{p.nom_prod}</p>
+                              <p className="label-sm text-on-surface-variant truncate" title={p.desc_prod}>{p.desc_prod || 'Sin descripción'}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 body-md text-on-surface-variant">{p.cod_prod}</td>
-                        <td className="px-6 py-4">
-                          <span className="bg-surface-container-high text-on-surface px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider">{catName}</span>
+                        <td className="px-4 py-4 body-md text-on-surface-variant align-middle truncate" title={p.cod_prod}>{p.cod_prod}</td>
+                        <td className="px-4 py-4 align-middle">
+                          <span className="bg-surface-container-high text-on-surface px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider inline-block leading-tight truncate max-w-full" title={catName}>{catName}</span>
                         </td>
-                        <td className="px-6 py-4 label-md text-right">
+                        <td className="px-4 py-4 label-md text-right align-middle truncate">
                           {(Number(p.descuento) || 0) > 0 ? (
                             <div className="flex flex-col items-end">
                               <span className="text-[10px] line-through text-on-surface-variant/60">
@@ -395,26 +420,26 @@ export function ProductsSection() {
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4 align-middle truncate">
                           <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${isOutOfStock ? 'bg-error' : 'bg-tertiary'}`}></div>
+                            <div className={`w-2 h-2 rounded-full shrink-0 ${isOutOfStock ? 'bg-error' : 'bg-tertiary'}`}></div>
                             <span className={`label-md ${isOutOfStock ? 'text-error' : 'text-on-surface'}`}>
                               {p.stock_actual} un.
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                        <td className="px-4 py-4 text-center align-middle">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border truncate max-w-full ${
                             isOutOfStock
-                              ? 'bg-surface-container-high text-on-surface-variant border-outline-variant/50'
+                              ? 'bg-surface-container-high text-on-surface-variant border-outline-variant'
                               : isLowStock
-                              ? 'bg-amber-100 text-amber-700 border-amber-200'
-                              : 'bg-teal-100 text-teal-700 border-teal-200'
-                          }`}>
+                              ? 'bg-secondary-container/50 text-on-secondary-container border-secondary/20'
+                              : 'bg-tertiary-container/50 text-on-tertiary-container border-tertiary/20'
+                          }`} title={isOutOfStock ? 'Agotado' : isLowStock ? 'Stock Bajo' : 'Activo'}>
                             {isOutOfStock ? 'Agotado' : isLowStock ? 'Stock Bajo' : 'Activo'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-4 py-4 text-right align-middle">
                           <div className="flex justify-end gap-1">
                             <button
                               onClick={() => setKardexProduct(p)}

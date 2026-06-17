@@ -25,6 +25,8 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [insightsError, setInsightsError] = useState(false);
 
+  const [trendPeriod, setTrendPeriod] = useState('7d');
+
   const { stockSyncVersion } = useInventoryStore();
   const { salesSyncVersion } = useSalesStore();
 
@@ -49,7 +51,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
     setIsLoading(true);
     try {
       const [statsRes, orderRes] = await Promise.all([
-        orderService.getDashboardStats().catch(() => null),
+        orderService.getDashboardStats(trendPeriod).catch(() => null),
         orderService.getOrders(1, 10).catch(() => null)
       ]);
       void fetchLowStock();
@@ -74,7 +76,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
     } finally {
       setIsLoading(false);
     }
-  }, [fetchLowStock]);
+  }, [fetchLowStock, trendPeriod]);
 
   useEffect(() => {
     void loadDashboardData();
@@ -263,9 +265,14 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
           <div id="section-tendencia" className="bg-surface rounded-xl border border-outline-variant/40 p-5 scroll-mt-20">
             <div className="flex items-center justify-between mb-5">
               <h3 className="headline-sm text-on-surface">Tendencia de Ventas</h3>
-              <select className="bg-surface-container-high border-none rounded-lg text-sm text-on-surface-variant px-3 py-1.5 focus:ring-2 focus:ring-primary/30">
-                <option>Últimos 7 días</option>
-                <option>Este mes</option>
+              <select 
+                value={trendPeriod}
+                onChange={(e) => setTrendPeriod(e.target.value)}
+                className="bg-surface-container-high border-none rounded-lg text-sm text-on-surface-variant px-3 py-1.5 focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="7d">Últimos 7 días</option>
+                <option value="this_month">Este mes</option>
+                <option value="this_year">Este año</option>
               </select>
             </div>
             <div className="h-[260px]">

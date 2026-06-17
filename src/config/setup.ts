@@ -14,13 +14,9 @@ import { ReportService } from "../services/ReportService";
 import { AiService } from "../services/AiService";
 
 // URL leída desde .env (prefijo PUBLIC_ requerido por Astro para exponerla al cliente)
-// Fallback: backend estable en Azure
-// NOTA: Se usa /api (sin v1) porque el v1Proxy del gateway tiene un bug de pathRewrite
-// en la versión actual desplegada en Azure. El fix está en el código pero requiere redeploy.
-// Las rutas /api tienen deprecation header (Sunset: 2027-01-01) pero son totalmente funcionales.
 export const API_URL: string =
   (import.meta.env.PUBLIC_API_URL as string | undefined) ??
-  "http://20.110.129.152:3000/api";
+  (import.meta.env.DEV ? "http://localhost:3000/api" : "/api");
 
 export const API_KEY: string =
   (import.meta.env.PUBLIC_KIORA_API_KEY as string | undefined) ?? "";
