@@ -16,6 +16,31 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   setSettingsView,
   onOpenProfile
 }) => {
+  const [showLangModal, setShowLangModal] = React.useState(false);
+
+  const changeLanguage = (lang: string) => {
+    const select = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+    if (select) {
+      select.value = lang;
+      select.dispatchEvent(new Event('change'));
+      alertService.showToast('success', `Idioma cambiado a ${lang === 'es' ? 'Español' : 'Inglés'}`);
+    } else {
+      // Fallback a las cookies por si no se generó el combo box
+      if (lang === 'es') {
+        document.cookie = 'googtrans=/es/es; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = `googtrans=/es/es; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${location.hostname}; path=/;`;
+      } else {
+        document.cookie = `googtrans=/es/${lang}; path=/`;
+        document.cookie = `googtrans=/es/${lang}; domain=${location.hostname}; path=/`;
+      }
+      alertService.showToast('success', `Cambiando idioma a ${lang === 'es' ? 'Español' : 'Inglés'}...`);
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
+    setShowLangModal(false);
+  };
+
   const sections = [
     {
       title: 'Perfil y Cuenta',
@@ -45,14 +70,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
           bg: 'bg-surface-container-high',
           color: 'text-on-surface-variant',
           hover: 'hover:border-outline',
-          onClick: () => {
-            const wg = (window as any).Weglot;
-            if (wg) {
-              const container = document.querySelector('.weglot-container');
-              if (container) { (container as HTMLElement).style.setProperty('display', 'block', 'important'); }
-              alertService.showToast('info', 'Selector de idioma activado');
-            }
-          },
+          onClick: () => setShowLangModal(true),
         },
         {
           label: 'Historial de Actividad',
@@ -163,6 +181,51 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
             Volver
           </button>
           <LegalSection defaultTab={settingsView === 'terms' ? 'terminos' : 'privacidad'} />
+        </div>
+      )}
+
+      {showLangModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowLangModal(false)}>
+          <div className="bg-surface rounded-3xl shadow-2xl w-[calc(100%-2rem)] max-w-sm overflow-hidden p-6 border border-outline-variant/20 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>language</span>
+              </div>
+              <h3 className="headline-sm text-on-surface">Seleccionar Idioma</h3>
+              <p className="body-md text-on-surface-variant mt-1">Elige tu idioma preferido</p>
+            </div>
+            
+            <div className="space-y-3">
+              <button 
+                onClick={() => changeLanguage('es')}
+                className="w-full flex items-center justify-between p-4 rounded-2xl border border-outline-variant/40 hover:bg-primary/5 hover:border-primary/40 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl shadow-sm rounded-sm overflow-hidden leading-none">🇪🇸</span>
+                  <span className="label-lg text-on-surface font-medium">Español</span>
+                </div>
+                <span className="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 group-hover:text-primary transition-all -translate-x-2 group-hover:translate-x-0">chevron_right</span>
+              </button>
+              
+              <button 
+                onClick={() => changeLanguage('en')}
+                className="w-full flex items-center justify-between p-4 rounded-2xl border border-outline-variant/40 hover:bg-primary/5 hover:border-primary/40 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl shadow-sm rounded-sm overflow-hidden leading-none">🇺🇸</span>
+                  <span className="label-lg text-on-surface font-medium">English</span>
+                </div>
+                <span className="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 group-hover:text-primary transition-all -translate-x-2 group-hover:translate-x-0">chevron_right</span>
+              </button>
+            </div>
+            
+            <button 
+              onClick={() => setShowLangModal(false)} 
+              className="mt-6 w-full py-3.5 rounded-2xl hover:bg-surface-variant/50 text-on-surface-variant font-medium transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
     </div>
