@@ -82,7 +82,9 @@ export class AiService {
   }
 
   async getInsights(): Promise<DashboardInsights> {
-    const response = await this.httpClient.get<DashboardInsights>('/ai/insights');
+    const token = localStorage.getItem('kiora_token');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const response = await this.httpClient.get<DashboardInsights>('/ai/insights', headers);
 
     if (!response.ok || !response.data) {
       throw new Error(response.error ?? 'Error al obtener insights');
