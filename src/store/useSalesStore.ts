@@ -27,6 +27,7 @@ interface SalesState {
   isSavingOrder: boolean;
   stripeQR: StripeQR;
   salesSyncVersion: number;
+  saleSuccessData: { total: number; method: string } | null;
 
   // Actions
   setIsOrderDrawerOpen: (open: boolean) => void;
@@ -38,6 +39,7 @@ interface SalesState {
   updateQuantity: (cod_prod: number, delta: number, maxStock?: number) => void;
   resetCart: () => void;
   setOrderForm: (form: CreateOrderDto) => void;
+  setSaleSuccessData: (data: { total: number; method: string } | null) => void;
   handleCreateOrder: () => Promise<void>;
   notifySalesChange: () => void;
 }
@@ -51,6 +53,7 @@ export const useSalesStore = create<SalesState>()(
     isSavingOrder: false,
     stripeQR: { isOpen: false, url: '', orderId: 0, amount: 0 },
     salesSyncVersion: 0,
+    saleSuccessData: null,
 
       setIsOrderDrawerOpen: (open) => set({ isOrderDrawerOpen: open }),
       setProdSearch: (prodSearch) => set({ prodSearch }),
@@ -142,6 +145,7 @@ export const useSalesStore = create<SalesState>()(
 
       resetCart: () => set({ orderForm: EMPTY_ORDER }),
       setOrderForm: (orderForm) => set({ orderForm }),
+      setSaleSuccessData: (data) => set({ saleSuccessData: data }),
 
       notifySalesChange: () => set((state) => ({ salesSyncVersion: state.salesSyncVersion + 1 })),
 
@@ -244,11 +248,16 @@ export const useSalesStore = create<SalesState>()(
             }
 
             // Venta exitosa
-            alertService.showToast('success', 'Venta registrada exitosamente');
-            resetCart();
-            setIsOrderDrawerOpen(false);
+            const total = candidateOrder.items.reduce(
+              (acc: number, item: OrderItem) => acc + item.cantidad * (item.precio_unit || 0),
+              0
+            );
+            const discountedTotal = total * (1 - (candidateOrder.descuento_global || 0) / 100);
+            
+            set({ saleSuccessData: { total: discountedTotal, method: candidateOrder.metodopago_usu } });
             notifySalesChange();
             useInventoryStore.getState().notifyStockChange();
+            // El overlay se encarga de resetear y cerrar tras el timeout
             break;
           }
         } catch (e) {

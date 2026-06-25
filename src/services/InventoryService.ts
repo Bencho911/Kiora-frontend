@@ -119,5 +119,16 @@ export class InventoryService {
     if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving product kardex');
     return response.data;
   }
+
+  async getLotesByProduct(cod_prod: number): Promise<any[]> {
+    const response = await this.httpClient.get<any[]>(`/inventory/products/${cod_prod}/lotes`, this.getAuthHeaders());
+    if (!response.ok || !response.data) throw new Error(response.error || 'Error retrieving product lotes');
+    return response.data;
+  }
+
+  async deleteLote(loteId: number): Promise<void> {
+    const response = await this.httpClient.delete<any>(`/inventory/lotes/${loteId}`, this.getAuthHeaders());
+    if (!response.ok) throw new Error(response.error || 'Error eliminando lote');
+  }
 }
 

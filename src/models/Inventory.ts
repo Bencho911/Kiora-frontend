@@ -16,6 +16,7 @@ export interface Movement {
   desc_mov: string;
   fk_cod_prov?: number;
   fk_id_vent?: number;
+  fecha_vencimiento?: string;
 }
 
 export interface Suministra {

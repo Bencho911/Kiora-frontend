@@ -28,6 +28,8 @@ export function useReportsManager() {
   const [activeTab, setActiveTab] = useState('generar');
   const [alerts, setAlerts] = useState<any[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [inventoryChartData, setInventoryChartData] = useState<any[]>([]);
+  const [totalProductsCount, setTotalProductsCount] = useState<number>(0);
   const [previewData, setPreviewData] = useState<{ isOpen: boolean; type: 'stock' | 'expired'; product: Product | null }>({
     isOpen: false,
     type: 'stock',
@@ -42,7 +44,32 @@ export function useReportsManager() {
     void loadCategories();
     void loadAlerts();
     void loadIncidents();
+    void loadInventoryChartData();
   }, []);
+
+  const loadInventoryChartData = async () => {
+    try {
+      const res = await productService.getProducts(1, 1000);
+      const list = Array.isArray(res) ? res : (res.data || []);
+      
+      // Update total products count
+      setTotalProductsCount(res.pagination?.total || list.length);
+      
+      // Map to chart format, calculate valuation, sort by stock
+      const chartData = list
+        .map(p => ({
+          name: p.nom_prod,
+          stock: p.stock_actual || 0,
+          valorizacion: (p.stock_actual || 0) * (p.precio_prod || 0)
+        }))
+        .sort((a, b) => b.stock - a.stock)
+        .slice(0, 10); // Top 10 for better visualization
+        
+      setInventoryChartData(chartData);
+    } catch (e) {
+      console.error('Error loading inventory chart data:', e);
+    }
+  };
 
   const loadIncidents = async () => {
     setIsLoading(true);
@@ -287,6 +314,7 @@ export function useReportsManager() {
     isLoading, reportData, savedReports,
     activeTab, setActiveTab, alerts,
     incidents, previewData, setPreviewData,
+    inventoryChartData, totalProductsCount,
     updateIncidentStatus, handleSaveReport,
     deleteSavedReport, loadSavedReport,
     generateReport, handleExportExcel,

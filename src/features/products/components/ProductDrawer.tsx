@@ -6,6 +6,8 @@ import { alertService, getImageUrl, inventoryService } from '@/config/setup';
 import { pushAppNotification } from '@/lib/pushAppNotification';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { ProductStockTab } from '@/components/panel/inventory/ProductStockTab';
+import { ProductLotesTab } from '@/components/panel/inventory/ProductLotesTab';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { processProductImage } from '@/utils/processProductImage';
 import type { Supplier } from '@/models/Inventory';
 
@@ -61,7 +63,7 @@ export function ProductDrawer({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [processingImage, setProcessingImage] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'info' | 'stock'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'stock' | 'lotes'>('info');
   const [savingMov, setSavingMov] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
@@ -146,7 +148,7 @@ export function ProductDrawer({
     return isFormDifferent || isImageDifferent;
   }, [form, product, imageFile, imagePreview]);
 
-  const handleSaveMovement = async (movForm: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; fk_cod_prov?: number }) => {
+  const handleSaveMovement = async (movForm: { tipo_mov: 'entrada' | 'salida' | 'ajuste'; cantidad: number; desc_mov: string; fk_cod_prov?: number; fecha_vencimiento?: string }) => {
     if (!product?.cod_prod) return;
     if (!movForm.fk_cod_prov && !movForm.desc_mov.trim()) {
       alertService.showToast('warning', 'La justificación es obligatoria');
@@ -221,14 +223,24 @@ export function ProductDrawer({
     <div className="fixed inset-0 z-[100] flex animate-in fade-in duration-300">
       <div className="absolute inset-0 bg-inverse-surface/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative ml-auto h-full w-full max-w-md bg-surface-bright shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 border-l border-outline-variant/40">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant/30 bg-surface">
-          <div>
-            <h2 className="label-md text-on-surface">{product ? 'Editar Producto' : 'Crear Producto'}</h2>
-            <p className="label-sm text-on-surface-variant mt-0.5">Información técnica y control de existencias.</p>
+        <div className="flex flex-col gap-2 px-5 py-4 border-b border-outline-variant/30 bg-surface">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <Breadcrumbs
+                items={[
+                  { label: 'Catálogo', onClick: onClose },
+                  { label: 'Productos', onClick: onClose },
+                  { label: product ? `Editar: ${product.nom_prod}` : 'Nuevo Producto' }
+                ]}
+                className="mb-1.5"
+              />
+              <h2 className="label-md text-on-surface">{product ? 'Editar Producto' : 'Crear Producto'}</h2>
+              <p className="label-sm text-on-surface-variant mt-0.5">Información técnica y control de existencias.</p>
+            </div>
+            <button onClick={onClose} className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors self-start">
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+            </button>
           </div>
-          <button onClick={onClose} className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors">
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
-          </button>
         </div>
 
         {product && (
@@ -244,6 +256,12 @@ export function ProductDrawer({
               className={`flex-1 py-3 label-sm transition-all border-b-2 ${activeTab === 'stock' ? 'text-primary border-primary bg-surface' : 'text-on-surface-variant border-transparent hover:text-on-surface'}`}
             >
               Inventario
+            </button>
+            <button
+              onClick={() => setActiveTab('lotes')}
+              className={`flex-1 py-3 label-sm transition-all border-b-2 ${activeTab === 'lotes' ? 'text-primary border-primary bg-surface' : 'text-on-surface-variant border-transparent hover:text-on-surface'}`}
+            >
+              Lotes
             </button>
           </div>
         )}
@@ -358,7 +376,10 @@ export function ProductDrawer({
                 <input
                   type="text"
                   value={form.codigo_barras ?? ''}
-                  onChange={e => setForm(f => ({ ...f, codigo_barras: e.target.value }))}
+                  onChange={e => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setForm(f => ({ ...f, codigo_barras: val }));
+                  }}
                   onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
                   placeholder="Ej. 7701234567890"
                   className="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
@@ -436,7 +457,7 @@ export function ProductDrawer({
               )}
             </div>
           </form>
-        ) : (
+        ) : activeTab === 'stock' ? (
           <ProductStockTab
             product={product!}
             movements={movements}
@@ -445,6 +466,8 @@ export function ProductDrawer({
             onViewMovement={onViewMovement}
             saving={savingMov}
           />
+        ) : (
+          <ProductLotesTab product={product!} />
         )}
 
         <div className="px-6 py-4 bg-surface border-t border-outline-variant/30 flex gap-3">
@@ -453,7 +476,7 @@ export function ProductDrawer({
             onClick={onClose}
             className="flex-1 rounded-xl border border-outline-variant/50 py-2.5 label-sm text-on-surface-variant hover:bg-surface-container-low transition-all"
           >
-            {activeTab === 'stock' ? 'Volver' : 'Cancelar'}
+            {activeTab !== 'info' ? 'Volver' : 'Cancelar'}
           </button>
           {activeTab === 'info' && (
             <button

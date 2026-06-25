@@ -168,10 +168,10 @@ export const ReportTable: React.FC<ReportTableProps> = ({
               {filters.reportType === 'ventas_detalladas' ? (
                 (data as DetailedSalesReport[]).map((row, idx) => (
                   <TableRow key={idx} className="hover:bg-surface-container-low transition-colors">
-                    <TableCell className="px-4 py-4 label-md text-on-surface">{row.period}</TableCell>
-                    <TableCell className="px-4 py-4 body-md text-on-surface-variant">${row.totalSales.toLocaleString('es-CO')}</TableCell>
-                    <TableCell className="px-4 py-4 body-md text-on-surface-variant">{row.orderCount} {filters.grouping === 'unidad' ? 'uds' : 'ops'}</TableCell>
-                    <TableCell className="px-4 py-4 label-md text-primary">${row.averageTicket.toLocaleString('es-CO')}</TableCell>
+                    <TableCell className="px-4 py-4 label-md text-on-surface">{row.period || '—'}</TableCell>
+                    <TableCell className="px-4 py-4 body-md text-on-surface-variant">${(row.totalSales || 0).toLocaleString('es-CO')}</TableCell>
+                    <TableCell className="px-4 py-4 body-md text-on-surface-variant">{row.orderCount || 0} {filters.grouping === 'unidad' ? 'uds' : 'ops'}</TableCell>
+                    <TableCell className="px-4 py-4 label-md text-primary">${(row.averageTicket || 0).toLocaleString('es-CO')}</TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -181,13 +181,13 @@ export const ReportTable: React.FC<ReportTableProps> = ({
                       <span className={`w-7 h-7 flex items-center justify-center rounded-lg text-[10px] font-bold ${
                         idx < 3 ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-on-surface-variant'
                       }`}>
-                        {row.position}
+                        {row.position || idx + 1}
                       </span>
                     </TableCell>
-                    <TableCell className="px-4 py-4 label-md text-on-surface">{row.productName}</TableCell>
-                    <TableCell className="px-4 py-4 label-sm text-on-surface-variant font-mono">#{row.productCode}</TableCell>
-                    <TableCell className="px-4 py-4 body-md text-on-surface-variant">{row.quantitySold} uds</TableCell>
-                    <TableCell className="px-4 py-4 label-md text-on-surface text-right">${row.totalRevenue.toLocaleString('es-CO')}</TableCell>
+                    <TableCell className="px-4 py-4 label-md text-on-surface">{row.productName || '—'}</TableCell>
+                    <TableCell className="px-4 py-4 label-sm text-on-surface-variant font-mono">#{row.productCode || '—'}</TableCell>
+                    <TableCell className="px-4 py-4 body-md text-on-surface-variant">{row.quantitySold || 0} uds</TableCell>
+                    <TableCell className="px-4 py-4 label-md text-on-surface text-right">${(row.totalRevenue || 0).toLocaleString('es-CO')}</TableCell>
                   </TableRow>
                 ))
               )}

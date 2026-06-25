@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { inventoryService, alertService } from '@/config/setup';
 import type { Product } from '@/models/Product';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 
 interface KardexDrawerProps {
   isOpen: boolean;
@@ -11,6 +13,7 @@ interface KardexDrawerProps {
 export const KardexDrawer: React.FC<KardexDrawerProps> = ({ isOpen, product, onClose }) => {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loteToDelete, setLoteToDelete] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen && product) {
@@ -41,19 +44,29 @@ export const KardexDrawer: React.FC<KardexDrawerProps> = ({ isOpen, product, onC
       <div className="w-full max-w-2xl bg-surface h-full flex flex-col shadow-elevation-4 animate-in slide-in-from-right duration-300">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-outline-variant/30 bg-surface-container-lowest">
-          <div>
-            <h2 className="headline-sm text-on-surface">Kardex y Lotes</h2>
-            <p className="body-md text-on-surface-variant mt-1">
-              {product ? `${product.nom_prod} (Cód: ${product.cod_prod})` : 'Cargando...'}
-            </p>
+        <div className="flex flex-col gap-3 px-6 py-5 border-b border-outline-variant/30 bg-surface-container-lowest">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <Breadcrumbs
+                items={[
+                  { label: 'Catálogo', onClick: onClose },
+                  { label: 'Productos', onClick: onClose },
+                  { label: 'Kardex y Lotes' }
+                ]}
+                className="mb-2"
+              />
+              <h2 className="headline-sm text-on-surface">Kardex y Lotes</h2>
+              <p className="body-md text-on-surface-variant mt-1">
+                {product ? `${product.nom_prod} (Cód: ${product.cod_prod})` : 'Cargando...'}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant self-start"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-[#f8fafc]">
@@ -77,11 +90,18 @@ export const KardexDrawer: React.FC<KardexDrawerProps> = ({ isOpen, product, onC
                           <p className="label-md font-semibold text-on-surface">Lote: {lote.numero_lote}</p>
                           <p className="body-sm text-on-surface-variant">Ingreso: {new Date(lote.fecha_ingreso).toLocaleDateString()}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end">
                           <p className="label-md font-bold text-primary">{lote.cantidad_actual} uds</p>
-                          <p className={`text-xs font-semibold mt-1 ${lote.fecha_vencimiento ? 'text-secondary' : 'text-on-surface-variant'}`}>
+                          <p className={`text-xs font-semibold mt-1 mb-2 ${lote.fecha_vencimiento ? 'text-secondary' : 'text-on-surface-variant'}`}>
                             {lote.fecha_vencimiento ? `Vence: ${new Date(lote.fecha_vencimiento).toLocaleDateString()}` : 'Sin Vencimiento'}
                           </p>
+                          <button
+                            onClick={() => setLoteToDelete(lote)}
+                            className="text-error hover:bg-error/10 p-1.5 rounded-md transition-colors"
+                            title="Eliminar Lote Manualmente"
+                          >
+                            <span className="material-symbols-outlined text-sm">delete</span>
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -146,6 +166,26 @@ export const KardexDrawer: React.FC<KardexDrawerProps> = ({ isOpen, product, onC
           ) : null}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!loteToDelete}
+        title="Eliminar Lote"
+        message={`¿Estás seguro de eliminar el lote ${loteToDelete?.numero_lote}? Se restarán ${loteToDelete?.cantidad_actual} uds del stock del producto y quedará un registro de salida.`}
+        confirmText="Eliminar Lote"
+        isDestructive={true}
+        onCancel={() => setLoteToDelete(null)}
+        onConfirm={async () => {
+          if (!loteToDelete) return;
+          try {
+            await inventoryService.deleteLote(loteToDelete.id);
+            alertService.showToast('success', 'Lote eliminado exitosamente');
+            setLoteToDelete(null);
+            fetchKardex();
+          } catch (error: any) {
+            alertService.showToast('error', error.message || 'Error al eliminar el lote');
+          }
+        }}
+      />
     </div>
   );
 };

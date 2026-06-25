@@ -9,7 +9,7 @@ import type { Incident } from '@/models/Incident';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { useSalesStore } from '@/store/useSalesStore';
 
-export type SalesSubTab = 'ventas' | 'facturas' | 'movimientos' | 'incidencias';
+export type SalesSubTab = 'ventas' | 'facturas' | 'movimientos';
 
 export function useSalesManager(isAdmin: boolean) {
   const [subTab, setSubTab] = useState<SalesSubTab>('ventas');
@@ -38,7 +38,7 @@ export function useSalesManager(isAdmin: boolean) {
   // Cancel / Refund reason modal state
   const [reasonModal, setReasonModal] = useState<{
     isOpen: boolean;
-    type: 'cancel' | 'refund';
+    type: 'cancel' | 'refund' | 'complete';
     orderId: number | null;
     reason: string;
   }>({ isOpen: false, type: 'cancel', orderId: null, reason: '' });
@@ -57,9 +57,6 @@ export function useSalesManager(isAdmin: boolean) {
       } else if (subTab === 'movimientos') {
         const res = await inventoryService.getMovements();
         setMovements(Array.isArray(res) ? res : (res?.data || []));
-      } else if (subTab === 'incidencias') {
-        const data = await incidentService.getAll();
-        setReports(data || []);
       }
     } catch (e) {
       alertService.showToast('error', getErrorMessage(e, 'Error al cargar datos'));
@@ -89,10 +86,6 @@ export function useSalesManager(isAdmin: boolean) {
       return;
     }
     try {
-      if (subTab === 'incidencias') {
-        await handleExportIncidents(type);
-        return;
-      }
       if (type === 'excel') await orderService.exportExcel();
       else await orderService.exportPdf();
       alertService.showToast('success', `Reporte ${type.toUpperCase()} generado`);
@@ -154,6 +147,11 @@ export function useSalesManager(isAdmin: boolean) {
       setReasonModal({ isOpen: true, type: newStatus === 'cancelada' ? 'cancel' : 'refund', orderId: id, reason: '' });
       return;
     }
+    
+    if (newStatus === 'completada') {
+      setReasonModal({ isOpen: true, type: 'complete', orderId: id, reason: '' });
+      return;
+    }
 
     try {
       await orderService.updateOrderStatus(id, newStatus as Order['estado'] & string);
@@ -173,16 +171,20 @@ export function useSalesManager(isAdmin: boolean) {
 
   const handleConfirmReason = async () => {
     const { orderId, type, reason } = reasonModal;
-    if (!reason.trim()) {
+    if (type !== 'complete' && !reason.trim()) {
       alertService.showToast('warning', 'Debes ingresar un motivo para continuar');
       return;
     }
     if (!orderId) return;
-    const targetStatus = type === 'cancel' ? 'cancelada' : 'reembolsada';
+    const targetStatus = type === 'cancel' ? 'cancelada' : type === 'refund' ? 'reembolsada' : 'completada';
     setReasonModal(prev => ({ ...prev, isOpen: false }));
     try {
       await orderService.updateOrderStatus(orderId, targetStatus);
-      alertService.showToast('success', type === 'cancel' ? `Venta #${orderId} cancelada y stock devuelto` : `Reembolso de venta #${orderId} procesado`);
+      const msg = type === 'cancel' 
+        ? `Venta #${orderId} cancelada y stock devuelto` 
+        : type === 'refund' ? `Reembolso de venta #${orderId} procesado`
+        : `Venta #${orderId} marcada como completada`;
+      alertService.showToast('success', msg);
       setDetailOrder(null);
       void loadData();
     } catch (e: unknown) {

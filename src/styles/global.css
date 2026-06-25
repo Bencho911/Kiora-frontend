@@ -327,4 +327,9 @@ html {
   body {
     @apply bg-background text-foreground font-sans;
   }
+  
+  /* Force hand cursor for interactive elements */
+  button, a, [role="button"], .cursor-pointer {
+    cursor: pointer !important;
+  }
 }

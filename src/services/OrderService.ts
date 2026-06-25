@@ -18,8 +18,9 @@ export class OrderService {
   }
 
   // Dashboard Stats (Direct from API Gateway)
-  async getDashboardStats(): Promise<any> {
-    const response = await this.httpClient.get<any>('/dashboard/stats', this.getAuthHeaders());
+  async getDashboardStats(period?: string): Promise<any> {
+    const url = period ? `/dashboard/stats?period=${period}` : '/dashboard/stats';
+    const response = await this.httpClient.get<any>(url, this.getAuthHeaders());
     if (!response.ok || !response.data) throw new Error(response.error || 'Error al obtener estadísticas del dashboard');
     return response.data;
   }

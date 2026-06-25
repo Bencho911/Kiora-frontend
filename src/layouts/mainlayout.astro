@@ -56,18 +56,28 @@ const {
     </script>
     <title>{title}</title>
 
-    {weglotKey && (
-      <script is:inline src="https://cdn.weglot.com/weglot.min.js"></script>
-    )}
-    {weglotKey && (
-      <script is:inline define:vars={{ weglotKey }}>
-        if (window.Weglot) {
-          window.Weglot.initialize({ api_key: weglotKey });
+    <!-- Google Translate Script -->
+    <script is:inline type="text/javascript">
+      window.googleTranslateElementInit = function() {
+        if (window.google && window.google.translate) {
+          new window.google.translate.TranslateElement({
+            pageLanguage: 'es',
+            includedLanguages: 'es,en'
+          }, 'google_translate_element');
         }
-      </script>
-    )}
+      };
+
+      document.addEventListener('astro:page-load', () => {
+        const gtContainer = document.getElementById('google_translate_element');
+        if (gtContainer && gtContainer.innerHTML.trim() === '' && window.google && window.google.translate) {
+          window.googleTranslateElementInit();
+        }
+      });
+    </script>
+    <script is:inline type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
   </head>
   <body class="m-0 min-h-screen relative overflow-x-hidden bg-background text-on-surface font-sans antialiased">
+    <div id="google_translate_element" style="opacity: 0; position: absolute; z-index: -1; pointer-events: none;"></div>
     <slot />
   </body>
 </html>
