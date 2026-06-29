@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { ReportFilters as Filters } from '@/services/ReportService';
 import type { Category } from '@/models/Product';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,6 +12,7 @@ interface ReportFiltersProps {
   categories: Category[];
   onGenerate: () => void;
   isLoading: boolean;
+  dateError?: string | null;
 }
 
 export const ReportFilters: React.FC<ReportFiltersProps> = ({
@@ -19,8 +20,13 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
   setFilters,
   categories,
   onGenerate,
-  isLoading
+  isLoading,
+  dateError
 }) => {
+  const isDateInvalid = useMemo(() => {
+    if (!filters.startDate || !filters.endDate) return false;
+    return filters.startDate > filters.endDate;
+  }, [filters.startDate, filters.endDate]);
   return (
     <section className="bg-surface rounded-xl border border-outline-variant/30 p-5">
       <div className="flex flex-col xl:flex-row gap-5 xl:items-end">
@@ -35,17 +41,35 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
               <Input
                 type="date"
                 value={filters.startDate}
+                max={filters.endDate || undefined}
                 onChange={e => setFilters({ ...filters, startDate: e.target.value })}
-                className="bg-surface-container-low border-outline-variant/50 rounded-lg label-md text-on-surface"
+                className={`bg-surface-container-low rounded-lg label-md text-on-surface ${
+                  isDateInvalid ? 'border-error ring-2 ring-error/20' : 'border-outline-variant/50'
+                }`}
               />
-              <span className="text-on-surface-variant/40 label-sm px-1">→</span>
+              <span className={`label-sm px-1 ${isDateInvalid ? 'text-error' : 'text-on-surface-variant/40'}`}>→</span>
               <Input
                 type="date"
                 value={filters.endDate}
+                min={filters.startDate || undefined}
                 onChange={e => setFilters({ ...filters, endDate: e.target.value })}
-                className="bg-surface-container-low border-outline-variant/50 rounded-lg label-md text-on-surface"
+                className={`bg-surface-container-low rounded-lg label-md text-on-surface ${
+                  isDateInvalid ? 'border-error ring-2 ring-error/20' : 'border-outline-variant/50'
+                }`}
               />
             </div>
+            {isDateInvalid && (
+              <p className="label-sm text-error flex items-center gap-1 mt-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>error</span>
+                La fecha de inicio no puede ser posterior a la fecha fin
+              </p>
+            )}
+            {dateError && !isDateInvalid && (
+              <p className="label-sm text-secondary-container flex items-center gap-1 mt-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>info</span>
+                {dateError}
+              </p>
+            )}
           </div>
 
           {/* Type + Grouping */}
@@ -128,8 +152,8 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
         <div className="shrink-0 w-full xl:w-auto mt-2 xl:mt-0">
           <button
             onClick={onGenerate}
-            disabled={isLoading}
-            className="w-full xl:w-auto bg-primary text-on-primary label-sm px-6 py-3 rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
+            disabled={isLoading || isDateInvalid}
+            className="w-full xl:w-auto bg-primary text-on-primary label-sm px-6 py-3 rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <div className="w-4 h-4 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin" />

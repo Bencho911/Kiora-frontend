@@ -35,6 +35,7 @@ export function useReportsManager() {
     type: 'stock',
     product: null
   });
+  const [dateError, setDateError] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('kiora_saved_reports', JSON.stringify(savedReports));
@@ -138,16 +139,31 @@ export function useReportsManager() {
   };
 
   const generateReport = async () => {
+    // Clear any previous date errors
+    setDateError(null);
+
+    // Validate date range
+    if (filters.startDate && filters.endDate && filters.startDate > filters.endDate) {
+      alertService.showError('Rango de fechas inválido', 'La fecha de inicio no puede ser posterior a la fecha de fin. Por favor, selecciona un rango válido.');
+      return;
+    }
+
     setIsLoading(true);
     setReportData([]);
     try {
+      let data: any[];
       if (filters.reportType === 'ventas_detalladas') {
-        const data = await reportService.getDetailedSales(filters);
-        setReportData(data);
+        data = await reportService.getDetailedSales(filters);
       } else {
-        const data = await reportService.getProductRanking(filters);
-        setReportData(data);
+        data = await reportService.getProductRanking(filters);
       }
+
+      if (data.length === 0) {
+        setDateError('No hay reportes para generar en el rango de fechas seleccionado. Por favor, elige otras fechas.');
+        alertService.showToast('warning', 'No hay datos de ventas en el rango de fechas seleccionado.');
+      }
+
+      setReportData(data);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'No se pudo generar el reporte';
       alertService.showError('Error', msg);
@@ -319,6 +335,6 @@ export function useReportsManager() {
     deleteSavedReport, loadSavedReport,
     generateReport, handleExportExcel,
     handleExportPdf, handleExportIncidents,
-    handleExportSingleIncident
+    handleExportSingleIncident, dateError
   };
 }

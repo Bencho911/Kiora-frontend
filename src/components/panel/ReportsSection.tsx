@@ -21,7 +21,7 @@ export function ReportsSection() {
     deleteSavedReport, loadSavedReport,
     generateReport, handleExportExcel,
     handleExportPdf, handleExportIncidents,
-    handleExportSingleIncident
+    handleExportSingleIncident, dateError
   } = useReportsManager();
 
   const tabs = [
@@ -71,6 +71,7 @@ export function ReportsSection() {
             categories={categories}
             onGenerate={generateReport}
             isLoading={isLoading}
+            dateError={dateError}
           />
           <ReportTable
             data={reportData}

@@ -43,6 +43,9 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
     fecha_vencimiento: ''
   });
 
+  const [existingLotes, setExistingLotes] = React.useState<string[]>([]);
+  const [duplicateLoteError, setDuplicateLoteError] = React.useState<string | null>(null);
+
   const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
   const [isAbastecimiento, setIsAbastecimiento] = React.useState(false);
   const [defaultProvider, setDefaultProvider] = React.useState<number | undefined>();
@@ -52,6 +55,15 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
       setSuppliers(res.data || []);
     }).catch(() => {});
   }, []);
+
+  // Load existing lotes for duplicate validation
+  React.useEffect(() => {
+    if (product?.cod_prod) {
+      inventoryService.getLotesByProduct(product.cod_prod).then((lotes: any[]) => {
+        setExistingLotes(lotes.map(l => (l.numero_lote || '').trim().toLowerCase()));
+      }).catch(() => setExistingLotes([]));
+    }
+  }, [product?.cod_prod]);
 
   React.useEffect(() => {
     if (product.cod_prod) {
@@ -82,6 +94,15 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate duplicate batch name
+    if (movForm.numero_lote && movForm.numero_lote.trim()) {
+      const normalizedName = movForm.numero_lote.trim().toLowerCase();
+      if (existingLotes.includes(normalizedName)) {
+        alertService.showToast('error', `Ya existe un lote con el nombre "${movForm.numero_lote.trim()}". Por favor, usa un nombre diferente.`);
+        return;
+      }
+    }
 
     // Validate expiration date: must be a future date (strictly after today)
     if (movForm.fecha_vencimiento) {
@@ -134,6 +155,12 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
       fecha_vencimiento: finalType === 'entrada' && movForm.fecha_vencimiento ? movForm.fecha_vencimiento : undefined
     });
 
+    // After successful save, update the existing lotes list with the new one
+    if (movForm.numero_lote && movForm.numero_lote.trim()) {
+      setExistingLotes(prev => [...prev, movForm.numero_lote!.trim().toLowerCase()]);
+    }
+    setDuplicateLoteError(null);
+
     setMovForm({ tipo_mov: 'entrada', cantidad: 1, desc_mov: '', fk_cod_prov: defaultProvider, stock_minimo: product.stock_minimo || 5, numero_lote: '', fecha_vencimiento: '' });
     setIsAbastecimiento(!!defaultProvider);
   };
@@ -176,7 +203,29 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="label-sm text-on-surface-variant">Nro. Lote</label>
-              <input type="text" value={movForm.numero_lote || ''} onChange={e => setMovForm(f => ({ ...f, numero_lote: e.target.value }))} placeholder="Lote-001" className="w-full rounded-lg border border-outline-variant/50 bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <input type="text" value={movForm.numero_lote || ''} onChange={e => {
+                const val = e.target.value;
+                setMovForm(f => ({ ...f, numero_lote: val }));
+                // Live duplicate check
+                if (val.trim()) {
+                  const normalized = val.trim().toLowerCase();
+                  if (existingLotes.includes(normalized)) {
+                    setDuplicateLoteError(`Ya existe un lote con el nombre "${val.trim()}"`);
+                  } else {
+                    setDuplicateLoteError(null);
+                  }
+                } else {
+                  setDuplicateLoteError(null);
+                }
+              }} placeholder="Lote-001" className={`w-full rounded-lg border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+                duplicateLoteError ? 'border-error ring-2 ring-error/20' : 'border-outline-variant/50'
+              }`} />
+              {duplicateLoteError && (
+                <p className="label-sm text-error flex items-center gap-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>error</span>
+                  {duplicateLoteError}
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="label-sm text-on-surface-variant">Fecha Vencimiento</label>
@@ -240,8 +289,8 @@ export const ProductStockTab: React.FC<ProductStockTabProps> = ({
         )}
         <button
           type="submit"
-          disabled={saving}
-          className="w-full rounded-lg bg-primary text-on-primary py-2.5 label-sm shadow-sm hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-60"
+          disabled={saving || !!duplicateLoteError}
+          className="w-full rounded-lg bg-primary text-on-primary py-2.5 label-sm shadow-sm hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {saving ? 'Registrando...' : 'Registrar Movimiento'}
         </button>
