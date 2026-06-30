@@ -174,6 +174,17 @@ Crea tu archivo `.env` basándote en `.env.example`:
 | `PUBLIC_API_URL` | URL base del API Gateway | `https://api.kiora.app` |
 | `PUBLIC_WEGLOT_API_KEY` | Clave de Weglot (opcional) | `wg_xxx...` |
 | `SENTRY_AUTH_TOKEN` | Token para Sentry source maps | `sntrys_xxx...` |
+| `PUBLIC_KIORA_API_KEY` | Llave API para comunicación segura con el backend | `kiosk_...` |
+
+> **⚠️ Advertencia de Seguridad:** Asegúrate de no exponer credenciales estáticas duras (hardcoded) en los archivos `setup.ts` al construir (build) la aplicación, ya que el JS resultante estará expuesto a los clientes. Es crucial usar roles y JWT en combinación con este token.
+
+---
+
+## 🛠️ Consideraciones de Despliegue y Seguridad (Tech Debt)
+
+1. **Estado Global & Renderizados**: Evita colocar lógica con estado global directo sin listas de dependencias (por ejemplo, en el componente de carrito `PanelApp.tsx`) para evitar escrituras cíclicas en `localStorage`.
+2. **Cobertura de Pruebas**: Actualmente la cobertura End-to-End se enfoca en "Happy Paths" básicos. Se debe expandir la validación sobre `HttpClient` y la capa de Autenticación para cumplir métricas de calidad formales.
+3. **Nginx Security Headers**: El archivo `nginx.conf` local debe enriquecerse en producción con cabeceras de seguridad CSP, X-Frame-Options, etc., para fortalecer la resiliencia contra CSRF/XSS.
 
 ---
 
