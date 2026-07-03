@@ -9,6 +9,7 @@ import { SessionHistoryTab } from './reports/SessionHistoryTab';
 import { EmailPreviewModal } from './reports/EmailPreviewModal';
 import { useInventoryStore } from '@/store/useInventoryStore';
 import { useReportsManager } from '@/hooks/useReportsManager';
+import { useReportsTour } from '@/hooks/useReportsTour';
 
 export function ReportsSection() {
   const {
@@ -23,6 +24,7 @@ export function ReportsSection() {
     handleExportPdf, handleExportIncidents,
     handleExportSingleIncident, dateError
   } = useReportsManager();
+  const { startTour } = useReportsTour();
 
   const tabs = [
     { id: 'generar', label: 'Generar', icon: 'bar_chart' },
@@ -35,13 +37,20 @@ export function ReportsSection() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
       {/* Header */}
-      <div>
-        <h2 className="headline-lg text-on-surface mb-1">
-          Reportes de <span className="text-primary">Inteligencia</span>
-        </h2>
-        <p className="body-md text-on-surface-variant max-w-2xl">
-          Analiza el rendimiento de tu negocio con datos reales.
-        </p>
+      {/* Header */}
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <h2 className="headline-lg text-on-surface mb-1">
+            Reportes de <span className="text-primary">Inteligencia</span>
+          </h2>
+          <p className="body-md text-on-surface-variant max-w-2xl">
+            Analiza el rendimiento de tu negocio con datos reales.
+          </p>
+        </div>
+        <button onClick={() => startTour()} className="bg-surface-container-high text-on-surface label-sm px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all active:scale-[0.98] shrink-0">
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help</span>
+          <span className="hidden sm:inline">Ver tutorial</span>
+        </button>
       </div>
 
       {/* Tabs */}

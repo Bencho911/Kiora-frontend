@@ -6,6 +6,7 @@ import type { Product } from '@/models/Product';
 import type { Order } from '@/models/Order';
 import type { DashboardInsights } from '@/services/AiService';
 import { SystemAlerts } from './SystemAlerts';
+import { useDashboardTour } from '@/hooks/useDashboardTour';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
@@ -29,6 +30,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
 
   const { stockSyncVersion } = useInventoryStore();
   const { salesSyncVersion } = useSalesStore();
+  const { startTour } = useDashboardTour();
 
   const evolutionData = useMemo(() => {
     if (!statsData?.evolucion_ventas) {
@@ -163,6 +165,10 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
           <p className="body-md text-on-surface-variant">Resumen general de tu negocio hoy.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button onClick={() => startTour()} className="flex items-center gap-2 bg-surface-container-high text-on-surface rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-surface-container-highest transition-all active:scale-[0.97]">
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help</span>
+            <span className="hidden sm:inline">Ver tutorial</span>
+          </button>
           <button
             type="button"
             onClick={() => onNavigate('inventario')}
@@ -175,6 +181,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
           </button>
           <button
             type="button"
+            id="tour-dashboard-nueva-venta"
             onClick={() => useSalesStore.getState().setIsOrderDrawerOpen(true)}
             className="flex items-center gap-2 bg-primary text-on-primary rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm hover:opacity-90 transition-all active:scale-[0.97]"
           >
@@ -187,7 +194,7 @@ export function DashboardSection({ onNavigate, isAdmin }: DashboardSectionProps)
       </div>
 
       {/* ─── KPI Row ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div id="tour-dashboard-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map((stat) => (
           <div
             key={stat.label}

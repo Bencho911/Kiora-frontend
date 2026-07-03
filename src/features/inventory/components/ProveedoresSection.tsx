@@ -3,6 +3,7 @@ import Fuse from 'fuse.js';
 import { inventoryService, alertService, productService } from '@/config/setup';
 import type { Supplier, Suministra } from '@/models/Inventory';
 import { SupplierDrawer } from './SupplierDrawer';
+import { useSupplierTour } from '@/hooks/useSupplierTour';
 
 export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string }) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -15,6 +16,7 @@ export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string })
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentSupplier, setCurrentSupplier] = useState<Partial<Supplier>>({});
+  const { startTour } = useSupplierTour();
 
   useEffect(() => {
     loadData();
@@ -130,7 +132,12 @@ export function ProveedoresSection({ searchTerm = '' }: { searchTerm?: string })
           </button>
         </div>
 
+        <button onClick={() => startTour()} className="bg-surface-container-high text-on-surface label-sm px-4 py-2.5 rounded-lg flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all active:scale-[0.98] w-full sm:w-auto justify-center">
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help</span>
+          <span className="hidden sm:inline">Ver tutorial</span>
+        </button>
         <button
+          id="tour-btn-nuevo-proveedor"
           onClick={handleOpenCreate}
           className="bg-primary text-on-primary label-sm px-4 py-2.5 rounded-lg flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all active:scale-[0.98] w-full sm:w-auto justify-center"
         >

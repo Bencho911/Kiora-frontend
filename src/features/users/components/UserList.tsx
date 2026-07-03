@@ -2,6 +2,7 @@ import React from 'react';
 import type { User } from '@/models/User';
 import { getPaginationPages } from '@/utils/pagination';
 import { getInitials } from '@/utils/userUtils';
+import { useUsersTour } from '@/hooks/useUsersTour';
 
 interface UserListProps {
   users: (User & { isBlocked: boolean })[];
@@ -48,6 +49,8 @@ export const UserList: React.FC<UserListProps> = ({
     return 'bg-tertiary/10 text-tertiary';
   };
 
+  const { startTour } = useUsersTour();
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
@@ -56,8 +59,13 @@ export const UserList: React.FC<UserListProps> = ({
           <h2 className="headline-lg text-on-surface mb-1">Usuarios</h2>
           <p className="body-md text-on-surface-variant">Listado detallado de miembros del equipo.</p>
         </div>
-        <div className="flex gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <button onClick={() => startTour()} className="bg-surface-container-high text-on-surface label-sm px-4 py-2.5 rounded-lg flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all active:scale-[0.98] w-full sm:w-auto justify-center">
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help</span>
+            <span className="hidden sm:inline">Ver tutorial</span>
+          </button>
           <button
+            id="tour-usuarios-nuevo"
             onClick={onAddUser}
             className="flex-1 sm:flex-none bg-primary text-on-primary label-sm px-4 py-2.5 rounded-lg flex items-center justify-center gap-1.5 shadow-sm hover:opacity-90 transition-all active:scale-[0.98]"
           >
@@ -79,7 +87,7 @@ export const UserList: React.FC<UserListProps> = ({
       </div>
 
       {/* User list card */}
-      <div className="bg-surface rounded-xl border border-outline-variant/30 overflow-hidden">
+      <div id="tour-usuarios-lista" className="bg-surface rounded-xl border border-outline-variant/30 overflow-hidden">
         {isLoading ? (
           <div className="flex flex-col items-center gap-3 py-16">
             <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
