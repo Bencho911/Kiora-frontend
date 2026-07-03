@@ -4,12 +4,14 @@ import { productService, alertService } from '@/config/setup';
 import type { Category } from '@/models/Product';
 import { CategoryDrawer } from './CategoryDrawer';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useCategoryTour } from '@/hooks/useCategoryTour';
 
 export function CategoriasSection() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 250);
+  const { startTour } = useCategoryTour();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -124,7 +126,11 @@ export function CategoriasSection() {
               className="w-full pl-9 pr-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
             />
           </div>
-          <button onClick={handleOpenCreate} className="bg-primary text-on-primary label-sm px-4 py-2.5 rounded-lg flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all active:scale-[0.98] shrink-0">
+          <button onClick={() => startTour()} className="bg-surface-container-high text-on-surface label-sm px-4 py-2.5 rounded-lg flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all active:scale-[0.98] shrink-0">
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help</span>
+            <span className="hidden sm:inline">Ver tutorial</span>
+          </button>
+          <button id="tour-btn-nueva-categoria" onClick={handleOpenCreate} className="bg-primary text-on-primary label-sm px-4 py-2.5 rounded-lg flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all active:scale-[0.98] shrink-0">
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
             Nueva
           </button>

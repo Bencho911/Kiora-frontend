@@ -211,10 +211,25 @@ export const AdminSubNav: React.FC<AdminSubNavProps> = ({ activeId, onItemClick,
               <ul className="space-y-1">
                 {group.items.map((item) => {
                   const active = activeId === item.id;
+                  
+                  const tourNavIds: Record<string, string> = {
+                    productos: 'tour-nav-productos',
+                    categorias: 'tour-nav-categorias',
+                    inventario: 'tour-nav-proveedores',
+                    reportes: 'tour-nav-reportes',
+                    dashboard: 'tour-nav-dashboard',
+                    ventas: 'tour-nav-ventas',
+                    usuarios: 'tour-nav-usuarios',
+                    mantenimiento: 'tour-nav-mantenimiento',
+                    actividad: 'tour-nav-actividad',
+                    ajustes: 'tour-nav-ajustes',
+                  };
+
                   return (
                     <li key={item.id}>
                       <button
                         type="button"
+                        id={tourNavIds[item.id]}
                         onClick={() => onItemClick(item.id)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
                           active

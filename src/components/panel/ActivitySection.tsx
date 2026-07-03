@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { authService, API_URL } from '@/config/setup';
+import { useActivityTour } from '@/hooks/useActivityTour';
 
 interface Activity {
   id: number;
@@ -48,6 +49,7 @@ export function ActivitySection() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { startTour } = useActivityTour();
 
   const fetchLogs = useCallback(async (p: number) => {
     setIsLoading(true);
@@ -74,9 +76,15 @@ export function ActivitySection() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10 max-w-4xl">
       {/* Header */}
-      <div>
-        <h2 className="headline-lg text-on-surface mb-1">Historial de Actividad</h2>
-        <p className="body-md text-on-surface-variant">Registro cronológico de acciones en el sistema.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="headline-lg text-on-surface mb-1">Historial de Actividad</h2>
+          <p className="body-md text-on-surface-variant">Registro cronológico de acciones en el sistema.</p>
+        </div>
+        <button onClick={() => startTour()} className="flex items-center gap-2 bg-surface-container-high text-on-surface rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-surface-container-highest transition-all active:scale-[0.97] w-full sm:w-auto justify-center">
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help</span>
+          <span className="hidden sm:inline">Ver tutorial</span>
+        </button>
       </div>
 
       {error && (
@@ -87,7 +95,7 @@ export function ActivitySection() {
       )}
 
       {/* Timeline */}
-      <div className="space-y-1">
+      <div id="tour-actividad-timeline" className="space-y-1">
         {isLoading && logs.length === 0 ? (
           <div className="py-16 flex justify-center">
             <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />

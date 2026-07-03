@@ -271,7 +271,7 @@ export function ProductDrawer({
             {/* Image Upload */}
             <div className="space-y-1.5">
               <label className="label-sm text-on-surface-variant">Imagen del Producto</label>
-              <div className="relative group aspect-video rounded-xl border-2 border-dashed border-outline-variant/50 bg-surface-container-low flex items-center justify-center overflow-hidden transition-all hover:border-primary/30">
+              <div id="tour-img-upload" className="relative group aspect-video rounded-xl border-2 border-dashed border-outline-variant/50 bg-surface-container-low flex items-center justify-center overflow-hidden transition-all hover:border-primary/30">
                 {processingImage ? (
                   <div className="flex flex-col items-center gap-2 p-4">
                     <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
@@ -310,6 +310,7 @@ export function ProductDrawer({
                 <label className="label-sm text-on-surface-variant">Nombre *</label>
                 <input
                   type="text"
+                  id="tour-input-nombre"
                   required
                   value={form.nom_prod}
                   onChange={e => setForm(f => ({ ...f, nom_prod: e.target.value }))}
@@ -332,6 +333,7 @@ export function ProductDrawer({
                 <label className="label-sm text-on-surface-variant">Fecha de vencimiento</label>
                 <input
                   type="date"
+                  id="tour-input-fecha"
                   value={form.fechaven_prod ?? ''}
                   min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => setForm(f => ({ ...f, fechaven_prod: e.target.value || undefined }))}
@@ -344,6 +346,7 @@ export function ProductDrawer({
                 <label className="label-sm text-on-surface-variant">Precio de Venta ($) *</label>
                 <input
                   type="number"
+                  id="tour-input-precio"
                   required
                   value={form.precio_prod}
                   onFocus={e => e.target.select()}
@@ -482,6 +485,7 @@ export function ProductDrawer({
             <button
               type="submit"
               form="productForm"
+              id="tour-btn-guardar"
               disabled={saving || (!hasChanges && !!product)}
               className={`flex-1 rounded-xl py-2.5 label-sm shadow-sm transition-all active:scale-[0.98] ${
                 !hasChanges && !!product 

@@ -18,6 +18,7 @@ const ESTADO_COLORS: Record<string, string> = {
 
 import { useInventoryStore } from '@/store/useInventoryStore';
 import { useSalesManager } from '@/hooks/useSalesManager';
+import { useSalesTour } from '@/hooks/useSalesTour';
 
 export function SalesSection({
   onOpenPOS,
@@ -67,6 +68,8 @@ export function SalesSection({
     downloadInvoicePDF, handleDownloadReceipt, handleEmitElectronicInvoice,
     handleSaveIncident, handleDeleteIncident, handleUpdateIncidentStatus
   } = useSalesManager(isAdmin || false);
+
+  const { startTour } = useSalesTour();
 
   const deepLinkHandled = useRef<number | null>(null);
   useEffect(() => {
@@ -122,28 +125,35 @@ export function SalesSection({
           </h2>
           <p className="body-md text-on-surface-variant">Registro de ventas, facturación y exportaciones.</p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => void handleExport('excel')}
-            title="Exportar a Excel"
-            className="flex items-center justify-center rounded-lg bg-tertiary/10 p-2.5 text-tertiary border border-tertiary/20 hover:bg-tertiary/20 transition-all active:scale-95"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>download</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <button onClick={() => startTour()} className="flex items-center gap-2 bg-surface-container-high text-on-surface rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-surface-container-highest transition-all active:scale-[0.97] w-full sm:w-auto justify-center">
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help</span>
+            <span className="hidden sm:inline">Ver tutorial</span>
           </button>
-          <button
-            onClick={() => void handleExport('pdf')}
-            title="Exportar a PDF"
-            className="flex items-center justify-center rounded-lg bg-primary-fixed/30 p-2.5 text-primary-container border border-primary-fixed/50 hover:bg-primary-fixed/50 transition-all active:scale-95"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>picture_as_pdf</span>
-          </button>
-          <button
-            onClick={onOpenPOS}
-            className="inline-flex items-center gap-1.5 bg-primary text-on-primary label-sm px-4 py-2.5 rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-[0.98]"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
-            Nueva Venta
-          </button>
+          <div className="flex gap-3 w-full sm:w-auto justify-end">
+            <button
+              onClick={() => void handleExport('excel')}
+              title="Exportar a Excel"
+              className="flex items-center justify-center rounded-lg bg-tertiary/10 p-2.5 text-tertiary border border-tertiary/20 hover:bg-tertiary/20 transition-all active:scale-95"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>download</span>
+            </button>
+            <button
+              onClick={() => void handleExport('pdf')}
+              title="Exportar a PDF"
+              className="flex items-center justify-center rounded-lg bg-primary-fixed/30 p-2.5 text-primary-container border border-primary-fixed/50 hover:bg-primary-fixed/50 transition-all active:scale-95"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>picture_as_pdf</span>
+            </button>
+            <button
+              id="tour-ventas-nueva"
+              onClick={onOpenPOS}
+              className="inline-flex items-center gap-1.5 bg-primary text-on-primary label-sm px-4 py-2.5 rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-[0.98]"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
+              Nueva Venta
+            </button>
+          </div>
         </div>
       </div>
 
@@ -179,7 +189,7 @@ export function SalesSection({
       </div>
 
       {/* Tabs + Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div id="tour-ventas-tabs" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex bg-surface-container-high rounded-lg p-1 w-full sm:w-fit overflow-x-auto">
           {tabs.map(t => (
             <button
@@ -321,7 +331,7 @@ export function SalesSection({
           )}
 
           {/* ─── DESKTOP: Table ─── */}
-          <div className="hidden sm:block bg-surface rounded-xl border border-outline-variant/30 overflow-hidden shadow-sm">
+          <div id="tour-ventas-tabla" className="hidden sm:block bg-surface rounded-xl border border-outline-variant/30 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-surface-container-low/50 border-b border-outline-variant/30">

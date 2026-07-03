@@ -143,6 +143,7 @@ export const CategoryDrawer: React.FC<CategoryDrawerProps> = ({
           <button
             form="categoryForm"
             type="submit"
+            id="tour-btn-guardar-categoria"
             disabled={isSaving}
             className="w-full bg-primary text-on-primary py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2"
           >

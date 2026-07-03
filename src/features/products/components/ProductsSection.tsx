@@ -7,6 +7,7 @@ import { KardexDrawer } from '@/features/inventory/components/KardexDrawer';
 import { useProductManager } from '@/hooks/useProductManager';
 import { useAppStore } from '@/store/useAppStore';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { useProductTour } from '@/hooks/useProductTour';
 
 export function ProductsSection() {
   const isAdmin = authService.isAdmin();
@@ -14,6 +15,7 @@ export function ProductsSection() {
   const [kardexProduct, setKardexProduct] = useState<Product | null>(null);
   const [visibleCount, setVisibleCount] = useState(15);
   const [observerTarget, setObserverTarget] = useState<HTMLDivElement | null>(null);
+  const { startTour } = useProductTour();
 
   const {
     categories, isLoading,
@@ -75,12 +77,21 @@ export function ProductsSection() {
               Categorías
             </button>
             {isAdmin && (
-              <button
-                onClick={() => { setSelectedProduct(null); setIsDrawerOpen(true); }}
-                className="flex-1 sm:flex-none bg-primary text-on-primary label-md px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-sm active:scale-[0.98]">
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add</span>
-                Nuevo Producto
-              </button>
+              <>
+                <button
+                  onClick={() => startTour()}
+                  className="flex-1 sm:flex-none bg-surface-container-high text-on-surface label-md px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors active:scale-[0.98]">
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>help</span>
+                  <span className="hidden sm:inline">Ver tutorial</span>
+                </button>
+                <button
+                  id="tour-btn-nuevo"
+                  onClick={() => { setSelectedProduct(null); setIsDrawerOpen(true); }}
+                  className="flex-1 sm:flex-none bg-primary text-on-primary label-md px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-sm active:scale-[0.98]">
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add</span>
+                  Nuevo Producto
+                </button>
+              </>
             )}
           </div>
         </div>

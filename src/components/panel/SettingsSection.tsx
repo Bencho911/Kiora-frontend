@@ -4,6 +4,7 @@ import { alertService } from '@/config/setup';
 import HelpCenter from '@/components/help/HelpCenter';
 import { LegalSection } from './LegalSection';
 import { SystemSettingsForm } from './SystemSettingsForm';
+import { useSettingsTour } from '@/hooks/useSettingsTour';
 
 interface SettingsSectionProps {
   settingsView: 'main' | 'help' | 'terms' | 'privacy' | 'system';
@@ -17,6 +18,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   onOpenProfile
 }) => {
   const [showLangModal, setShowLangModal] = React.useState(false);
+  const { startTour } = useSettingsTour();
 
   const changeLanguage = (lang: string) => {
     const select = document.querySelector('.goog-te-combo') as HTMLSelectElement;
@@ -46,6 +48,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
       title: 'Perfil y Cuenta',
       items: [
         {
+          id: 'tour-ajustes-perfil',
           label: 'Mi Perfil',
           desc: 'Gestiona tu identidad y accesos.',
           icon: 'person',
@@ -55,6 +58,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
           onClick: onOpenProfile,
         },
         {
+          id: 'tour-ajustes-sistema',
           label: 'Sistema',
           desc: 'Horarios de caja y alertas.',
           icon: 'settings',
@@ -126,11 +130,17 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   return (
     <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
       {/* Header */}
-      <div className="mb-8">
-        <h2 className="headline-lg text-on-surface mb-1">
-          Configuración del <span className="text-primary">Sistema</span>
-        </h2>
-        <p className="body-md text-on-surface-variant">Gestiona tu cuenta, preferencias y ayuda técnica.</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="headline-lg text-on-surface mb-1">
+            Configuración del <span className="text-primary">Sistema</span>
+          </h2>
+          <p className="body-md text-on-surface-variant">Gestiona tu cuenta, preferencias y ayuda técnica.</p>
+        </div>
+        <button onClick={() => startTour()} className="flex items-center gap-2 bg-surface-container-high text-on-surface rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-surface-container-highest transition-all active:scale-[0.97] w-full sm:w-auto justify-center">
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help</span>
+          <span className="hidden sm:inline">Ver tutorial</span>
+        </button>
       </div>
 
       {settingsView === 'main' ? (
@@ -139,9 +149,10 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
             <section key={section.title}>
               <h3 className="label-sm text-on-surface-variant font-semibold mb-3 px-1">{section.title}</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {section.items.map(item => (
+                {section.items.map((item: any) => (
                   <div
                     key={item.label}
+                    id={item.id}
                     onClick={item.onClick}
                     className={`group flex-col gap-3 p-5 bg-surface border border-outline-variant/30 rounded-xl cursor-pointer ${item.hover} hover:shadow-md hover:-translate-y-0.5 transition-all ${'mobileOnly' in item && item.mobileOnly ? 'md:hidden flex' : 'flex'}`}
                   >

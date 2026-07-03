@@ -82,6 +82,7 @@ export const SupplierDrawer: React.FC<SupplierDrawerProps> = ({
               <label className="label-sm text-on-surface-variant">Nombre del Proveedor / Empresa</label>
               <input
                 type="text"
+                id="tour-input-nombre-proveedor"
                 required
                 value={supplierData.nom_prov || ''}
                 onChange={(e) => setSupplierData({ ...supplierData, nom_prov: e.target.value })}
@@ -107,6 +108,7 @@ export const SupplierDrawer: React.FC<SupplierDrawerProps> = ({
                 <label className="label-sm text-on-surface-variant">Identificación</label>
                 <input
                   type="text"
+                  id="tour-input-id-proveedor"
                   inputMode="numeric"
                   value={supplierData.id_prov || ''}
                   onChange={(e) => {
@@ -123,6 +125,7 @@ export const SupplierDrawer: React.FC<SupplierDrawerProps> = ({
               <label className="label-sm text-on-surface-variant">Teléfono / Celular *</label>
               <input
                 type="tel"
+                id="tour-input-contacto-proveedor"
                 required
                 inputMode="numeric"
                 value={supplierData.tel_prov || ''}
@@ -154,6 +157,7 @@ export const SupplierDrawer: React.FC<SupplierDrawerProps> = ({
           <button
             form="supplierForm"
             type="submit"
+            id="tour-btn-guardar-proveedor"
             disabled={isSaving}
             className="w-full bg-primary text-on-primary py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2"
           >

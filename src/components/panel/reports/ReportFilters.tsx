@@ -37,7 +37,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
               <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>calendar_today</span>
               Rango de Fechas
             </Label>
-            <div className="flex flex-col sm:flex-row items-center gap-2 report-date-range">
+            <div id="tour-reportes-fecha" className="flex flex-col sm:flex-row items-center gap-2 report-date-range">
               <Input
                 type="date"
                 value={filters.startDate}
@@ -83,9 +83,11 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
                 value={filters.reportType}
                 onValueChange={val => setFilters({ ...filters, reportType: val as any })}
               >
-                <SelectTrigger className="flex-1 bg-surface-container-low border-outline-variant/50 rounded-lg font-medium text-on-surface">
-                  <SelectValue placeholder="Tipo de reporte" />
-                </SelectTrigger>
+                <div id="tour-reportes-tipo" className="flex-1">
+                  <SelectTrigger className="w-full bg-surface-container-low border-outline-variant/50 rounded-lg font-medium text-on-surface">
+                    <SelectValue placeholder="Tipo de reporte" />
+                  </SelectTrigger>
+                </div>
                 <SelectContent>
                   <SelectItem value="ventas_detalladas">Ventas Detalladas</SelectItem>
                   <SelectItem value="mas_vendidos">Más Vendidos</SelectItem>
@@ -98,9 +100,11 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
                   value={filters.grouping}
                   onValueChange={val => setFilters({ ...filters, grouping: val as any })}
                 >
-                  <SelectTrigger className="w-28 bg-surface-container-low border-outline-variant/50 rounded-lg font-medium text-on-surface">
-                    <SelectValue placeholder="Agrupar" />
-                  </SelectTrigger>
+                  <div id="tour-reportes-tiempo">
+                    <SelectTrigger className="w-28 bg-surface-container-low border-outline-variant/50 rounded-lg font-medium text-on-surface">
+                      <SelectValue placeholder="Agrupar" />
+                    </SelectTrigger>
+                  </div>
                   <SelectContent>
                     <SelectItem value="dia">Día</SelectItem>
                     <SelectItem value="semana">Semana</SelectItem>
@@ -134,9 +138,11 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
                 value={filters.category?.toString() || "all"}
                 onValueChange={val => setFilters({ ...filters, category: val === "all" ? undefined : Number(val) })}
               >
-                <SelectTrigger className="flex-1 bg-surface-container-low border-outline-variant/50 rounded-lg font-medium text-on-surface">
-                  <SelectValue placeholder="Categoría" />
-                </SelectTrigger>
+                <div id="tour-reportes-param" className="flex-1">
+                  <SelectTrigger className="w-full bg-surface-container-low border-outline-variant/50 rounded-lg font-medium text-on-surface">
+                    <SelectValue placeholder="Categoría" />
+                  </SelectTrigger>
+                </div>
                 <SelectContent>
                   <SelectItem value="all">Todas las Categorías</SelectItem>
                   {categories.map(c => (
@@ -151,6 +157,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
         {/* Generate Button */}
         <div className="shrink-0 w-full xl:w-auto mt-2 xl:mt-0">
           <button
+            id="tour-reportes-generar"
             onClick={onGenerate}
             disabled={isLoading || isDateInvalid}
             className="w-full xl:w-auto bg-primary text-on-primary label-sm px-6 py-3 rounded-lg shadow-sm hover:opacity-90 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
