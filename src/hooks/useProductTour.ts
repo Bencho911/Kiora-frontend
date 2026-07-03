@@ -1,5 +1,4 @@
 import Shepherd from 'shepherd.js';
-import 'shepherd.js/dist/css/shepherd.css';
 
 export function useProductTour() {
   const startTour = () => {
@@ -29,6 +28,17 @@ export function useProductTour() {
       title: 'Crea un producto',
       text: 'Haz clic aquí para añadir un nuevo artículo.',
       attachTo: { element: '#tour-btn-nuevo', on: 'bottom' },
+      beforeShowPromise: () => {
+        return new Promise<void>((resolve) => {
+          const closeBtn = document.querySelector('#tour-close-product-drawer') as HTMLElement;
+          if (closeBtn && document.querySelector('#tour-btn-guardar')) {
+            closeBtn.click();
+            setTimeout(resolve, 300);
+          } else {
+            resolve();
+          }
+        });
+      },
       buttons: [
         { text: 'Atrás', action: tour.back, classes: 'text-on-surface-variant px-4 py-2 text-sm font-medium hover:bg-surface-container-low rounded-lg' },
         { text: 'Siguiente', action: tour.next, classes: 'bg-primary text-on-primary px-4 py-2 rounded-lg text-sm font-medium' }
@@ -40,6 +50,17 @@ export function useProductTour() {
       title: 'Completa y guarda',
       text: 'Llena los detalles solicitados y presiona guardar.',
       attachTo: { element: '#tour-btn-guardar', on: 'left' },
+      beforeShowPromise: () => {
+        return new Promise((resolve) => {
+          const btn = document.querySelector('#tour-btn-nuevo') as HTMLElement;
+          if (btn && !document.querySelector('#tour-btn-guardar')) {
+            btn.click();
+            setTimeout(resolve, 300);
+          } else {
+            resolve();
+          }
+        });
+      },
       buttons: [
         { text: 'Atrás', action: tour.back, classes: 'text-on-surface-variant px-4 py-2 text-sm font-medium hover:bg-surface-container-low rounded-lg' },
         { text: 'Finalizar', action: tour.complete, classes: 'bg-primary text-on-primary px-4 py-2 rounded-lg text-sm font-medium' }
