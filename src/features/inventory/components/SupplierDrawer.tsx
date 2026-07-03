@@ -172,6 +172,7 @@ export const SupplierDrawer: React.FC<SupplierDrawerProps> = ({
           </button>
           <button
             type="button"
+            id="tour-close-supplier-drawer"
             disabled={isSaving}
             onClick={onClose}
             className="w-full py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors rounded-xl hover:bg-surface-container-low"

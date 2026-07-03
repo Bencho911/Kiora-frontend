@@ -476,6 +476,7 @@ export function ProductDrawer({
         <div className="px-6 py-4 bg-surface border-t border-outline-variant/30 flex gap-3">
           <button
             type="button"
+            id="tour-close-product-drawer"
             onClick={onClose}
             className="flex-1 rounded-xl border border-outline-variant/50 py-2.5 label-sm text-on-surface-variant hover:bg-surface-container-low transition-all"
           >

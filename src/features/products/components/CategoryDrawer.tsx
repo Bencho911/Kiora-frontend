@@ -158,6 +158,7 @@ export const CategoryDrawer: React.FC<CategoryDrawerProps> = ({
           </button>
           <button
             type="button"
+            id="tour-close-category-drawer"
             disabled={isSaving}
             onClick={onClose}
             className="w-full py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors rounded-xl hover:bg-surface-container-low"

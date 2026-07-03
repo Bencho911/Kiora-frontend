@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "shepherd.js/dist/css/shepherd.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -332,4 +333,45 @@ html {
   button, a, [role="button"], .cursor-pointer {
     cursor: pointer !important;
   }
+}
+
+/* ────────────── SHEPHERD TOUR CUSTOM THEME ────────────── */
+.shepherd-theme-custom {
+  color: var(--md-on-surface) !important;
+  max-width: 380px !important;
+}
+.shepherd-theme-custom .shepherd-content {
+  background: transparent !important;
+  padding: 0 !important;
+}
+.shepherd-theme-custom .shepherd-header {
+  background: transparent !important;
+  padding: 1.25rem 1.25rem 0.5rem 1.25rem !important;
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+}
+.shepherd-theme-custom .shepherd-title {
+  color: var(--md-on-surface) !important;
+  font-size: var(--text-headline-sm) !important;
+  font-weight: 600 !important;
+}
+.shepherd-theme-custom .shepherd-text {
+  color: var(--md-on-surface-variant) !important;
+  font-size: var(--text-body-md) !important;
+  line-height: 1.5 !important;
+  padding: 0 1.25rem 1rem 1.25rem !important;
+}
+.shepherd-theme-custom .shepherd-footer {
+  padding: 0.75rem 1.25rem 1.25rem 1.25rem !important;
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+}
+.shepherd-theme-custom .shepherd-cancel-icon {
+  color: var(--md-on-surface-variant) !important;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+.shepherd-theme-custom .shepherd-cancel-icon:hover {
+  opacity: 1;
+  color: var(--md-error) !important;
 }

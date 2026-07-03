@@ -1,5 +1,4 @@
 import Shepherd from 'shepherd.js';
-import 'shepherd.js/dist/css/shepherd.css';
 
 export function useSettingsTour() {
   const startTour = () => {
